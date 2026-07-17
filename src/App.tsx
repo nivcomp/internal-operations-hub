@@ -270,7 +270,17 @@ function App() {
   }
 
   const page = {
-    dashboard: <DashboardPage clients={clients} projects={projects} changeRequests={changeRequests} timeEntries={timeEntries} />,
+    dashboard: (
+      <DashboardPage
+        clients={clients}
+        projects={projects}
+        changeRequests={changeRequests}
+        timeEntries={timeEntries}
+        activityEntries={activityEntries}
+        onNavigate={setActiveView}
+        onProjectSelect={openProjectDetail}
+      />
+    ),
     "action-queue": (
       <ActionQueuePage
         clients={clients}
