@@ -1,19 +1,18 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Layout } from "./components/Layout";
-import {
-  changeRequests as initialChangeRequests,
-  clientPayments as initialClientPayments,
-  clients as initialClients,
-  hourBanks as initialHourBanks,
-  projects as initialProjects,
-  timeEntries as initialTimeEntries,
-} from "./data/mockData";
 import {
   createChangeRequestRow,
   createClientPaymentRow,
   createClientRow,
   createProjectRow,
   createTimeEntryRow,
+  fetchActivityLogs,
+  fetchChangeRequests,
+  fetchClientPayments,
+  fetchClients,
+  fetchHourBanks,
+  fetchProjects,
+  fetchTimeEntries,
   markClientPaymentReceivedRow,
   recordActivityRow,
   setProjectSupplierAssignmentRow,
@@ -52,35 +51,54 @@ export type ActivityEntry = {
   detail: string;
 };
 
-function createId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
 function App() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | undefined>();
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>(initialChangeRequests);
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(initialTimeEntries);
-  const [clientPayments, setClientPayments] = useState<ClientPayment[]>(initialClientPayments);
-  const [hourBanks] = useState<HourBank[]>(initialHourBanks);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [clientPayments, setClientPayments] = useState<ClientPayment[]>([]);
+  const [hourBanks, setHourBanks] = useState<HourBank[]>([]);
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
+  const [dataStatus, setDataStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [dataError, setDataError] = useState<string | null>(null);
 
-  function recordActivity(label: string, detail: string) {
-    const entry: ActivityEntry = {
-      id: createId("activity"),
-      createdAt: new Date().toLocaleString("en-GB", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }),
-      label,
-      detail,
-    };
-    setActivityEntries((current) => [entry, ...current].slice(0, 20));
-    void recordActivityRow(label, detail);
+  const loadAll = useCallback(async () => {
+    setDataStatus("loading");
+    setDataError(null);
+    try {
+      const [c, p, cr, te, cp, hb, al] = await Promise.all([
+        fetchClients(),
+        fetchProjects(),
+        fetchChangeRequests(),
+        fetchTimeEntries(),
+        fetchClientPayments(),
+        fetchHourBanks(),
+        fetchActivityLogs(20),
+      ]);
+      setClients(c);
+      setProjects(p);
+      setChangeRequests(cr);
+      setTimeEntries(te);
+      setClientPayments(cp);
+      setHourBanks(hb);
+      setActivityEntries(al);
+      setDataStatus("ready");
+    } catch (err) {
+      console.error("[App] failed to load data", err);
+      setDataError(err instanceof Error ? err.message : "Unknown error loading data from database.");
+      setDataStatus("error");
+    }
+  }, []);
+
+  useEffect(() => { void loadAll(); }, [loadAll]);
+
+  async function recordActivity(label: string, detail: string) {
+    const persisted = await recordActivityRow(label, detail);
+    if (persisted) setActivityEntries((current) => [persisted, ...current].slice(0, 20));
   }
 
   function openClientDetail(clientId: string) {
@@ -108,26 +126,11 @@ function App() {
     setActiveView("supplier-portal");
   }
 
-  function resetLocalSession() {
-    setClients(initialClients);
-    setProjects(initialProjects);
-    setChangeRequests(initialChangeRequests);
-    setTimeEntries(initialTimeEntries);
-    setClientPayments(initialClientPayments);
+  function reloadFromDatabase() {
     setSelectedClientId(undefined);
     setSelectedProjectId(undefined);
     setSelectedSupplierId(undefined);
-    setActiveView("action-queue");
-    const entry: ActivityEntry = {
-      id: createId("activity"),
-      createdAt: new Date().toLocaleString("en-GB", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }),
-      label: "Session reset",
-      detail: "Local workflow state was restored from mock seed data.",
-    };
-    setActivityEntries([entry]);
+    void loadAll();
   }
 
   async function createClient(input: NewClientInput) {
@@ -139,14 +142,10 @@ function App() {
       notes: input.notes,
       status: input.status,
     });
-    const client: Client = persisted ?? {
-      id: createId("client"),
-      ...input,
-      phone: input.phone || undefined,
-    };
-    setClients((current) => [...current, client]);
-    recordActivity("Client created", `${client.company} was added as ${client.status}.`);
-    openClientDetail(client.id);
+    if (!persisted) throw new Error("Failed to save client. Please try again.");
+    setClients((current) => [...current, persisted]);
+    void recordActivity("Client created", `${persisted.company} was added as ${persisted.status}.`);
+    openClientDetail(persisted.id);
   }
 
   async function createProject(clientId: string, input: NewProjectInput) {
@@ -156,21 +155,10 @@ function App() {
       summary: input.summary,
       budgetSignal: input.budgetSignal,
     });
-    const project: Project = persisted ?? {
-      id: createId("project"),
-      clientId,
-      name: input.name,
-      status: "discovery_in_progress",
-      summary: input.summary,
-      budgetSignal: input.budgetSignal,
-      paymentGateStatus: "blocked",
-      assignedSupplierIds: [],
-      createdDate: new Date().toISOString().slice(0, 10),
-      updatedDate: new Date().toISOString().slice(0, 10),
-    };
-    setProjects((current) => [...current, project]);
-    recordActivity("Project created", `${project.name} was created for ${clients.find((client) => client.id === clientId)?.company ?? "a client"}.`);
-    openProjectDetail(project.id);
+    if (!persisted) throw new Error("Failed to save project. Please try again.");
+    setProjects((current) => [...current, persisted]);
+    void recordActivity("Project created", `${persisted.name} was created for ${clients.find((client) => client.id === clientId)?.company ?? "a client"}.`);
+    openProjectDetail(persisted.id);
   }
 
   async function createChangeRequest(projectId: string, clientId: string, input: NewChangeRequestInput) {
@@ -182,18 +170,9 @@ function App() {
       agencyPrice: input.agencyPrice,
       supplierCost: input.supplierCost,
     });
-    const request: ChangeRequest = persisted ?? {
-      id: createId("change"),
-      projectId,
-      requestedByClientId: clientId,
-      title: input.title,
-      description: input.description,
-      status: "agency_review",
-      agencyPrice: input.agencyPrice,
-      supplierCost: input.supplierCost,
-    };
-    setChangeRequests((current) => [...current, request]);
-    recordActivity("Change request created", `${request.title} was added to ${getProjectName(projectId, projects)}.`);
+    if (!persisted) throw new Error("Failed to save change request. Please try again.");
+    setChangeRequests((current) => [...current, persisted]);
+    void recordActivity("Change request created", `${persisted.title} was added to ${getProjectName(projectId, projects)}.`);
   }
 
   async function createTimeEntry(projectId: string, input: NewTimeEntryInput) {
@@ -204,30 +183,22 @@ function App() {
       hours: input.hours,
       description: input.description,
     });
-    const entry: TimeEntry = persisted ?? {
-      id: createId("time"),
-      projectId,
-      supplierId: input.supplierId,
-      date: input.date,
-      hours: input.hours,
-      description: input.description,
-      status: "submitted",
-    };
-    setTimeEntries((current) => [...current, entry]);
-    recordActivity("Supplier time submitted", `${entry.hours} hours from ${getSupplierName(entry.supplierId)} were submitted for ${getProjectName(projectId, projects)}.`);
+    if (!persisted) throw new Error("Failed to save time entry. Please try again.");
+    setTimeEntries((current) => [...current, persisted]);
+    void recordActivity("Supplier time submitted", `${persisted.hours} hours from ${getSupplierName(persisted.supplierId)} were submitted for ${getProjectName(projectId, projects)}.`);
   }
 
   async function markPaymentReceived(paymentId: string) {
-    const receivedDate = new Date().toISOString().slice(0, 10);
     const paymentToUpdate = clientPayments.find((payment) => payment.id === paymentId);
-    await markClientPaymentReceivedRow(paymentId);
+    const receivedDate = await markClientPaymentReceivedRow(paymentId);
+    if (!receivedDate) throw new Error("Failed to mark payment as received. Please try again.");
     setClientPayments((current) =>
       current.map((payment) =>
         payment.id === paymentId ? { ...payment, status: "received", receivedDate } : payment,
       ),
     );
     if (paymentToUpdate) {
-      recordActivity("Payment received", `${getProjectName(paymentToUpdate.projectId, projects)} payment was marked received.`);
+      void recordActivity("Payment received", `${getProjectName(paymentToUpdate.projectId, projects)} payment was marked received.`);
       const newStatus =
         (paymentToUpdate && projects.find((p) => p.id === paymentToUpdate.projectId)?.status) === "waiting_for_payment"
           ? "paid_ready_to_start"
@@ -258,16 +229,8 @@ function App() {
       dueDate: input.dueDate || undefined,
       notes,
     });
-    const payment: ClientPayment = persisted ?? {
-      id: createId("client-payment"),
-      projectId,
-      amount: input.amount,
-      currency: "GBP",
-      status: "requested",
-      dueDate: input.dueDate || undefined,
-      notes,
-    };
-    setClientPayments((current) => [...current, payment]);
+    if (!persisted) throw new Error("Failed to save payment request. Please try again.");
+    setClientPayments((current) => [...current, persisted]);
     void updateProjectRow(projectId, { status: "waiting_for_payment", paymentGateStatus: "blocked" });
     setProjects((current) =>
       current.map((project) =>
@@ -276,11 +239,11 @@ function App() {
           : project,
       ),
     );
-    recordActivity("Payment requested", `${currency.format(payment.amount)} was requested for ${getProjectName(projectId, projects)}.`);
+    void recordActivity("Payment requested", `${currency.format(persisted.amount)} was requested for ${getProjectName(projectId, projects)}.`);
   }
 
-  function updateProjectSupplierAssignment(projectId: string, supplierId: string, assigned: boolean) {
-    void setProjectSupplierAssignmentRow(projectId, supplierId, assigned);
+  async function updateProjectSupplierAssignment(projectId: string, supplierId: string, assigned: boolean) {
+    await setProjectSupplierAssignmentRow(projectId, supplierId, assigned);
     setProjects((current) =>
       current.map((project) => {
         if (project.id !== projectId) return project;
@@ -290,15 +253,15 @@ function App() {
         return { ...project, assignedSupplierIds: supplierIds, updatedDate: new Date().toISOString().slice(0, 10) };
       }),
     );
-    recordActivity(
+    void recordActivity(
       assigned ? "Supplier assigned" : "Supplier unassigned",
       `${getSupplierName(supplierId)} was ${assigned ? "assigned to" : "removed from"} ${getProjectName(projectId, projects)}.`,
     );
   }
 
-  function updateTimeEntryStatus(timeEntryId: string, status: "approved" | "rejected") {
+  async function updateTimeEntryStatus(timeEntryId: string, status: "approved" | "rejected") {
     const entryToUpdate = timeEntries.find((entry) => entry.id === timeEntryId);
-    void updateTimeEntryStatusRow(timeEntryId, status);
+    await updateTimeEntryStatusRow(timeEntryId, status);
     setTimeEntries((current) =>
       current.map((entry) =>
         entry.id === timeEntryId
@@ -307,16 +270,16 @@ function App() {
       ),
     );
     if (entryToUpdate) {
-      recordActivity(
+      void recordActivity(
         status === "approved" ? "Supplier time approved" : "Supplier time rejected",
         `${entryToUpdate.hours} hours from ${getSupplierName(entryToUpdate.supplierId)} for ${getProjectName(entryToUpdate.projectId, projects)} were ${status}.`,
       );
     }
   }
 
-  function updateChangeRequestStatus(changeRequestId: string, status: "priced" | "client_approved" | "declined") {
+  async function updateChangeRequestStatus(changeRequestId: string, status: "priced" | "client_approved" | "declined") {
     const requestToUpdate = changeRequests.find((request) => request.id === changeRequestId);
-    void updateChangeRequestStatusRow(changeRequestId, status);
+    await updateChangeRequestStatusRow(changeRequestId, status);
     setChangeRequests((current) =>
       current.map((request) => {
         if (request.id !== changeRequestId) return request;
@@ -328,7 +291,7 @@ function App() {
       }),
     );
     if (requestToUpdate) {
-      recordActivity("Change request updated", `${requestToUpdate.title} is now ${status.replace("_", " ")}.`);
+      void recordActivity("Change request updated", `${requestToUpdate.title} is now ${status.replace("_", " ")}.`);
     }
   }
 
@@ -358,7 +321,7 @@ function App() {
         onPaymentReceived={markPaymentReceived}
         onTimeEntryStatusChange={updateTimeEntryStatus}
         onChangeRequestStatusChange={updateChangeRequestStatus}
-        onResetSession={resetLocalSession}
+        onResetSession={reloadFromDatabase}
       />
     ),
     clients: <ClientsPage clients={clients} onClientCreate={createClient} onClientSelect={openClientDetail} />,
@@ -442,7 +405,19 @@ function App() {
 
   return (
     <Layout activeView={activeView} onNavigate={setActiveView}>
-      {page[activeView]}
+      {dataStatus === "loading" ? (
+        <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
+          <p>Loading data from database…</p>
+        </div>
+      ) : dataStatus === "error" ? (
+        <div className="card" style={{ padding: "2rem" }}>
+          <h2>Could not load data</h2>
+          <p style={{ color: "var(--color-danger, #b91c1c)" }}>{dataError}</p>
+          <button type="button" onClick={reloadFromDatabase}>Retry</button>
+        </div>
+      ) : (
+        page[activeView]
+      )}
     </Layout>
   );
 }

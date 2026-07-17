@@ -71,10 +71,10 @@ export function ActionQueuePage({
       <PageHeader title="Action Queue" subtitle="Yaniv's daily control screen for pricing, approvals, payments, supplier time, blocked work, and ready work." />
       <section className="card reset-panel">
         <div>
-          <h2>Local session controls</h2>
-          <p>Reset restores the mock seed data and clears current selections. It does not touch any backend.</p>
+          <h2>Data controls</h2>
+          <p>Reload refetches all data from the database and clears the current selections. It does not modify any stored records.</p>
         </div>
-        <button type="button" onClick={onResetSession}>Reset local session</button>
+        <button type="button" onClick={onResetSession}>Reload from database</button>
       </section>
       <section className="stats-grid">
         <StatCard label="Needs pricing" value={needsPricing.length} tone={needsPricing.length ? "warning" : "default"} />
