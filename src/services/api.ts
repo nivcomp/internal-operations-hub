@@ -332,6 +332,30 @@ export async function fetchSkillSuggestions(): Promise<SupplierSkillSuggestion[]
   return (await selectAll("supplier_skill_suggestions")).map(mapSkillSuggestion);
 }
 
+export type ActivityLogRow = {
+  id: string;
+  createdAt: string;
+  label: string;
+  detail: string;
+};
+function mapActivityLog(r: Row): ActivityLogRow {
+  return {
+    id: r.id,
+    createdAt: new Date(r.created_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }),
+    label: r.label,
+    detail: r.detail,
+  };
+}
+export async function fetchActivityLogs(limit = 20): Promise<ActivityLogRow[]> {
+  const { data, error } = await (supabase as any)
+    .from("activity_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) { console.error("[api] fetchActivityLogs", error); throw error; }
+  return ((data as Row[]) ?? []).map(mapActivityLog);
+}
+
 // ----- mutations -------------------------------------------------------------
 const client = supabase as any;
 
@@ -501,9 +525,14 @@ export async function setProjectSupplierAssignmentRow(projectId: string, supplie
   }
 }
 
-export async function recordActivityRow(label: string, detail: string): Promise<void> {
-  const { error } = await client.from("activity_logs").insert({ label, detail });
-  if (error) console.error("[api] recordActivity", error);
+export async function recordActivityRow(label: string, detail: string): Promise<ActivityLogRow | null> {
+  const { data, error } = await client
+    .from("activity_logs")
+    .insert({ label, detail })
+    .select("*")
+    .single();
+  if (error) { console.error("[api] recordActivity", error); return null; }
+  return mapActivityLog(data);
 }
 
 // unused fallback to satisfy asString import lint
