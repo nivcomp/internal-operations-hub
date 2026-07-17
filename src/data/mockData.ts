@@ -1,3 +1,24 @@
+import {
+  fetchApprovals,
+  fetchChangeRequests,
+  fetchClientPayments,
+  fetchClients,
+  fetchDecisionLogs,
+  fetchFileLinks,
+  fetchHourBanks,
+  fetchPhasePricing,
+  fetchProjectBriefs,
+  fetchProjectMessages,
+  fetchProjectPricing,
+  fetchProjects,
+  fetchScopeItems,
+  fetchScopes,
+  fetchSkillSuggestions,
+  fetchSupplierPayments,
+  fetchSupplierProfiles,
+  fetchSuppliers,
+  fetchTimeEntries,
+} from "../services/api";
 import type {
   Agency,
   Approval,
@@ -39,7 +60,6 @@ export const users: User[] = [
   { id: "user-supplier-1", name: "Sam Reed", email: "sam@supplier.example", role: "supplier", linkedSupplierId: "supplier-1" },
 ];
 
-export const clients: Client[] = [
   {
     id: "client-1",
     name: "Maya Cohen",
