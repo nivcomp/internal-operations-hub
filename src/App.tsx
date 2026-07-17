@@ -80,6 +80,7 @@ function App() {
       detail,
     };
     setActivityEntries((current) => [entry, ...current].slice(0, 20));
+    void recordActivityRow(label, detail);
   }
 
   function openClientDetail(clientId: string) {
@@ -129,8 +130,16 @@ function App() {
     setActivityEntries([entry]);
   }
 
-  function createClient(input: NewClientInput) {
-    const client: Client = {
+  async function createClient(input: NewClientInput) {
+    const persisted = await createClientRow({
+      name: input.name,
+      company: input.company,
+      email: input.email,
+      phone: input.phone || undefined,
+      notes: input.notes,
+      status: input.status,
+    });
+    const client: Client = persisted ?? {
       id: createId("client"),
       ...input,
       phone: input.phone || undefined,
@@ -140,8 +149,14 @@ function App() {
     openClientDetail(client.id);
   }
 
-  function createProject(clientId: string, input: NewProjectInput) {
-    const project: Project = {
+  async function createProject(clientId: string, input: NewProjectInput) {
+    const persisted = await createProjectRow({
+      clientId,
+      name: input.name,
+      summary: input.summary,
+      budgetSignal: input.budgetSignal,
+    });
+    const project: Project = persisted ?? {
       id: createId("project"),
       clientId,
       name: input.name,
@@ -158,8 +173,16 @@ function App() {
     openProjectDetail(project.id);
   }
 
-  function createChangeRequest(projectId: string, clientId: string, input: NewChangeRequestInput) {
-    const request: ChangeRequest = {
+  async function createChangeRequest(projectId: string, clientId: string, input: NewChangeRequestInput) {
+    const persisted = await createChangeRequestRow({
+      projectId,
+      clientId,
+      title: input.title,
+      description: input.description,
+      agencyPrice: input.agencyPrice,
+      supplierCost: input.supplierCost,
+    });
+    const request: ChangeRequest = persisted ?? {
       id: createId("change"),
       projectId,
       requestedByClientId: clientId,
@@ -173,8 +196,15 @@ function App() {
     recordActivity("Change request created", `${request.title} was added to ${getProjectName(projectId, projects)}.`);
   }
 
-  function createTimeEntry(projectId: string, input: NewTimeEntryInput) {
-    const entry: TimeEntry = {
+  async function createTimeEntry(projectId: string, input: NewTimeEntryInput) {
+    const persisted = await createTimeEntryRow({
+      projectId,
+      supplierId: input.supplierId,
+      date: input.date,
+      hours: input.hours,
+      description: input.description,
+    });
+    const entry: TimeEntry = persisted ?? {
       id: createId("time"),
       projectId,
       supplierId: input.supplierId,
@@ -187,9 +217,10 @@ function App() {
     recordActivity("Supplier time submitted", `${entry.hours} hours from ${getSupplierName(entry.supplierId)} were submitted for ${getProjectName(projectId, projects)}.`);
   }
 
-  function markPaymentReceived(paymentId: string) {
+  async function markPaymentReceived(paymentId: string) {
     const receivedDate = new Date().toISOString().slice(0, 10);
     const paymentToUpdate = clientPayments.find((payment) => payment.id === paymentId);
+    await markClientPaymentReceivedRow(paymentId);
     setClientPayments((current) =>
       current.map((payment) =>
         payment.id === paymentId ? { ...payment, status: "received", receivedDate } : payment,
@@ -197,6 +228,14 @@ function App() {
     );
     if (paymentToUpdate) {
       recordActivity("Payment received", `${getProjectName(paymentToUpdate.projectId, projects)} payment was marked received.`);
+      const newStatus =
+        (paymentToUpdate && projects.find((p) => p.id === paymentToUpdate.projectId)?.status) === "waiting_for_payment"
+          ? "paid_ready_to_start"
+          : undefined;
+      void updateProjectRow(paymentToUpdate.projectId, {
+        paymentGateStatus: "paid",
+        ...(newStatus ? { status: newStatus } : {}),
+      });
       setProjects((current) =>
         current.map((project) =>
           project.id === paymentToUpdate.projectId
@@ -211,17 +250,25 @@ function App() {
     }
   }
 
-  function createClientPayment(projectId: string, input: NewClientPaymentInput) {
-    const payment: ClientPayment = {
+  async function createClientPayment(projectId: string, input: NewClientPaymentInput) {
+    const notes = input.notes.trim() || "Manual payment request created locally.";
+    const persisted = await createClientPaymentRow({
+      projectId,
+      amount: input.amount,
+      dueDate: input.dueDate || undefined,
+      notes,
+    });
+    const payment: ClientPayment = persisted ?? {
       id: createId("client-payment"),
       projectId,
       amount: input.amount,
       currency: "GBP",
       status: "requested",
       dueDate: input.dueDate || undefined,
-      notes: input.notes.trim() || "Manual payment request created locally.",
+      notes,
     };
     setClientPayments((current) => [...current, payment]);
+    void updateProjectRow(projectId, { status: "waiting_for_payment", paymentGateStatus: "blocked" });
     setProjects((current) =>
       current.map((project) =>
         project.id === projectId && project.status !== "completed"
@@ -233,6 +280,7 @@ function App() {
   }
 
   function updateProjectSupplierAssignment(projectId: string, supplierId: string, assigned: boolean) {
+    void setProjectSupplierAssignmentRow(projectId, supplierId, assigned);
     setProjects((current) =>
       current.map((project) => {
         if (project.id !== projectId) return project;
@@ -250,6 +298,7 @@ function App() {
 
   function updateTimeEntryStatus(timeEntryId: string, status: "approved" | "rejected") {
     const entryToUpdate = timeEntries.find((entry) => entry.id === timeEntryId);
+    void updateTimeEntryStatusRow(timeEntryId, status);
     setTimeEntries((current) =>
       current.map((entry) =>
         entry.id === timeEntryId
@@ -267,6 +316,7 @@ function App() {
 
   function updateChangeRequestStatus(changeRequestId: string, status: "priced" | "client_approved" | "declined") {
     const requestToUpdate = changeRequests.find((request) => request.id === changeRequestId);
+    void updateChangeRequestStatusRow(changeRequestId, status);
     setChangeRequests((current) =>
       current.map((request) => {
         if (request.id !== changeRequestId) return request;
