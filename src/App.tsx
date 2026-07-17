@@ -8,6 +8,19 @@ import {
   projects as initialProjects,
   timeEntries as initialTimeEntries,
 } from "./data/mockData";
+import {
+  createChangeRequestRow,
+  createClientPaymentRow,
+  createClientRow,
+  createProjectRow,
+  createTimeEntryRow,
+  markClientPaymentReceivedRow,
+  recordActivityRow,
+  setProjectSupplierAssignmentRow,
+  updateChangeRequestStatusRow,
+  updateProjectRow,
+  updateTimeEntryStatusRow,
+} from "./services/api";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
 import { ActionQueuePage } from "./pages/ActionQueuePage";
 import { ChangeRequestsPage } from "./pages/ChangeRequestsPage";
