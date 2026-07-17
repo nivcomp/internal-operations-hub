@@ -986,6 +986,15 @@ ul li {
   }
 }
 
+@media (max-width: 1200px) {
+  .stats-grid-primary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .financial-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1024px) {
   .two-column,
   .detail-grid {
@@ -1027,6 +1036,11 @@ ul li {
   .stats-grid,
   .agent-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-grid-primary,
+  .financial-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .reset-panel {
