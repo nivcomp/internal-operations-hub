@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Layout } from "./components/Layout";
+import { hydrateStaticCollections } from "./data/mockData";
 import {
   createChangeRequestRow,
   createClientPaymentRow,
@@ -78,6 +79,7 @@ function App() {
         fetchClientPayments(),
         fetchHourBanks(),
         fetchActivityLogs(20),
+        hydrateStaticCollections(true),
       ]);
       setClients(c);
       setProjects(p);
