@@ -1,6 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { approvals, fileLinks, projectMessages, scopeItems, scopes } from "../data/mockData";
+import { useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -21,6 +21,7 @@ export function ClientPortalPage({
   clientPayments,
   hourBanks,
 }: ClientPortalPageProps) {
+  const { approvals, fileLinks, projectMessages, scopeItems, scopes } = useAppData();
   const fallbackClient = clients[0];
   const client = selectedClientId ? getClientById(selectedClientId, clients) ?? fallbackClient : fallbackClient;
   const clientProjects = client ? projects.filter((project) => project.clientId === client.id) : [];
