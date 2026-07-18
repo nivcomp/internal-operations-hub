@@ -1,7 +1,8 @@
-// This module now hydrates from the Supabase backend at load time.
-// Legacy named exports are preserved so existing pages keep working
-// (they still import synchronously). Top-level await blocks module
-// evaluation until data is fetched, so consumers see populated arrays.
+// Static reference collections hydrated on demand from the Supabase backend.
+// We use `export let` so that consumer modules pick up the populated values
+// via ES module live bindings once `hydrateStaticCollections()` resolves.
+// This avoids running any network I/O at module-init time, which previously
+// caused a silent white screen when any single fetch failed.
 
 import {
   fetchApprovals,
@@ -64,65 +65,92 @@ export const users: User[] = [
   { id: "user-yaniv", name: "Yaniv", email: "yaniv@example.com", role: "agency_admin" },
 ];
 
-// Hydrate every collection in parallel from the backend.
-const [
-  clientsRows,
-  suppliersRows,
-  supplierProfilesRows,
-  supplierSkillSuggestionsRows,
-  projectsRows,
-  projectBriefsRows,
-  scopesRows,
-  scopeItemsRows,
-  projectPricingRows,
-  phasePricingRows,
-  approvalsRows,
-  changeRequestsRows,
-  timeEntriesRows,
-  clientPaymentsRows,
-  supplierPaymentsRows,
-  hourBanksRows,
-  projectMessagesRows,
-  decisionLogsRows,
-  fileLinksRows,
-] = await Promise.all([
-  fetchClients(),
-  fetchSuppliers(),
-  fetchSupplierProfiles(),
-  fetchSkillSuggestions(),
-  fetchProjects(),
-  fetchProjectBriefs(),
-  fetchScopes(),
-  fetchScopeItems(),
-  fetchProjectPricing(),
-  fetchPhasePricing(),
-  fetchApprovals(),
-  fetchChangeRequests(),
-  fetchTimeEntries(),
-  fetchClientPayments(),
-  fetchSupplierPayments(),
-  fetchHourBanks(),
-  fetchProjectMessages(),
-  fetchDecisionLogs(),
-  fetchFileLinks(),
-]);
+// Live-binding exports; consumers automatically observe the hydrated values.
+export let clients: Client[] = [];
+export let suppliers: Supplier[] = [];
+export let supplierProfiles: SupplierProfile[] = [];
+export let supplierSkillSuggestions: SupplierSkillSuggestion[] = [];
+export let projects: Project[] = [];
+export let projectBriefs: ProjectBrief[] = [];
+export let scopes: Scope[] = [];
+export let scopeItems: ScopeItem[] = [];
+export let projectPricing: ProjectPricing[] = [];
+export let phasePricing: PhasePricing[] = [];
+export let approvals: Approval[] = [];
+export let changeRequests: ChangeRequest[] = [];
+export let timeEntries: TimeEntry[] = [];
+export let clientPayments: ClientPayment[] = [];
+export let supplierPayments: SupplierPayment[] = [];
+export let hourBanks: HourBank[] = [];
+export let projectMessages: ProjectMessage[] = [];
+export let decisionLogs: DecisionLog[] = [];
+export let fileLinks: FileLink[] = [];
 
-export const clients: Client[] = clientsRows;
-export const suppliers: Supplier[] = suppliersRows;
-export const supplierProfiles: SupplierProfile[] = supplierProfilesRows;
-export const supplierSkillSuggestions: SupplierSkillSuggestion[] = supplierSkillSuggestionsRows;
-export const projects: Project[] = projectsRows;
-export const projectBriefs: ProjectBrief[] = projectBriefsRows;
-export const scopes: Scope[] = scopesRows;
-export const scopeItems: ScopeItem[] = scopeItemsRows;
-export const projectPricing: ProjectPricing[] = projectPricingRows;
-export const phasePricing: PhasePricing[] = phasePricingRows;
-export const approvals: Approval[] = approvalsRows;
-export const changeRequests: ChangeRequest[] = changeRequestsRows;
-export const timeEntries: TimeEntry[] = timeEntriesRows;
-export const clientPayments: ClientPayment[] = clientPaymentsRows;
-export const supplierPayments: SupplierPayment[] = supplierPaymentsRows;
-export const hourBanks: HourBank[] = hourBanksRows;
-export const projectMessages: ProjectMessage[] = projectMessagesRows;
-export const decisionLogs: DecisionLog[] = decisionLogsRows;
-export const fileLinks: FileLink[] = fileLinksRows;
+let hydrationPromise: Promise<void> | null = null;
+
+export function hydrateStaticCollections(force = false): Promise<void> {
+  if (hydrationPromise && !force) return hydrationPromise;
+  hydrationPromise = (async () => {
+    const [
+      clientsRows,
+      suppliersRows,
+      supplierProfilesRows,
+      supplierSkillSuggestionsRows,
+      projectsRows,
+      projectBriefsRows,
+      scopesRows,
+      scopeItemsRows,
+      projectPricingRows,
+      phasePricingRows,
+      approvalsRows,
+      changeRequestsRows,
+      timeEntriesRows,
+      clientPaymentsRows,
+      supplierPaymentsRows,
+      hourBanksRows,
+      projectMessagesRows,
+      decisionLogsRows,
+      fileLinksRows,
+    ] = await Promise.all([
+      fetchClients(),
+      fetchSuppliers(),
+      fetchSupplierProfiles(),
+      fetchSkillSuggestions(),
+      fetchProjects(),
+      fetchProjectBriefs(),
+      fetchScopes(),
+      fetchScopeItems(),
+      fetchProjectPricing(),
+      fetchPhasePricing(),
+      fetchApprovals(),
+      fetchChangeRequests(),
+      fetchTimeEntries(),
+      fetchClientPayments(),
+      fetchSupplierPayments(),
+      fetchHourBanks(),
+      fetchProjectMessages(),
+      fetchDecisionLogs(),
+      fetchFileLinks(),
+    ]);
+    clients = clientsRows;
+    suppliers = suppliersRows;
+    supplierProfiles = supplierProfilesRows;
+    supplierSkillSuggestions = supplierSkillSuggestionsRows;
+    projects = projectsRows;
+    projectBriefs = projectBriefsRows;
+    scopes = scopesRows;
+    scopeItems = scopeItemsRows;
+    projectPricing = projectPricingRows;
+    phasePricing = phasePricingRows;
+    approvals = approvalsRows;
+    changeRequests = changeRequestsRows;
+    timeEntries = timeEntriesRows;
+    clientPayments = clientPaymentsRows;
+    supplierPayments = supplierPaymentsRows;
+    hourBanks = hourBanksRows;
+    projectMessages = projectMessagesRows;
+    decisionLogs = decisionLogsRows;
+    fileLinks = fileLinksRows;
+  })();
+  return hydrationPromise;
+}

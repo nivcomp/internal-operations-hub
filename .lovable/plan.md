@@ -1,48 +1,46 @@
-# Plan: Import repo, then run first UI refinement pass
+## מטרה
 
-Repo confirmed public: `nivcomp/client-to-scope-ai`, `main`, 63 files, plain Vite 5 + React 18 + TypeScript SPA (no router library — `src/App.tsx` switches views via `src/views.ts`), pnpm.
+לתקן את המסך הלבן ב־preview ולוודא שגם אם קריאת רשת נכשלת המשתמש רואה הודעה ברורה במקום עמוד ריק.
 
-## Phase 1 — Replace template with the repo
+## אבחון
 
-1. Remove TanStack Start scaffolding: `src/routes/`, `src/router.tsx`, `src/routeTree.gen.ts`, `src/server.ts`, `src/start.ts`, `src/styles.css`, `bun.lock`, `bunfig.toml`, current `vite.config.ts`, `tsconfig.json`, `package.json`, `components.json`, `.prettierrc`, `.prettierignore`, `eslint.config.js`. Keep `.lovable/`, `public/favicon.ico`, `AGENTS.md`, `.gitignore`.
-2. Fetch all 63 files from `raw.githubusercontent.com/nivcomp/client-to-scope-ai/main/…` in batches and write them at the same paths (index.html, vite.config.ts, tsconfig.json, package.json, src/**, docs/**, top-level MD files).
-3. Install deps with `pnpm install` (repo ships `pnpm-lock.yaml`). Only runtime deps are `react` + `react-dom`; devDeps are Vite 5, plugin-react, TS 5.
-4. Verify baseline with `pnpm run build` before any refinement edits, so any later break is attributable to the UI pass.
+- `src/data/mockData.ts` מבצע `await Promise.all([...19 fetches])` ב־top-level.
+- זה רץ בזמן טעינת המודול, לפני שה־UI מספיק להעלות מסך Loading או Error.
+- אם קריאה אחת נכשלת (RLS, GRANT חסר, שגיאת רשת, backend cold-start) → המודול נכשל → `main.tsx` לא מרנדר → מסך לבן שקט בלי שגיאה גלויה למשתמש.
+- בסביבת הסנדבוקס הקריאות הצליחו והדשבורד נטען מלא, כלומר הקוד עצמו תקין — התבנית פשוט שבירה מדי לפרודקשן.
 
-## Phase 2 — First UI refinement pass (visual only)
+## מה משתנה
 
-Constraints strictly honored: no changes to `App.tsx` view/state wiring, `views.ts`, `types/domain.ts`, `data/mockData.ts`, `lib/actionQueue.ts`, `lib/domainHelpers.ts`. No new deps. No routing changes. RTL/Hebrew preserved. Restricted-visibility rules on Supplier Portal / Client Portal untouched — refine only markup and styles around already-rendered fields.
+### 1. הסרת ה־top-level await מ־`src/data/mockData.ts`
+- להסיר את בלוק `await Promise.all(...)` ואת ה־exports שנשענים עליו.
+- להשאיר את ה־exports הסטטיים היחידים שנשארו רלוונטיים: `agency`, `users`.
+- להחליף כל שאר ה־exports (`suppliers`, `supplierProfiles`, וכו') במערכים ריקים ראשוניים (`export let suppliers: Supplier[] = []`) שיאוכלסו דרך פונקציית `hydrateStaticCollections()` הנקראת מ־`App.tsx` בתוך `loadAll()` הקיים.
+- כך שום עמוד קיים לא נשבר (אותם שמות imports), אבל אף fetch לא רץ בזמן טעינת מודול.
 
-Design system (edits localized to `src/styles.css` plus per-page markup/class tweaks):
-- Neutral operations palette (calm slate/zinc surface, one accent for primary actions, semantic colors for status).
-- Type scale with clear H1/H2/section-label/body/meta tiers; Hebrew-friendly font stack (system + Heebo/Rubik fallback via `<link>` in `index.html`).
-- Reusable tokens for spacing, radii, borders, shadows, focus ring.
-- Component conventions restyled in place: `StatCard`, `StatusBadge`, `PageHeader`, `RulePanel`, `Layout` sidebar shell.
-- Table pattern: compact rows, zebra optional, sticky header, right-aligned numerics, truncation with tooltip title.
-- Form pattern: label above input, helper text muted, aligned buttons, consistent empty states.
+### 2. הרחבת `loadAll` ב־`src/App.tsx`
+- להוסיף קריאה ל־`hydrateStaticCollections()` בתוך אותו `Promise.all` שכבר מטפל ב־loading / error / retry UI.
+- כל כשל יופיע עכשיו במסך "Could not load data" הקיים במקום מסך לבן.
 
-Per-screen targets (markup + class changes only):
-- **Action Queue** (`ActionQueuePage.tsx`): tighten grouped sections (Blockers / Approvals / Payments / Next actions), stronger section headers, status chip emphasis, better empty states.
-- **Project Detail** (`ProjectDetailPage.tsx`): command-center hierarchy — summary strip (payment, approval, paid hours, ready-to-start) → assigned suppliers → changes → time entries; readability polish on supplier assignment controls without altering handlers.
-- **Client Portal** (`ClientPortalPage.tsx`) and **Supplier Portal** (`SupplierPortalPage.tsx`): card + table readability, clearer role-safe labels; audit that no client-price/margin/supplier-cost fields are added or newly rendered.
-- **Dashboard** (`DashboardPage.tsx`): metric grouping and spacing only; identical metric set.
-- **Forms** across pages: unified inputs/labels/helper text/buttons/empty states.
+### 3. Error boundary ברמת ה־root
+- להוסיף `src/components/ErrorBoundary.tsx` פשוט (class component) שעוטף את `<App />` ב־`main.tsx` ומציג הודעה + כפתור Reload אם משהו לא צפוי נזרק בזמן ריצה.
+- כך גם bug עתידי לא ייצור מסך לבן שקט.
 
-Responsiveness: sidebar collapses at narrow widths (CSS only), tables become horizontally scrollable containers instead of wrapping, cards stack on mobile.
+### 4. בדיקה
+- `pnpm run build`.
+- להריץ Playwright מול `http://localhost:8080` ולוודא שהדשבורד עדיין נטען עם הנתונים האמיתיים.
+- להריץ שנית עם simulate של כשל ברשת (blocking supabase URL) ולוודא שרואים את מסך ה־Error במקום עמוד לבן.
 
-## Phase 3 — Verification
+## מה לא משתנה
 
-1. `pnpm run build` and record output.
-2. Manual read-through checklist:
-   - Supplier Portal / Supplier Detail render no client price, no agency margin, no supplier cost estimates, no internal pricing notes.
-   - Client Portal / Client Detail render no supplier cost, no agency margin, no internal delivery notes.
-   - "Ready to start" indicators still gated by approved scope + (payment received OR paid hours available).
-   - Supplier assign/remove handlers in `ProjectDetailPage.tsx` still call the same activity-log helper.
-3. Summary of files changed, screens refined, and any remaining visual issues.
+- אין שינויי UI, workflow, permissions, RTL, או logic.
+- אין שינוי סכמה, RLS או policies.
+- אין הוספת auth, AI, payments, notifications.
+- אין שינוי בקריאות שירות ב־`services/api.ts` או במיפויים.
 
-## Technical notes
+## סיכונים
 
-- Package manager switches from bun to pnpm because the repo ships `pnpm-lock.yaml` and scripts (`pnpm run build`). Lovable's harness auto-runs builds; if it insists on bun, I'll fall back to `bun install` + `bun run build` — both work for plain Vite.
-- Lovable's default TanStack Start preview wiring won't apply after the replacement; preview will run as a standard Vite SPA on the repo's `vite.config.ts`.
-- The two directive files `AGENTS.md` and `.gitignore` exist in both places; I'll take the repo's versions.
-- Nothing in Phase 2 touches business logic, workflow gates, domain types, mock data, or the activity log.
+- אם עמוד כלשהו קורא ל־collection מ־`mockData` לפני ש־`hydrateStaticCollections` רץ, הוא יראה מערך ריק לרגע. זה מקובל כי `App.tsx` ממילא מציג את מסך ה־Loading עד ש־`loadAll` מסתיים, ואף עמוד לא מרונדר לפני זה.
+
+## הערכת גודל
+
+שינוי ממוקד ב־3 קבצים (`mockData.ts`, `App.tsx`, `main.tsx`) + הוספת `ErrorBoundary.tsx`. build אחד, אימות ויזואלי אחד.
