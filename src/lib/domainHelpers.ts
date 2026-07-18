@@ -1,4 +1,3 @@
-import { clients, projectPricing, projects, scopes, suppliers } from "../data/mockData";
 import type { Client, Project, ProjectPricing, ProjectStatus, Scope, Supplier } from "../types/domain";
 
 export const currency = new Intl.NumberFormat("en-GB", {
@@ -26,39 +25,41 @@ export const statusLabels: Record<ProjectStatus, string> = {
   completed: "Completed",
 };
 
-export function getClient(project: Project, clientRecords: Client[] = clients) {
+// All helpers take their collections explicitly; no module-level global data.
+
+export function getClient(project: Project, clientRecords: Client[]) {
   return clientRecords.find((client) => client.id === project.clientId);
 }
 
-export function getClientById(clientId: string, clientRecords: Client[] = clients) {
+export function getClientById(clientId: string, clientRecords: Client[]) {
   return clientRecords.find((client) => client.id === clientId);
 }
 
-export function getPricing(projectId: string, pricingRecords: ProjectPricing[] = projectPricing) {
+export function getPricing(projectId: string, pricingRecords: ProjectPricing[]) {
   return pricingRecords.find((pricing) => pricing.projectId === projectId);
 }
 
-export function getProjectById(projectId: string, projectRecords: Project[] = projects) {
+export function getProjectById(projectId: string, projectRecords: Project[]) {
   return projectRecords.find((project) => project.id === projectId);
 }
 
-export function getProjectsForClient(clientId: string, projectRecords: Project[] = projects) {
+export function getProjectsForClient(clientId: string, projectRecords: Project[]) {
   return projectRecords.filter((project) => project.clientId === clientId);
 }
 
-export function getSupplierById(supplierId: string, supplierRecords: Supplier[] = suppliers) {
+export function getSupplierById(supplierId: string, supplierRecords: Supplier[]) {
   return supplierRecords.find((supplier) => supplier.id === supplierId);
 }
 
-export function getSupplierName(supplierId: string, supplierRecords: Supplier[] = suppliers) {
+export function getSupplierName(supplierId: string, supplierRecords: Supplier[]) {
   return supplierRecords.find((supplier) => supplier.id === supplierId)?.name ?? "Unassigned";
 }
 
-export function getProjectName(projectId: string, projectRecords: Project[] = projects) {
+export function getProjectName(projectId: string, projectRecords: Project[]) {
   return projectRecords.find((project) => project.id === projectId)?.name ?? "Unknown project";
 }
 
-export function hasApprovedScope(project: Project, scopeRecords: Scope[] = scopes) {
+export function hasApprovedScope(project: Project, scopeRecords: Scope[]) {
   return scopeRecords.some((scope) => scope.projectId === project.id && scope.status === "approved");
 }
 
@@ -66,12 +67,12 @@ export function hasPaymentOrHours(project: Project) {
   return project.paymentGateStatus === "paid" || project.paymentGateStatus === "hour_bank_available";
 }
 
-export function canWorkStart(project: Project, scopeRecords: Scope[] = scopes) {
+export function canWorkStart(project: Project, scopeRecords: Scope[]) {
   return hasApprovedScope(project, scopeRecords) && hasPaymentOrHours(project);
 }
 
-export function marginAmount() {
-  const revenue = projectPricing.reduce((sum, pricing) => sum + pricing.clientPrice, 0);
-  const cost = projectPricing.reduce((sum, pricing) => sum + pricing.supplierCostEstimate, 0);
+export function marginAmount(pricingRecords: ProjectPricing[]) {
+  const revenue = pricingRecords.reduce((sum, pricing) => sum + pricing.clientPrice, 0);
+  const cost = pricingRecords.reduce((sum, pricing) => sum + pricing.supplierCostEstimate, 0);
   return { revenue, cost, margin: revenue - cost };
 }

@@ -1,6 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { approvals, fileLinks, projectMessages, scopeItems, scopes } from "../data/mockData";
+import { useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -21,6 +21,7 @@ export function ClientPortalPage({
   clientPayments,
   hourBanks,
 }: ClientPortalPageProps) {
+  const { approvals, fileLinks, projectMessages, scopeItems, scopes } = useAppData();
   const fallbackClient = clients[0];
   const client = selectedClientId ? getClientById(selectedClientId, clients) ?? fallbackClient : fallbackClient;
   const clientProjects = client ? projects.filter((project) => project.clientId === client.id) : [];
@@ -65,10 +66,10 @@ export function ClientPortalPage({
                 return (
                   <tr key={project.id}>
                     <td>{project.name}</td>
-                    <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project) ? "success" : "warning"} /></td>
+                    <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></td>
                     <td>{approval?.status ?? "Not requested"}</td>
                     <td>{payment?.status ?? "Not due"}</td>
-                    <td>{canWorkStart(project) ? "Ready" : "Waiting for approval, payment, or paid hours"}</td>
+                    <td>{canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours"}</td>
                   </tr>
                 );
               })}
@@ -100,7 +101,7 @@ export function ClientPortalPage({
                 <tr key={item.id}>
                   <td>{scope ? clientProjects.find((project) => project.id === scope.projectId)?.name ?? "Project" : "Project"}</td>
                   <td>{scope && clientProjects.find((project) => project.id === scope.projectId) ? statusLabels[clientProjects.find((project) => project.id === scope.projectId)!.status] : "Project not found"}</td>
-                  <td>{scope && clientProjects.find((project) => project.id === scope.projectId) ? (canWorkStart(clientProjects.find((project) => project.id === scope.projectId)!) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
+                  <td>{scope && clientProjects.find((project) => project.id === scope.projectId) ? (canWorkStart(clientProjects.find((project) => project.id === scope.projectId)!, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
                   <td>{scope ? `v${scope.version} · ${scope.status}` : "Scope"}</td>
                   <td>{item.phase}</td>
                   <td>
@@ -143,7 +144,7 @@ export function ClientPortalPage({
                     <tr key={approval.id}>
                       <td>{project?.name ?? "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
                       <td>{scope ? `v${scope.version} - ${scope.status}` : "Scope not linked"}</td>
                       <td>
                         <StatusBadge
@@ -231,7 +232,7 @@ export function ClientPortalPage({
                       <tr key={bank.id}>
                         <td>{project?.name ?? "General"}</td>
                         <td>{project ? statusLabels[project.status] : "General hour bank"}</td>
-                        <td>{project ? (canWorkStart(project) ? "Ready" : "Waiting for approval, payment, or paid hours") : "General hour bank"}</td>
+                        <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "General hour bank"}</td>
                         <td>{bank.hoursPurchased} hrs</td>
                         <td>{bank.hoursUsed} hrs</td>
                         <td>{usagePercent}% used</td>
@@ -278,7 +279,7 @@ export function ClientPortalPage({
                       <td>{request.description}</td>
                       <td>{project?.name ?? "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Project ready" : "Project waiting for approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Project ready" : "Project waiting for approval, payment, or paid hours") : "Project not found"}</td>
                       <td><StatusBadge label={request.status} tone={request.status === "client_approved" ? "success" : "warning"} /></td>
                       <td>{request.agencyPrice ? currency.format(request.agencyPrice) : "Awaiting agency pricing"}</td>
                       <td>{request.agencyPrice ? "Priced" : "Awaiting agency pricing"}</td>
@@ -319,7 +320,7 @@ export function ClientPortalPage({
                       <td>{file.title}</td>
                       <td>{project?.name ?? "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
                       <td>{file.fileType}</td>
                       <td><a href={file.url}>Open</a></td>
                     </tr>
@@ -355,7 +356,7 @@ export function ClientPortalPage({
                     <tr key={message.id}>
                       <td>{project?.name ?? "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
                       <td>{message.authorRole}</td>
                       <td>{message.body}</td>
                       <td>{message.createdDate}</td>

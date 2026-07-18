@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
-import type { NewClientInput } from "../App";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import type { NewClientInput } from "../context/AppDataContext";
 import type { Client } from "../types/domain";
 
 type ClientsPageProps = {

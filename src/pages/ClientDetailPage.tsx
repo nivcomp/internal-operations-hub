@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
-import type { NewProjectInput } from "../App";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import { useAppData, type NewProjectInput } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, getProjectsForClient, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -24,23 +24,13 @@ function getWaitingOn(projectStatus: string, paymentStatus?: string) {
   return "Active monitoring";
 }
 
-const initialProjectForm: NewProjectInput = {
-  name: "",
-  summary: "",
-  budgetSignal: "",
-};
+const initialProjectForm: NewProjectInput = { name: "", summary: "", budgetSignal: "" };
 
 export function ClientDetailPage({
-  selectedClientId,
-  clients,
-  projects,
-  changeRequests,
-  clientPayments,
-  hourBanks,
-  onProjectCreate,
-  onProjectSelect,
-  onClientPortalOpen,
+  selectedClientId, clients, projects, changeRequests, clientPayments, hourBanks,
+  onProjectCreate, onProjectSelect, onClientPortalOpen,
 }: ClientDetailPageProps) {
+  const { scopes } = useAppData();
   const [projectForm, setProjectForm] = useState<NewProjectInput>(initialProjectForm);
   const client = selectedClientId ? getClientById(selectedClientId, clients) : undefined;
 
@@ -117,9 +107,9 @@ export function ClientDetailPage({
               return (
                 <tr key={project.id} className="clickable-row" onClick={() => onProjectSelect(project.id)}>
                   <td>{project.name}</td>
-                  <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project) ? "success" : "warning"} /></td>
+                  <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></td>
                   <td>{payment?.status ?? "Not due"}</td>
-                  <td>{canWorkStart(project) ? "Ready" : "Blocked"}</td>
+                  <td>{canWorkStart(project, scopes) ? "Ready" : "Blocked"}</td>
                   <td>{getWaitingOn(project.status, payment?.status)}</td>
                 </tr>
               );

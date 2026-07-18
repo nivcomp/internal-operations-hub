@@ -1,5 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import { useAppData } from "../context/AppDataContext";
 import { canWorkStart, getClient, getSupplierName, statusLabels } from "../lib/domainHelpers";
 import type { Client, Project } from "../types/domain";
 
@@ -10,6 +11,7 @@ type ProjectsPageProps = {
 };
 
 export function ProjectsPage({ clients, projects, onProjectSelect }: ProjectsPageProps) {
+  const { scopes, suppliers } = useAppData();
   return (
     <>
       <PageHeader title="Projects" subtitle="Each project tracks status, client, assigned suppliers, budget signal, and whether delivery can start." />
@@ -29,9 +31,9 @@ export function ProjectsPage({ clients, projects, onProjectSelect }: ProjectsPag
               <tr key={project.id} className="clickable-row" onClick={() => onProjectSelect(project.id)}>
                 <td>{project.name}</td>
                 <td>{getClient(project, clients)?.company}</td>
-                <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project) ? "success" : "warning"} /></td>
-                <td>{project.assignedSupplierIds.map((supplierId) => getSupplierName(supplierId)).join(", ") || "Not assigned"}</td>
-                <td>{canWorkStart(project) ? "Can start" : "Blocked until payment or paid hours"}</td>
+                <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></td>
+                <td>{project.assignedSupplierIds.map((supplierId) => getSupplierName(supplierId, suppliers)).join(", ") || "Not assigned"}</td>
+                <td>{canWorkStart(project, scopes) ? "Can start" : "Blocked until payment or paid hours"}</td>
               </tr>
             ))}
           </tbody>

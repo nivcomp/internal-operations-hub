@@ -1,6 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { supplierProfiles } from "../data/mockData";
+import { useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getProjectName, getSupplierById } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
 
@@ -12,7 +12,8 @@ type SupplierDetailPageProps = {
 };
 
 export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, onSupplierPortalOpen }: SupplierDetailPageProps) {
-  const supplier = selectedSupplierId ? getSupplierById(selectedSupplierId) : undefined;
+  const { suppliers, supplierProfiles, scopes } = useAppData();
+  const supplier = selectedSupplierId ? getSupplierById(selectedSupplierId, suppliers) : undefined;
 
   if (!supplier) {
     return (
@@ -70,8 +71,8 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
               {assignedProjects.map((project) => (
                 <tr key={project.id}>
                   <td>{project.name}</td>
-                  <td><StatusBadge label={project.status} tone={canWorkStart(project) ? "success" : "warning"} /></td>
-                  <td>{canWorkStart(project) ? "Ready" : "Blocked by agency gate"}</td>
+                  <td><StatusBadge label={project.status} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></td>
+                  <td>{canWorkStart(project, scopes) ? "Ready" : "Blocked by agency gate"}</td>
                   <td>Assigned scope and work updates only</td>
                 </tr>
               ))}
