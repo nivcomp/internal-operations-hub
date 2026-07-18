@@ -2,17 +2,12 @@ import type { ReactNode } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
+import { useAppData, type ActivityEntry } from "../context/AppDataContext";
 import {
-  getBlockedProjects,
-  getNeedsPricingItems,
-  getReadyToStartProjects,
-  getSupplierTimeApprovalItems,
-  getWaitingApprovalItems,
-  getWaitingPaymentItems,
+  getBlockedProjects, getNeedsPricingItems, getReadyToStartProjects,
+  getSupplierTimeApprovalItems, getWaitingApprovalItems, getWaitingPaymentItems,
 } from "../lib/actionQueue";
 import { currency, getClient, getProjectById, getProjectName, getSupplierName, statusLabels } from "../lib/domainHelpers";
-import type { ActivityEntry } from "../App";
-import { scopes } from "../data/mockData";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project, TimeEntry } from "../types/domain";
 
 type ActionQueuePageProps = {
@@ -45,20 +40,11 @@ function QueueSection({ title, children, emptyText }: { title: string; children:
 }
 
 export function ActionQueuePage({
-  clients,
-  projects,
-  changeRequests,
-  timeEntries,
-  clientPayments,
-  hourBanks,
-  activityEntries,
-  onProjectSelect,
-  onClientSelect,
-  onPaymentReceived,
-  onTimeEntryStatusChange,
-  onChangeRequestStatusChange,
-  onResetSession,
+  clients, projects, changeRequests, timeEntries, clientPayments, hourBanks, activityEntries,
+  onProjectSelect, onClientSelect, onPaymentReceived, onTimeEntryStatusChange,
+  onChangeRequestStatusChange, onResetSession,
 }: ActionQueuePageProps) {
+  const { scopes, suppliers } = useAppData();
   const needsPricing = getNeedsPricingItems(projects, changeRequests);
   const waitingApproval = getWaitingApprovalItems(projects, changeRequests);
   const waitingPayment = getWaitingPaymentItems(projects, clientPayments);
@@ -89,12 +75,7 @@ export function ActionQueuePage({
         {needsPricing.length ? (
           <table>
             <thead>
-              <tr>
-                <th>Project / client</th>
-                <th>Needs pricing</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
+              <tr><th>Project / client</th><th>Needs pricing</th><th>Status</th><th>Action</th></tr>
             </thead>
             <tbody>
               {needsPricing.map((item) => {
@@ -123,12 +104,7 @@ export function ActionQueuePage({
         {waitingApproval.length ? (
           <table>
             <thead>
-              <tr>
-                <th>Project / client</th>
-                <th>Needs approval</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>Project / client</th><th>Needs approval</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {waitingApproval.map((item) => {
@@ -160,17 +136,12 @@ export function ActionQueuePage({
         {waitingPayment.length ? (
           <table>
             <thead>
-              <tr>
-                <th>Project / client</th>
-                <th>Amount</th>
-                <th>Payment status</th>
-                <th>Action</th>
-              </tr>
+              <tr><th>Project / client</th><th>Amount</th><th>Payment status</th><th>Action</th></tr>
             </thead>
             <tbody>
               {waitingPayment.map((item, index) => {
-                const project = item.type === "project" ? item.project : item.project;
-                const payment = item.type === "project" ? item.payment : item.payment;
+                const project = item.project;
+                const payment = item.payment;
                 if (!project) return null;
                 return (
                   <tr key={`${item.type}-${project.id}-${payment?.id ?? index}`}>
@@ -190,18 +161,12 @@ export function ActionQueuePage({
         {supplierTimeApprovals.length ? (
           <table>
             <thead>
-              <tr>
-                <th>Supplier</th>
-                <th>Project</th>
-                <th>Hours</th>
-                <th>Description</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>Supplier</th><th>Project</th><th>Hours</th><th>Description</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {supplierTimeApprovals.map((entry) => (
                 <tr key={entry.id}>
-                  <td>{getSupplierName(entry.supplierId)}</td>
+                  <td>{getSupplierName(entry.supplierId, suppliers)}</td>
                   <td>{getProjectName(entry.projectId, projects)}</td>
                   <td>{entry.hours}</td>
                   <td>{entry.description}</td>
@@ -223,11 +188,7 @@ export function ActionQueuePage({
           {blockedProjects.length ? (
             <table>
               <thead>
-                <tr>
-                  <th>Project / client</th>
-                  <th>Reason</th>
-                  <th>Action</th>
-                </tr>
+                <tr><th>Project / client</th><th>Reason</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {blockedProjects.map((project) => {
@@ -249,17 +210,13 @@ export function ActionQueuePage({
           {readyProjects.length ? (
             <table>
               <thead>
-                <tr>
-                  <th>Project / client</th>
-                  <th>Assigned suppliers</th>
-                  <th>Action</th>
-                </tr>
+                <tr><th>Project / client</th><th>Assigned suppliers</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {readyProjects.map((project) => (
                   <tr key={project.id}>
                     <td>{project.name}<br /><span className="muted-text">{clientLabel(project, clients)}</span></td>
-                    <td>{project.assignedSupplierIds.map((supplierId) => getSupplierName(supplierId)).join(", ") || "No supplier assigned"}</td>
+                    <td>{project.assignedSupplierIds.map((supplierId) => getSupplierName(supplierId, suppliers)).join(", ") || "No supplier assigned"}</td>
                     <td><button type="button" onClick={() => onProjectSelect(project.id)}>Open project</button></td>
                   </tr>
                 ))}
