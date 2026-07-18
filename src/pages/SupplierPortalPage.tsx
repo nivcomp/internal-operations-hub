@@ -71,7 +71,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries }
                   <tr key={project.id}>
                     <td>{project.name}</td>
                     <td>{statusLabels[project.status]}</td>
-                    <td>{canWorkStart(project) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours"}</td>
+                    <td>{canWorkStart(project, scopes) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours"}</td>
                     <td>View assigned scope items only</td>
                   </tr>
                 ))}
@@ -106,7 +106,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries }
                     <tr key={item.id}>
                       <td>{scope ? getProjectName(scope.projectId, projects) : "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours") : "Project not found"}</td>
                       <td>{scope ? `v${scope.version} · ${scope.status}` : "Scope"}</td>
                       <td>{item.phase}</td>
                       <td>
@@ -227,7 +227,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries }
                       <td>{file.title}</td>
                       <td>{project?.name ?? "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours") : "Project not found"}</td>
                       <td>{file.fileType}</td>
                       <td><a href={file.url}>Open</a></td>
                     </tr>
@@ -263,7 +263,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries }
                     <tr key={message.id}>
                       <td>{project?.name ?? "Project"}</td>
                       <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours") : "Project not found"}</td>
+                      <td>{project ? (canWorkStart(project, scopes) ? "Ready to start" : "Blocked until agency approval, payment, or paid hours") : "Project not found"}</td>
                       <td>{message.authorRole}</td>
                       <td>{message.body}</td>
                       <td>{message.createdDate}</td>
