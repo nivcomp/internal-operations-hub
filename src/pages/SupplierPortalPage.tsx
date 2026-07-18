@@ -1,6 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { fileLinks, projectMessages, scopeItems, scopes, supplierProfiles, suppliers } from "../data/mockData";
+import { useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getProjectName, statusLabels } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
 
@@ -11,6 +11,7 @@ type SupplierPortalPageProps = {
 };
 
 export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries }: SupplierPortalPageProps) {
+  const { fileLinks, projectMessages, scopeItems, scopes, supplierProfiles, suppliers } = useAppData();
   const fallbackSupplier = suppliers.find((supplier) => supplier.status === "approved") ?? suppliers[0];
   const supplier = suppliers.find((item) => item.id === selectedSupplierId) ?? fallbackSupplier;
   const assigned = supplier
