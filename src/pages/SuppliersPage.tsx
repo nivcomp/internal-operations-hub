@@ -1,6 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { supplierProfiles, suppliers } from "../data/mockData";
+import { useAppData } from "../context/AppDataContext";
 import { currency } from "../lib/domainHelpers";
 
 type SuppliersPageProps = {
@@ -8,6 +8,7 @@ type SuppliersPageProps = {
 };
 
 export function SuppliersPage({ onSupplierSelect }: SuppliersPageProps) {
+  const { suppliers, supplierProfiles } = useAppData();
   return (
     <>
       <PageHeader title="Suppliers" subtitle="Supplier records track capability, availability, cost, and approval status for Yaniv's internal use." />

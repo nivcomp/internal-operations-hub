@@ -1,5 +1,6 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import { useAppData } from "../context/AppDataContext";
 import { getProjectName, getSupplierName } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
 
@@ -10,6 +11,7 @@ type SupplierTimePageProps = {
 };
 
 export function SupplierTimePage({ projects, timeEntries, onStatusChange }: SupplierTimePageProps) {
+  const { suppliers } = useAppData();
   return (
     <>
       <PageHeader title="Supplier Time Entries" subtitle="Submitted time needs Yaniv's approval before it becomes payable or consumes paid hours." />
@@ -29,7 +31,7 @@ export function SupplierTimePage({ projects, timeEntries, onStatusChange }: Supp
           <tbody>
             {timeEntries.map((entry) => (
               <tr key={entry.id}>
-                <td>{getSupplierName(entry.supplierId)}</td>
+                <td>{getSupplierName(entry.supplierId, suppliers)}</td>
                 <td>{getProjectName(entry.projectId, projects)}</td>
                 <td>{entry.date}</td>
                 <td>{entry.hours}</td>

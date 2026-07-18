@@ -1,9 +1,11 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { agency, phasePricing, projectPricing } from "../data/mockData";
+import { agency } from "../config/app";
+import { useAppData } from "../context/AppDataContext";
 import { currency, getProjectName } from "../lib/domainHelpers";
 
 export function PricingMarginPage() {
+  const { projects, projectPricing, phasePricing } = useAppData();
   return (
     <>
       <PageHeader title="Pricing / Margin" subtitle="Yaniv sees client price, supplier cost, and margin together. Suppliers never see this page." />
@@ -21,7 +23,7 @@ export function PricingMarginPage() {
           <tbody>
             {projectPricing.map((pricing) => (
               <tr key={pricing.id}>
-                <td>{getProjectName(pricing.projectId)}</td>
+                <td>{getProjectName(pricing.projectId, projects)}</td>
                 <td>{currency.format(pricing.clientPrice)}</td>
                 <td>{currency.format(pricing.supplierCostEstimate)}</td>
                 <td><StatusBadge label={`${pricing.actualMarginPercent}%`} tone={pricing.actualMarginPercent >= agency.marginTargetPercent ? "success" : "danger"} /></td>
@@ -48,7 +50,7 @@ export function PricingMarginPage() {
               return (
                 <tr key={phase.id}>
                   <td>{phase.phaseName}</td>
-                  <td>{pricing ? getProjectName(pricing.projectId) : "Unknown"}</td>
+                  <td>{pricing ? getProjectName(pricing.projectId, projects) : "Unknown"}</td>
                   <td>{currency.format(phase.clientPrice)}</td>
                   <td>{currency.format(phase.supplierCost)}</td>
                 </tr>
