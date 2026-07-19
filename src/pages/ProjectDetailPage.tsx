@@ -232,7 +232,13 @@ export function ProjectDetailPage({
           <label>Supplier cost optional<input min="0" type="number" value={changeForm.supplierCost ?? ""} onChange={(e) => setChangeForm({ ...changeForm, supplierCost: e.target.value ? Number(e.target.value) : undefined })} /></label>
           <label className="span-2">Description<textarea value={changeForm.description} onChange={(e) => setChangeForm({ ...changeForm, description: e.target.value })} /></label>
           <p className="form-note">New change requests start in agency review. If prices are empty, they remain visibly unpriced.</p>
-          <div className="form-actions"><button className="primary-button" type="submit">Add change request</button></div>
+          <div className="form-actions">
+            <button className="primary-button" type="submit" disabled={isPending(changeKey)}>
+              {isPending(changeKey) ? "Saving…" : "Add change request"}
+            </button>
+          </div>
+          {getError(changeKey) ? <p className="form-error" role="alert">{getError(changeKey)}</p> : null}
+          {getSuccess(changeKey) && !getError(changeKey) ? <p className="form-success">{getSuccess(changeKey)}</p> : null}
         </form>
       </section>
       <section className="card">
@@ -276,7 +282,13 @@ export function ProjectDetailPage({
                       <td>{supplier?.name ?? getSupplierName(supplierId, suppliers)}</td>
                       <td>{supplier?.status ?? "Unknown"}</td>
                       <td>{profile?.mainSkills.join(", ") ?? "Not set"}</td>
-                      <td><button type="button" onClick={() => onSupplierAssignmentChange(activeProject.id, supplierId, false)}>Remove</button></td>
+                      <td>
+                        <button
+                          type="button"
+                          disabled={assignmentPending(supplierId)}
+                          onClick={() => { void onSupplierAssignmentChange(activeProject.id, supplierId, false).catch(() => {}); }}
+                        >{assignmentPending(supplierId) ? "…" : "Remove"}</button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -293,8 +305,13 @@ export function ProjectDetailPage({
                 })}
               </select>
             </label>
-            <button type="submit" disabled={!supplierToAssign}>Assign</button>
+            <button type="submit" disabled={!supplierToAssign || assignmentPending(supplierToAssign)}>
+              {assignmentPending(supplierToAssign) ? "Saving…" : "Assign"}
+            </button>
           </form>
+          {supplierToAssign && getError(MutationKeys.updateProjectSupplierAssignment(activeProject.id, supplierToAssign))
+            ? <p className="form-error" role="alert">{getError(MutationKeys.updateProjectSupplierAssignment(activeProject.id, supplierToAssign))}</p>
+            : null}
           <h3>Approved supplier pool</h3>
           {approvedSupplierRows.length ? (
             <table>
@@ -308,8 +325,16 @@ export function ProjectDetailPage({
                     <td><StatusBadge label={assigned ? "Assigned" : "Available"} tone={assigned ? "success" : "neutral"} /></td>
                     <td>
                       {assigned
-                        ? <button type="button" onClick={() => onSupplierAssignmentChange(activeProject.id, supplier.id, false)}>Remove</button>
-                        : <button type="button" onClick={() => onSupplierAssignmentChange(activeProject.id, supplier.id, true)}>Assign</button>}
+                        ? <button
+                            type="button"
+                            disabled={assignmentPending(supplier.id)}
+                            onClick={() => { void onSupplierAssignmentChange(activeProject.id, supplier.id, false).catch(() => {}); }}
+                          >{assignmentPending(supplier.id) ? "…" : "Remove"}</button>
+                        : <button
+                            type="button"
+                            disabled={assignmentPending(supplier.id)}
+                            onClick={() => { void onSupplierAssignmentChange(activeProject.id, supplier.id, true).catch(() => {}); }}
+                          >{assignmentPending(supplier.id) ? "…" : "Assign"}</button>}
                     </td>
                   </tr>
                 ))}
@@ -332,8 +357,16 @@ export function ProjectDetailPage({
                     <td>
                       {entry.status === "submitted" ? (
                         <div className="table-actions">
-                          <button type="button" onClick={() => onTimeEntryStatusChange(entry.id, "approved")}>Approve</button>
-                          <button type="button" onClick={() => onTimeEntryStatusChange(entry.id, "rejected")}>Reject</button>
+                          <button
+                            type="button"
+                            disabled={timeStatusPending(entry.id)}
+                            onClick={() => { void onTimeEntryStatusChange(entry.id, "approved").catch(() => {}); }}
+                          >{timeStatusPending(entry.id) ? "…" : "Approve"}</button>
+                          <button
+                            type="button"
+                            disabled={timeStatusPending(entry.id)}
+                            onClick={() => { void onTimeEntryStatusChange(entry.id, "rejected").catch(() => {}); }}
+                          >{timeStatusPending(entry.id) ? "…" : "Reject"}</button>
                         </div>
                       ) : (entry.status === "approved" ? "Payable" : "Not payable")}
                     </td>
@@ -357,7 +390,13 @@ export function ProjectDetailPage({
           <label>Hours<input min="0.25" step="0.25" type="number" value={timeForm.hours} onChange={(e) => setTimeForm({ ...timeForm, hours: Number(e.target.value) })} /></label>
           <label className="span-2">Description<textarea value={timeForm.description} onChange={(e) => setTimeForm({ ...timeForm, description: e.target.value })} /></label>
           <p className="form-note">New time entries are submitted first. They are not payable until Yaniv approves them.</p>
-          <div className="form-actions"><button className="primary-button" type="submit">Add submitted time</button></div>
+          <div className="form-actions">
+            <button className="primary-button" type="submit" disabled={isPending(timeKey)}>
+              {isPending(timeKey) ? "Saving…" : "Add submitted time"}
+            </button>
+          </div>
+          {getError(timeKey) ? <p className="form-error" role="alert">{getError(timeKey)}</p> : null}
+          {getSuccess(timeKey) && !getError(timeKey) ? <p className="form-success">{getSuccess(timeKey)}</p> : null}
         </form>
       </section>
       <section className="card">
@@ -375,9 +414,9 @@ export function ProjectDetailPage({
                   <td>{request.status === "client_approved" ? "Can become work" : "Blocked until priced and approved"}</td>
                   <td>
                     <div className="table-actions">
-                      {request.status === "agency_review" ? <button type="button" onClick={() => onChangeRequestStatusChange(request.id, "priced")}>Mark priced</button> : null}
-                      {request.status === "priced" ? <button type="button" onClick={() => onChangeRequestStatusChange(request.id, "client_approved")}>Client approved</button> : null}
-                      {request.status !== "declined" && request.status !== "client_approved" ? <button type="button" onClick={() => onChangeRequestStatusChange(request.id, "declined")}>Decline</button> : null}
+                      {request.status === "agency_review" ? <button type="button" disabled={crStatusPending(request.id)} onClick={() => { void onChangeRequestStatusChange(request.id, "priced").catch(() => {}); }}>{crStatusPending(request.id) ? "…" : "Mark priced"}</button> : null}
+                      {request.status === "priced" ? <button type="button" disabled={crStatusPending(request.id)} onClick={() => { void onChangeRequestStatusChange(request.id, "client_approved").catch(() => {}); }}>{crStatusPending(request.id) ? "…" : "Client approved"}</button> : null}
+                      {request.status !== "declined" && request.status !== "client_approved" ? <button type="button" disabled={crStatusPending(request.id)} onClick={() => { void onChangeRequestStatusChange(request.id, "declined").catch(() => {}); }}>{crStatusPending(request.id) ? "…" : "Decline"}</button> : null}
                     </div>
                   </td>
                 </tr>
