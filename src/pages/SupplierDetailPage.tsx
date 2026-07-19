@@ -79,7 +79,7 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
             </tbody>
           </table>
         ) : (
-          <p>No projects assigned to this supplier in the current local session.</p>
+          <p>No projects assigned to this supplier yet.</p>
         )}
       </section>
       <section className="card">
