@@ -47,10 +47,12 @@ function AppShell() {
   async function handleCreateClient(input: Parameters<typeof createClient>[0]) {
     const persisted = await createClient(input);
     openClientDetail(persisted.id);
+    return persisted;
   }
   async function handleCreateProject(clientId: string, input: Parameters<typeof createProject>[1]) {
     const persisted = await createProject(clientId, input);
     openProjectDetail(persisted.id);
+    return persisted;
   }
 
   const page = {
