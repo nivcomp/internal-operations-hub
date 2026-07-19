@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import type { NewClientInput } from "../context/AppDataContext";
+import { MutationKeys, useAppData, type NewClientInput } from "../context/AppDataContext";
 import type { Client } from "../types/domain";
 
 type ClientsPageProps = {
   clients: Client[];
-  onClientCreate: (input: NewClientInput) => void;
+  onClientCreate: (input: NewClientInput) => Promise<unknown>;
   onClientSelect: (clientId: string) => void;
 };
 
@@ -21,19 +21,29 @@ const initialForm: NewClientInput = {
 
 export function ClientsPage({ clients, onClientCreate, onClientSelect }: ClientsPageProps) {
   const [form, setForm] = useState<NewClientInput>(initialForm);
+  const { isPending, getError, getSuccess } = useAppData();
+  const key = MutationKeys.createClient;
+  const saving = isPending(key);
+  const error = getError(key);
+  const success = getSuccess(key);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     if (!form.name.trim() || !form.company.trim() || !form.email.trim()) return;
-    onClientCreate({
-      ...form,
-      name: form.name.trim(),
-      company: form.company.trim(),
-      email: form.email.trim(),
-      phone: form.phone?.trim(),
-      notes: form.notes.trim(),
-    });
-    setForm(initialForm);
+    try {
+      await onClientCreate({
+        ...form,
+        name: form.name.trim(),
+        company: form.company.trim(),
+        email: form.email.trim(),
+        phone: form.phone?.trim(),
+        notes: form.notes.trim(),
+      });
+      setForm(initialForm);
+    } catch {
+      // Provider recorded the error; keep the form values so the user can retry.
+    }
   }
 
   return (
@@ -71,8 +81,12 @@ export function ClientsPage({ clients, onClientCreate, onClientSelect }: Clients
             <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
           </label>
           <div className="form-actions">
-            <button className="primary-button" type="submit">Add and open client</button>
+            <button className="primary-button" type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Add and open client"}
+            </button>
           </div>
+          {error ? <p className="form-error" role="alert">{error}</p> : null}
+          {success && !error ? <p className="form-success">{success}</p> : null}
         </form>
       </section>
       <section className="card">

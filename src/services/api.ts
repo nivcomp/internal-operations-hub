@@ -359,7 +359,15 @@ export async function fetchActivityLogs(limit = 20): Promise<ActivityLogRow[]> {
 // ----- mutations -------------------------------------------------------------
 const client = supabase as any;
 
-export async function createClientRow(input: Omit<Client, "id">): Promise<Client | null> {
+function fail(op: string, error: unknown): never {
+  console.error(`[api] ${op} failed`, error);
+  const msg =
+    (error && typeof error === "object" && "message" in error && (error as { message?: string }).message) ||
+    `Database error during ${op}.`;
+  throw new Error(String(msg));
+}
+
+export async function createClientRow(input: Omit<Client, "id">): Promise<Client> {
   const { data, error } = await client
     .from("clients")
     .insert({
@@ -372,7 +380,7 @@ export async function createClientRow(input: Omit<Client, "id">): Promise<Client
     })
     .select("*")
     .single();
-  if (error) { console.error("[api] createClient", error); return null; }
+  if (error || !data) fail("createClient", error);
   return mapClient(data);
 }
 
@@ -381,7 +389,7 @@ export async function createProjectRow(input: {
   name: string;
   summary: string;
   budgetSignal: string;
-}): Promise<Project | null> {
+}): Promise<Project> {
   const { data, error } = await client
     .from("projects")
     .insert({
@@ -394,7 +402,7 @@ export async function createProjectRow(input: {
     })
     .select("*")
     .single();
-  if (error) { console.error("[api] createProject", error); return null; }
+  if (error || !data) fail("createProject", error);
   return mapProject(data);
 }
 
@@ -403,7 +411,7 @@ export async function updateProjectRow(id: string, patch: Partial<{ status: Proj
   if (patch.status !== undefined) dbPatch.status = patch.status;
   if (patch.paymentGateStatus !== undefined) dbPatch.payment_gate_status = patch.paymentGateStatus;
   const { error } = await client.from("projects").update(dbPatch).eq("id", id);
-  if (error) console.error("[api] updateProject", error);
+  if (error) fail("updateProject", error);
 }
 
 export async function createChangeRequestRow(input: {
@@ -413,7 +421,7 @@ export async function createChangeRequestRow(input: {
   description: string;
   agencyPrice?: number;
   supplierCost?: number;
-}): Promise<ChangeRequest | null> {
+}): Promise<ChangeRequest> {
   const { data, error } = await client
     .from("change_requests")
     .insert({
@@ -427,7 +435,7 @@ export async function createChangeRequestRow(input: {
     })
     .select("*")
     .single();
-  if (error) { console.error("[api] createChangeRequest", error); return null; }
+  if (error || !data) fail("createChangeRequest", error);
   return mapChangeRequest(data);
 }
 
@@ -438,7 +446,7 @@ export async function updateChangeRequestStatusRow(
   const patch: Row = { status };
   if (status === "client_approved") patch.approved_date = new Date().toISOString().slice(0, 10);
   const { error } = await client.from("change_requests").update(patch).eq("id", id);
-  if (error) console.error("[api] updateChangeRequestStatus", error);
+  if (error) fail("updateChangeRequestStatus", error);
 }
 
 export async function createTimeEntryRow(input: {
@@ -447,7 +455,7 @@ export async function createTimeEntryRow(input: {
   date: string;
   hours: number;
   description: string;
-}): Promise<TimeEntry | null> {
+}): Promise<TimeEntry> {
   const { data, error } = await client
     .from("supplier_time_entries")
     .insert({
@@ -460,7 +468,7 @@ export async function createTimeEntryRow(input: {
     })
     .select("*")
     .single();
-  if (error) { console.error("[api] createTimeEntry", error); return null; }
+  if (error || !data) fail("createTimeEntry", error);
   return mapTimeEntry(data);
 }
 
@@ -472,7 +480,7 @@ export async function updateTimeEntryStatusRow(id: string, status: "approved" | 
       approved_by: status === "approved" ? "user-yaniv" : null,
     })
     .eq("id", id);
-  if (error) console.error("[api] updateTimeEntryStatus", error);
+  if (error) fail("updateTimeEntryStatus", error);
 }
 
 export async function createClientPaymentRow(input: {
@@ -480,7 +488,7 @@ export async function createClientPaymentRow(input: {
   amount: number;
   dueDate?: string;
   notes: string;
-}): Promise<ClientPayment | null> {
+}): Promise<ClientPayment> {
   const { data, error } = await client
     .from("payments")
     .insert({
@@ -493,19 +501,19 @@ export async function createClientPaymentRow(input: {
     })
     .select("*")
     .single();
-  if (error) { console.error("[api] createClientPayment", error); return null; }
+  if (error || !data) fail("createClientPayment", error);
   return mapClientPayment(data);
 }
 
-export async function markClientPaymentReceivedRow(id: string): Promise<string | null> {
+export async function markClientPaymentReceivedRow(id: string): Promise<string> {
   const receivedDate = new Date().toISOString().slice(0, 10);
-  const { data, error } = await client
+  const { error } = await client
     .from("payments")
     .update({ status: "received", received_date: receivedDate })
     .eq("id", id)
     .select("*")
     .single();
-  if (error) { console.error("[api] markPaymentReceived", error); return null; }
+  if (error) fail("markPaymentReceived", error);
   return receivedDate;
 }
 
@@ -514,24 +522,24 @@ export async function setProjectSupplierAssignmentRow(projectId: string, supplie
     const { error } = await client
       .from("project_supplier_assignments")
       .upsert({ project_id: projectId, supplier_id: supplierId }, { onConflict: "project_id,supplier_id" });
-    if (error) console.error("[api] assignSupplier", error);
+    if (error) fail("assignSupplier", error);
   } else {
     const { error } = await client
       .from("project_supplier_assignments")
       .delete()
       .eq("project_id", projectId)
       .eq("supplier_id", supplierId);
-    if (error) console.error("[api] unassignSupplier", error);
+    if (error) fail("unassignSupplier", error);
   }
 }
 
-export async function recordActivityRow(label: string, detail: string): Promise<ActivityLogRow | null> {
+export async function recordActivityRow(label: string, detail: string): Promise<ActivityLogRow> {
   const { data, error } = await client
     .from("activity_logs")
     .insert({ label, detail })
     .select("*")
     .single();
-  if (error) { console.error("[api] recordActivity", error); return null; }
+  if (error || !data) fail("recordActivity", error);
   return mapActivityLog(data);
 }
 

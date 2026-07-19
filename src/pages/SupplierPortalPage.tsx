@@ -201,7 +201,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries }
             </tbody>
           </table>
         ) : (
-          <p>No time entries for this supplier in the current local session.</p>
+          <p>No time entries for this supplier yet.</p>
         )}
       </section>
       <section className="card">

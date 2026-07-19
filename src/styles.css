@@ -1061,3 +1061,24 @@ ul li {
     gap: 2px;
   }
 }
+
+/* Mutation feedback */
+.form-error {
+  color: var(--color-danger, #b91c1c);
+  background: rgba(185, 28, 28, 0.08);
+  border-left: 3px solid var(--color-danger, #b91c1c);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+.form-success {
+  color: #047857;
+  background: rgba(4, 120, 87, 0.08);
+  border-left: 3px solid #047857;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+button:disabled { opacity: 0.55; cursor: not-allowed; }

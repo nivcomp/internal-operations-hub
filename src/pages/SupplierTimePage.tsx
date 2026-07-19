@@ -1,17 +1,18 @@
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { useAppData } from "../context/AppDataContext";
+import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { getProjectName, getSupplierName } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
 
 type SupplierTimePageProps = {
   projects: Project[];
   timeEntries: TimeEntry[];
-  onStatusChange: (timeEntryId: string, status: "approved" | "rejected") => void;
+  onStatusChange: (timeEntryId: string, status: "approved" | "rejected") => Promise<unknown>;
 };
 
 export function SupplierTimePage({ projects, timeEntries, onStatusChange }: SupplierTimePageProps) {
-  const { suppliers } = useAppData();
+  const { suppliers, isPending } = useAppData();
+  const pending = (id: string) => isPending(MutationKeys.updateTimeEntryStatus(id));
   return (
     <>
       <PageHeader title="Supplier Time Entries" subtitle="Submitted time needs Yaniv's approval before it becomes payable or consumes paid hours." />
@@ -29,7 +30,9 @@ export function SupplierTimePage({ projects, timeEntries, onStatusChange }: Supp
             </tr>
           </thead>
           <tbody>
-            {timeEntries.map((entry) => (
+            {timeEntries.length === 0 ? (
+              <tr><td colSpan={7}><p>No supplier time submitted yet.</p></td></tr>
+            ) : timeEntries.map((entry) => (
               <tr key={entry.id}>
                 <td>{getSupplierName(entry.supplierId, suppliers)}</td>
                 <td>{getProjectName(entry.projectId, projects)}</td>
@@ -40,8 +43,8 @@ export function SupplierTimePage({ projects, timeEntries, onStatusChange }: Supp
                 <td>
                   {entry.status === "submitted" ? (
                     <div className="table-actions">
-                      <button type="button" onClick={() => onStatusChange(entry.id, "approved")}>Approve</button>
-                      <button type="button" onClick={() => onStatusChange(entry.id, "rejected")}>Reject</button>
+                      <button type="button" disabled={pending(entry.id)} onClick={() => { void onStatusChange(entry.id, "approved").catch(() => {}); }}>{pending(entry.id) ? "…" : "Approve"}</button>
+                      <button type="button" disabled={pending(entry.id)} onClick={() => { void onStatusChange(entry.id, "rejected").catch(() => {}); }}>{pending(entry.id) ? "…" : "Reject"}</button>
                     </div>
                   ) : null}
                 </td>

@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { useAppData, type NewProjectInput } from "../context/AppDataContext";
+import { MutationKeys, useAppData, type NewProjectInput } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, getProjectsForClient, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -12,7 +12,7 @@ type ClientDetailPageProps = {
   changeRequests: ChangeRequest[];
   clientPayments: ClientPayment[];
   hourBanks: HourBank[];
-  onProjectCreate: (clientId: string, input: NewProjectInput) => void;
+  onProjectCreate: (clientId: string, input: NewProjectInput) => Promise<unknown>;
   onProjectSelect: (projectId: string) => void;
   onClientPortalOpen: (clientId: string) => void;
 };
@@ -30,7 +30,7 @@ export function ClientDetailPage({
   selectedClientId, clients, projects, changeRequests, clientPayments, hourBanks,
   onProjectCreate, onProjectSelect, onClientPortalOpen,
 }: ClientDetailPageProps) {
-  const { scopes } = useAppData();
+  const { scopes, isPending, getError, getSuccess } = useAppData();
   const [projectForm, setProjectForm] = useState<NewProjectInput>(initialProjectForm);
   const client = selectedClientId ? getClientById(selectedClientId, clients) : undefined;
 
@@ -47,6 +47,10 @@ export function ClientDetailPage({
   }
 
   const activeClient = client;
+  const key = MutationKeys.createProject(activeClient.id);
+  const saving = isPending(key);
+  const error = getError(key);
+  const success = getSuccess(key);
   const clientProjects = getProjectsForClient(activeClient.id, projects);
   const clientProjectIds = clientProjects.map((project) => project.id);
   const clientHourBanks = hourBanks.filter((bank) => bank.clientId === activeClient.id);
@@ -54,15 +58,20 @@ export function ClientDetailPage({
     (request) => clientProjectIds.includes(request.projectId) && request.status !== "declined" && request.status !== "client_approved",
   );
 
-  function handleProjectSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleProjectSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     if (!projectForm.name.trim() || !projectForm.summary.trim()) return;
-    onProjectCreate(activeClient.id, {
-      name: projectForm.name.trim(),
-      summary: projectForm.summary.trim(),
-      budgetSignal: projectForm.budgetSignal.trim() || "Unknown",
-    });
-    setProjectForm(initialProjectForm);
+    try {
+      await onProjectCreate(activeClient.id, {
+        name: projectForm.name.trim(),
+        summary: projectForm.summary.trim(),
+        budgetSignal: projectForm.budgetSignal.trim() || "Unknown",
+      });
+      setProjectForm(initialProjectForm);
+    } catch {
+      // Keep form values so the user can retry.
+    }
   }
 
   return (
@@ -134,8 +143,12 @@ export function ClientDetailPage({
             <textarea value={projectForm.summary} onChange={(event) => setProjectForm({ ...projectForm, summary: event.target.value })} />
           </label>
           <div className="form-actions">
-            <button className="primary-button" type="submit">Create and open project</button>
+            <button className="primary-button" type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Create and open project"}
+            </button>
           </div>
+          {error ? <p className="form-error" role="alert">{error}</p> : null}
+          {success && !error ? <p className="form-success">{success}</p> : null}
         </form>
       </section>
 
