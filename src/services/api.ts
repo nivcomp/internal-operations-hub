@@ -421,7 +421,7 @@ export async function createChangeRequestRow(input: {
   description: string;
   agencyPrice?: number;
   supplierCost?: number;
-}): Promise<ChangeRequest | null> {
+}): Promise<ChangeRequest> {
   const { data, error } = await client
     .from("change_requests")
     .insert({
@@ -455,7 +455,7 @@ export async function createTimeEntryRow(input: {
   date: string;
   hours: number;
   description: string;
-}): Promise<TimeEntry | null> {
+}): Promise<TimeEntry> {
   const { data, error } = await client
     .from("supplier_time_entries")
     .insert({
@@ -488,7 +488,7 @@ export async function createClientPaymentRow(input: {
   amount: number;
   dueDate?: string;
   notes: string;
-}): Promise<ClientPayment | null> {
+}): Promise<ClientPayment> {
   const { data, error } = await client
     .from("payments")
     .insert({
