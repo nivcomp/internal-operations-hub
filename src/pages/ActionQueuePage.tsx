@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
-import { useAppData, type ActivityEntry } from "../context/AppDataContext";
+import { MutationKeys, useAppData, type ActivityEntry } from "../context/AppDataContext";
 import {
   getBlockedProjects, getNeedsPricingItems, getReadyToStartProjects,
   getSupplierTimeApprovalItems, getWaitingApprovalItems, getWaitingPaymentItems,
@@ -20,9 +20,9 @@ type ActionQueuePageProps = {
   activityEntries: ActivityEntry[];
   onProjectSelect: (projectId: string) => void;
   onClientSelect: (clientId: string) => void;
-  onPaymentReceived: (paymentId: string) => void;
-  onTimeEntryStatusChange: (timeEntryId: string, status: "approved" | "rejected") => void;
-  onChangeRequestStatusChange: (changeRequestId: string, status: "priced" | "client_approved" | "declined") => void;
+  onPaymentReceived: (paymentId: string) => Promise<unknown>;
+  onTimeEntryStatusChange: (timeEntryId: string, status: "approved" | "rejected") => Promise<unknown>;
+  onChangeRequestStatusChange: (changeRequestId: string, status: "priced" | "client_approved" | "declined") => Promise<unknown>;
   onResetSession: () => void;
 };
 
@@ -44,7 +44,7 @@ export function ActionQueuePage({
   onProjectSelect, onClientSelect, onPaymentReceived, onTimeEntryStatusChange,
   onChangeRequestStatusChange, onResetSession,
 }: ActionQueuePageProps) {
-  const { scopes, suppliers } = useAppData();
+  const { scopes, suppliers, isPending } = useAppData();
   const needsPricing = getNeedsPricingItems(projects, changeRequests);
   const waitingApproval = getWaitingApprovalItems(projects, changeRequests);
   const waitingPayment = getWaitingPaymentItems(projects, clientPayments);
@@ -120,7 +120,13 @@ export function ActionQueuePage({
                         <button type="button" onClick={() => onProjectSelect(project.id)}>Open project</button>
                         <button type="button" onClick={() => onClientSelect(project.clientId)}>Open client</button>
                         {item.type === "change_request" ? (
-                          <button type="button" onClick={() => onChangeRequestStatusChange(item.changeRequest.id, "client_approved")}>Mark client approved</button>
+                          <button
+                            type="button"
+                            disabled={isPending(MutationKeys.updateChangeRequestStatus(item.changeRequest.id))}
+                            onClick={() => { void onChangeRequestStatusChange(item.changeRequest.id, "client_approved").catch(() => {}); }}
+                          >
+                            {isPending(MutationKeys.updateChangeRequestStatus(item.changeRequest.id)) ? "…" : "Mark client approved"}
+                          </button>
                         ) : null}
                       </div>
                     </td>
@@ -148,7 +154,15 @@ export function ActionQueuePage({
                     <td>{project.name}<br /><span className="muted-text">{clientLabel(project, clients)}</span></td>
                     <td>{payment ? currency.format(payment.amount) : "Not set"}</td>
                     <td><StatusBadge label={payment?.status ?? statusLabels[project.status]} tone="warning" /></td>
-                    <td>{payment && payment.status !== "received" ? <button type="button" onClick={() => onPaymentReceived(payment.id)}>Mark payment received</button> : <button type="button" onClick={() => onProjectSelect(project.id)}>Open project</button>}</td>
+                    <td>{payment && payment.status !== "received" ? (
+                      <button
+                        type="button"
+                        disabled={isPending(MutationKeys.markPaymentReceived(payment.id))}
+                        onClick={() => { void onPaymentReceived(payment.id).catch(() => {}); }}
+                      >
+                        {isPending(MutationKeys.markPaymentReceived(payment.id)) ? "…" : "Mark payment received"}
+                      </button>
+                    ) : <button type="button" onClick={() => onProjectSelect(project.id)}>Open project</button>}</td>
                   </tr>
                 );
               })}
@@ -172,8 +186,16 @@ export function ActionQueuePage({
                   <td>{entry.description}</td>
                   <td>
                     <div className="table-actions">
-                      <button type="button" onClick={() => onTimeEntryStatusChange(entry.id, "approved")}>Approve</button>
-                      <button type="button" onClick={() => onTimeEntryStatusChange(entry.id, "rejected")}>Reject</button>
+                      <button
+                        type="button"
+                        disabled={isPending(MutationKeys.updateTimeEntryStatus(entry.id))}
+                        onClick={() => { void onTimeEntryStatusChange(entry.id, "approved").catch(() => {}); }}
+                      >{isPending(MutationKeys.updateTimeEntryStatus(entry.id)) ? "…" : "Approve"}</button>
+                      <button
+                        type="button"
+                        disabled={isPending(MutationKeys.updateTimeEntryStatus(entry.id))}
+                        onClick={() => { void onTimeEntryStatusChange(entry.id, "rejected").catch(() => {}); }}
+                      >{isPending(MutationKeys.updateTimeEntryStatus(entry.id)) ? "…" : "Reject"}</button>
                     </div>
                   </td>
                 </tr>
@@ -251,7 +273,7 @@ export function ActionQueuePage({
             ))}
           </div>
         ) : (
-          <p>No local activity recorded yet. Use a workflow action to start the session trail.</p>
+          <p>No activity recorded yet. Use a workflow action to start the audit trail.</p>
         )}
       </section>
     </>
