@@ -439,7 +439,65 @@ export type Database = {
             foreignKeyName: "phase_pricing_pricing_id_fkey"
             columns: ["pricing_id"]
             isOneToOne: false
+            referencedRelation: "client_project_pricing_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phase_pricing_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
             referencedRelation: "project_pricing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          email: string
+          full_name?: string
+          id: string
+          is_active?: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -990,13 +1048,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_phase_pricing_view: {
+        Row: {
+          client_price: number | null
+          created_at: string | null
+          id: string | null
+          phase_name: string | null
+          pricing_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_pricing_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
+            referencedRelation: "client_project_pricing_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phase_pricing_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
+            referencedRelation: "project_pricing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_project_pricing_view: {
+        Row: {
+          client_price: number | null
+          created_at: string | null
+          currency: string | null
+          id: string | null
+          project_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_pricing_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      bootstrap_agency_admin: { Args: { _email: string }; Returns: string }
+      client_owns_project: { Args: { _project_id: string }; Returns: boolean }
+      current_client_id: { Args: never; Returns: string }
+      current_supplier_id: { Args: never; Returns: string }
+      current_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      is_agency_admin: { Args: never; Returns: boolean }
+      supplier_has_project: { Args: { _project_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "agency_admin" | "client" | "supplier"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1123,6 +1234,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["agency_admin", "client", "supplier"],
+    },
   },
 } as const
