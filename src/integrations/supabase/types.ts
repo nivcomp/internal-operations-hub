@@ -868,6 +868,7 @@ export type Database = {
       supplier_profiles: {
         Row: {
           created_at: string
+          currency: string
           hourly_rate: number
           languages: string[]
           main_skills: string[]
@@ -881,6 +882,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string
           hourly_rate?: number
           languages?: string[]
           main_skills?: string[]
@@ -894,6 +896,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string
           hourly_rate?: number
           languages?: string[]
           main_skills?: string[]
