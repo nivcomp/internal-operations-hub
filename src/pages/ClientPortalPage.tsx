@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
@@ -143,6 +144,8 @@ export function ClientPortalPage({
 
       <section className="card">
         <h2>Approvals</h2>
+      </section>
+      <section style={{ display: "none" }} />
         {approvalsForProject.length === 0 ? (
           <p className="muted-text">Nothing needs your approval right now.</p>
         ) : (
