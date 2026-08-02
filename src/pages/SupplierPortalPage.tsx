@@ -144,6 +144,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
 
       <section className="card">
         <h2>Delivery instructions</h2>
+      </section>
         {items.length === 0 ? (
           <p className="muted-text">No scope items have been shared with you yet.</p>
         ) : (
