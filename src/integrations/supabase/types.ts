@@ -439,13 +439,6 @@ export type Database = {
             foreignKeyName: "phase_pricing_pricing_id_fkey"
             columns: ["pricing_id"]
             isOneToOne: false
-            referencedRelation: "client_project_pricing_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "phase_pricing_pricing_id_fkey"
-            columns: ["pricing_id"]
-            isOneToOne: false
             referencedRelation: "project_pricing"
             referencedColumns: ["id"]
           },
@@ -1051,51 +1044,7 @@ export type Database = {
       }
     }
     Views: {
-      client_phase_pricing_view: {
-        Row: {
-          client_price: number | null
-          created_at: string | null
-          id: string | null
-          phase_name: string | null
-          pricing_id: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "phase_pricing_pricing_id_fkey"
-            columns: ["pricing_id"]
-            isOneToOne: false
-            referencedRelation: "client_project_pricing_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "phase_pricing_pricing_id_fkey"
-            columns: ["pricing_id"]
-            isOneToOne: false
-            referencedRelation: "project_pricing"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      client_project_pricing_view: {
-        Row: {
-          client_price: number | null
-          created_at: string | null
-          currency: string | null
-          id: string | null
-          project_id: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_pricing_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       bootstrap_agency_admin: { Args: { _email: string }; Returns: string }
