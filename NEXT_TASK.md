@@ -1,32 +1,34 @@
-# NEXT TASK: Prepare Lovable UI Refinement Pass
+# Next Task
 
 ## Last Completed
 
-Added a Lovable UI refinement handoff that documents the current internal MVP screens, app structure, UI refinement boundaries, and business rules that must be preserved during visual polish.
+Turned the internal hub into a usable operational MVP: supplier creation, invitation-link based access for clients and suppliers, a filterable Access Management page, and fully actionable client and supplier portals.
 
 ## Current State
 
-- The app remains a static React + TypeScript internal MVP using mock data and local in-memory state only.
-- Project supplier assignment controls already exist in Project Detail and use `Project.assignedSupplierIds`.
-- Recent Activity records local workflow actions, including supplier assignment and removal.
-- Ready-to-start logic requires approved scope plus payment or paid hours.
-- Supplier-facing views continue to use assigned project state without exposing client price, agency margin, supplier cost estimates, or internal pricing notes.
-- `docs/lovable-ui-refinement-handoff.md` now gives Lovable a focused UI-only brief.
-- There is no Supabase, auth, AI integration, payment provider, notification system, deployment, or persistence.
+- Supabase (Lovable Cloud) is the single source of truth. No mock data remains.
+- Email/password auth with `profiles`, roles (`agency_admin`, `client`, `supplier`), and strict RLS.
+- `access-admin` edge function (agency-admin only) lists accounts, invites users, regenerates copyable invitation links, and enables/disables accounts.
+- Suppliers can be created in-app with a profile (skills, tools, rate, currency, availability).
+- Client portal: project overview, approved scope, approve/decline scope approvals, payment requests, paid hours, change requests (submit + approve/decline priced ones), files, messages.
+- Supplier portal: assigned work, delivery instructions, log time, edit non-approved entries, approved value, files, messages. Client price, margin, and internal notes are never exposed.
+- A database trigger guarantees a client can only change the decision on a `priced` change request — never the title, description, price, or supplier cost.
+- Dashboard quick actions cover add client, add supplier, invite account, action queue, projects, payments, supplier time, change requests.
 
 ## Recommended Next Work Unit
 
-Prepare the existing application for the first Lovable UI refinement pass while preserving all current business logic.
+Add an agency-side project delivery workspace for scope authoring: create and version a scope, add scope items with client/supplier visibility flags, and send a scope for client approval from one place.
 
 ## Why This Matters
 
-The current app is functionally broad enough for a careful visual refinement pass. The next step should improve visual hierarchy and usability without changing workflow behavior or introducing integrations.
+Scope is the core artefact of the product, but it can still only be read, not authored, inside the app. Without scope authoring Yaniv must prepare scope outside the system and the approval gate stays partly manual.
 
 ## Acceptance Criteria
 
-- Refine only UI structure, spacing, hierarchy, and readability.
-- Preserve all current business logic and local in-memory state behavior.
-- Preserve supplier/client visibility rules and pricing separation.
-- Preserve approval, payment, paid-hours, change-request, and supplier-time gates.
-- Do not add Supabase, auth, AI APIs, payment integrations, notifications, deployment, or persistence.
-- Run `pnpm run build` and record the result.
+- Agency admin can create a scope version for a project and edit its client-facing summary and internal delivery notes.
+- Agency admin can add, edit, and remove scope items with phase, description, acceptance notes, and client/supplier visibility.
+- Agency admin can send a scope version for client approval, creating a pending client approval row.
+- Client portal reflects the new scope and approval without further changes.
+- RLS remains strict; suppliers never see client price, margin, or internal notes.
+- Mutations await the database, use returned rows, and expose saving/error states.
+- `pnpm run build` passes and the result is recorded.
