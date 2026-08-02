@@ -2025,3 +2025,26 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 
 **Next**  
 - Agency-side scope authoring workspace (see `NEXT_TASK.md`).
+
+## 2026-08-02 — Multi-party AI project chat (phase 1)
+
+- Work unit: shared project conversation model + secure AI edge function + three role chats.
+- Migration: `project_conversations`, `conversation_participants`, `chat_messages`, `ai_runs`,
+  `ai_generated_drafts`, `project_requirements`, `project_assumptions`, `project_questions`,
+  `project_progress_updates`, all with GRANTs, RLS and updated_at triggers. Clients read only
+  `client_agency`/`shared_all` messages on their own projects; suppliers only
+  `supplier_agency`/`shared_all` on assigned projects; agency admin sees everything.
+- `supabase/functions/project-chat`: verifies the JWT, resolves the profile/role, checks project
+  access, ensures the conversation, rate-limits to 12 AI runs per profile per minute, builds a
+  role-filtered context (supplier context never contains client price/margin; client context never
+  contains supplier cost), calls `openai/gpt-5.6-sol` on the Lovable AI gateway Responses API with
+  streaming consumed server-side, and persists the user message, AI message, AI run and draft.
+- Frontend: `src/services/chatApi.ts`, `src/components/ProjectChat.tsx` (thinking/failed/retry
+  states, RTL-aware Hebrew/English, drafts, open questions, proposed actions, visibility labels for
+  the agency), wired into Client Portal, Supplier Portal and Project Detail.
+- AI never mutates records: scope/price/assignment/approval/payment changes come back as
+  "proposed actions" only.
+- Tests: `pnpm run build` passes. Edge function deployed and rejects unauthenticated calls (401).
+  A signed-in end-to-end AI round trip was NOT run in this environment (no preview session).
+- Next: agency confirmation cards that apply proposed actions as real mutations, plus pricing
+  configuration, chat file attachments, Supplier Mode and the Role Test Lab.
