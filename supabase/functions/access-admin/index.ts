@@ -154,6 +154,24 @@ Deno.serve(async (req) => {
       if (!userId) return json({ error: inviteError?.message ?? "Could not invite this user." }, 400);
     }
 
+    // Never let an invite overwrite the caller's own account, and never demote the
+    // last active agency admin — that would lock everyone out of Access Management.
+    if (userId === callerId && role !== "agency_admin") {
+      return json({ error: "This is your own account. You cannot re-invite yourself as a client or supplier." }, 400);
+    }
+    if (role !== "agency_admin") {
+      const { data: existing } = await admin
+        .from("profiles").select("role").eq("id", userId).maybeSingle();
+      if (existing?.role === "agency_admin") {
+        const { count } = await admin
+          .from("profiles").select("id", { count: "exact", head: true })
+          .eq("role", "agency_admin").eq("is_active", true);
+        if ((count ?? 0) <= 1) {
+          return json({ error: "This is the last active agency admin. Create another admin before changing this account." }, 400);
+        }
+      }
+    }
+
     // The profile is written server-side only: the invited user can never choose
     // their own role, client_id or supplier_id.
     const { error: profileError } = await admin.from("profiles").upsert({
