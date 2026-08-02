@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { canWorkStart, formatRate, getProjectName, statusLabels } from "../lib/domainHelpers";
@@ -26,6 +27,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ date: "", hours: "", description: "" });
   const [messageForm, setMessageForm] = useState({ projectId: "", body: "" });
+  const [chatProjectId, setChatProjectId] = useState<string>("");
 
   if (!supplier) {
     return (
