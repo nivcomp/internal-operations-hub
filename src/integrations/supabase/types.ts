@@ -1047,16 +1047,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      bootstrap_agency_admin: { Args: { _email: string }; Returns: string }
-      client_owns_project: { Args: { _project_id: string }; Returns: boolean }
-      current_client_id: { Args: never; Returns: string }
-      current_supplier_id: { Args: never; Returns: string }
-      current_user_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      is_agency_admin: { Args: never; Returns: boolean }
-      supplier_has_project: { Args: { _project_id: string }; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       app_role: "agency_admin" | "client" | "supplier"
