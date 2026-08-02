@@ -1,24 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Layout } from "./components/Layout";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
+import { AccessManagementPage } from "./pages/AccessManagementPage";
 import { ActionQueuePage } from "./pages/ActionQueuePage";
 import { ChangeRequestsPage } from "./pages/ChangeRequestsPage";
 import { ClientDetailPage } from "./pages/ClientDetailPage";
 import { ClientPortalPage } from "./pages/ClientPortalPage";
 import { ClientsPage } from "./pages/ClientsPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { LoginPage } from "./pages/LoginPage";
 import { PaymentsHoursPage } from "./pages/PaymentsHoursPage";
 import { PricingMarginPage } from "./pages/PricingMarginPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { SupplierDetailPage } from "./pages/SupplierDetailPage";
 import { SupplierPortalPage } from "./pages/SupplierPortalPage";
 import { SupplierTimePage } from "./pages/SupplierTimePage";
 import { SuppliersPage } from "./pages/SuppliersPage";
+import type { UserRole } from "./types/domain";
 import type { ViewKey } from "./views";
 
+const roleViews: Record<UserRole, ViewKey[]> = {
+  agency_admin: [
+    "dashboard", "action-queue", "clients", "client-detail", "client-portal",
+    "projects", "project-detail", "change-requests",
+    "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
+    "pricing-margin", "payments-hours", "ai-workbench", "access-management",
+  ],
+  client: ["client-portal"],
+  supplier: ["supplier-portal"],
+};
+
 function AppShell() {
+  const { profile, signOut } = useAuth();
   const {
     status, error, reload,
     clients, projects, changeRequests, timeEntries, clientPayments, hourBanks, activityEntries,
@@ -26,21 +43,32 @@ function AppShell() {
     markPaymentReceived, updateProjectSupplierAssignment, updateTimeEntryStatus, updateChangeRequestStatus,
   } = useAppData();
 
-  const [activeView, setActiveView] = useState<ViewKey>("dashboard");
-  const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | undefined>();
+  const role: UserRole = profile?.role ?? "client";
+  const allowedViews = roleViews[role];
 
-  function openClientDetail(clientId: string) { setSelectedClientId(clientId); setActiveView("client-detail"); }
-  function openClientPortal(clientId: string) { setSelectedClientId(clientId); setActiveView("client-portal"); }
-  function openProjectDetail(projectId: string) { setSelectedProjectId(projectId); setActiveView("project-detail"); }
-  function openSupplierDetail(supplierId: string) { setSelectedSupplierId(supplierId); setActiveView("supplier-detail"); }
-  function openSupplierPortal(supplierId: string) { setSelectedSupplierId(supplierId); setActiveView("supplier-portal"); }
+  const [activeView, setActiveView] = useState<ViewKey>(allowedViews[0]);
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(profile?.clientId);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | undefined>(profile?.supplierId);
+
+  useEffect(() => {
+    if (!allowedViews.includes(activeView)) setActiveView(allowedViews[0]);
+  }, [allowedViews, activeView]);
+
+  function navigate(view: ViewKey) {
+    if (allowedViews.includes(view)) setActiveView(view);
+  }
+
+  function openClientDetail(clientId: string) { setSelectedClientId(clientId); navigate("client-detail"); }
+  function openClientPortal(clientId: string) { setSelectedClientId(clientId); navigate("client-portal"); }
+  function openProjectDetail(projectId: string) { setSelectedProjectId(projectId); navigate("project-detail"); }
+  function openSupplierDetail(supplierId: string) { setSelectedSupplierId(supplierId); navigate("supplier-detail"); }
+  function openSupplierPortal(supplierId: string) { setSelectedSupplierId(supplierId); navigate("supplier-portal"); }
 
   function reloadFromDatabase() {
-    setSelectedClientId(undefined);
+    setSelectedClientId(profile?.clientId);
     setSelectedProjectId(undefined);
-    setSelectedSupplierId(undefined);
+    setSelectedSupplierId(profile?.supplierId);
     reload();
   }
 
@@ -63,7 +91,7 @@ function AppShell() {
         changeRequests={changeRequests}
         timeEntries={timeEntries}
         activityEntries={activityEntries}
-        onNavigate={setActiveView}
+        onNavigate={navigate}
         onProjectSelect={openProjectDetail}
       />
     ),
@@ -139,7 +167,7 @@ function AppShell() {
     ),
     "client-portal": (
       <ClientPortalPage
-        selectedClientId={selectedClientId}
+        selectedClientId={role === "client" ? profile?.clientId : selectedClientId}
         clients={clients}
         projects={projects}
         changeRequests={changeRequests}
@@ -147,12 +175,26 @@ function AppShell() {
         hourBanks={hourBanks}
       />
     ),
-    "supplier-portal": <SupplierPortalPage selectedSupplierId={selectedSupplierId} projects={projects} timeEntries={timeEntries} />,
+    "supplier-portal": (
+      <SupplierPortalPage
+        selectedSupplierId={role === "supplier" ? profile?.supplierId : selectedSupplierId}
+        projects={projects}
+        timeEntries={timeEntries}
+      />
+    ),
     "ai-workbench": <AIWorkbenchPage />,
+    "access-management": <AccessManagementPage />,
   } satisfies Record<ViewKey, JSX.Element>;
 
   return (
-    <Layout activeView={activeView} onNavigate={setActiveView}>
+    <Layout
+      activeView={activeView}
+      onNavigate={navigate}
+      allowedViews={allowedViews}
+      accountLabel={profile?.fullName ?? profile?.email ?? ""}
+      accountRole={role}
+      onSignOut={() => void signOut()}
+    >
       {status === "loading" ? (
         <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
           <p>Loading data from database…</p>
@@ -170,11 +212,51 @@ function AppShell() {
   );
 }
 
-function App() {
+function AuthGate() {
+  const { status, profileError, signOut } = useAuth();
+  const [isResetRoute, setIsResetRoute] = useState(
+    () => window.location.pathname === "/reset-password" || window.location.hash.includes("type=recovery"),
+  );
+
+  function leaveResetRoute() {
+    setIsResetRoute(false);
+    if (window.location.pathname === "/reset-password") window.history.replaceState({}, "", "/");
+  }
+
+  if (isResetRoute) return <ResetPasswordPage onDone={leaveResetRoute} />;
+
+  if (status === "loading") {
+    return (
+      <div className="auth-screen">
+        <div className="card auth-card"><p>Checking your session…</p></div>
+      </div>
+    );
+  }
+  if (status === "signed_out") return <LoginPage />;
+  if (status === "no_profile") {
+    return (
+      <div className="auth-screen">
+        <div className="card auth-card">
+          <h1 style={{ fontSize: "1.15rem" }}>No access yet</h1>
+          <p className="form-error">{profileError ?? "This account has no profile."}</p>
+          <button type="button" onClick={() => void signOut()}>Sign out</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AppDataProvider>
       <AppShell />
     </AppDataProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
   );
 }
 
