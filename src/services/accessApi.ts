@@ -22,7 +22,23 @@ type AccessPayload = Record<string, unknown>;
 
 async function callAccessAdmin<T>(payload: AccessPayload): Promise<T> {
   const { data, error } = await supabase.functions.invoke("access-admin", { body: payload });
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Supabase wraps non-2xx responses; read the real message from the response body.
+    const response = (error as any)?.context as Response | undefined;
+    if (response && typeof response.json === "function") {
+      try {
+        const body = await response.clone().json();
+        if (body && typeof body === "object" && body.error) {
+          throw new Error(String(body.error));
+        }
+      } catch (parseError) {
+        if (parseError instanceof Error && parseError.message && !/JSON/i.test(parseError.message)) {
+          throw parseError;
+        }
+      }
+    }
+    throw new Error(error.message);
+  }
   if (data && typeof data === "object" && "error" in data && (data as any).error) {
     throw new Error(String((data as any).error));
   }
