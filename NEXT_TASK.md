@@ -2,7 +2,7 @@
 
 ## Last Completed
 
-Turned the internal hub into a usable operational MVP: supplier creation, invitation-link based access for clients and suppliers, a filterable Access Management page, and fully actionable client and supplier portals.
+Phase 1 of the multi-party AI project chat: a database-backed shared conversation model with strict RLS, a secure `project-chat` edge function that builds role-filtered context server-side and calls the Lovable AI gateway, and three real AI chats (client Project Guide, Agency Control, supplier Work Assistant).
 
 ## Current State
 
