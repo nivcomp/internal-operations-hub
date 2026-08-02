@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { canWorkStart, formatRate, getProjectName, statusLabels } from "../lib/domainHelpers";
@@ -26,6 +27,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ date: "", hours: "", description: "" });
   const [messageForm, setMessageForm] = useState({ projectId: "", body: "" });
+  const [chatProjectId, setChatProjectId] = useState<string>("");
 
   if (!supplier) {
     return (
@@ -139,6 +141,34 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
           </table>
         )}
       </section>
+
+      {assigned.length > 0 && (() => {
+        const chatProject = assigned.find((p) => p.id === chatProjectId) ?? assigned[0];
+        return (
+          <>
+            {assigned.length > 1 && (
+              <div className="filter-row">
+                <label className="inline-label">
+                  Work Assistant project
+                  <select value={chatProject.id} onChange={(event) => setChatProjectId(event.target.value)}>
+                    {assigned.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
+            <ProjectChat
+              projectId={chatProject.id}
+              projectName={chatProject.name}
+              agent="work_assistant"
+              title="Work Assistant"
+              subtitle="Ask about your assigned work, acceptance criteria, blockers and time. Client price and margin are never part of this workspace."
+              readOnly={isPreview}
+              readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the supplier is disabled."
+              suggestions={["Explain the acceptance criteria", "Draft my progress report", "What is left to complete?"]}
+            />
+          </>
+        );
+      })()}
 
       <section className="card">
         <h2>Delivery instructions</h2>

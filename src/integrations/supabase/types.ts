@@ -38,6 +38,131 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generated_drafts: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          draft_type: string
+          id: string
+          message_id: string | null
+          payload: Json
+          project_id: string
+          status: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          draft_type: string
+          id?: string
+          message_id?: string | null
+          payload?: Json
+          project_id: string
+          status?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          draft_type?: string
+          id?: string
+          message_id?: string | null
+          payload?: Json
+          project_id?: string
+          status?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generated_drafts_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generated_drafts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generated_drafts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_runs: {
+        Row: {
+          agent_type: string
+          conversation_id: string | null
+          created_at: string
+          error: string
+          id: string
+          latency_ms: number | null
+          model: string
+          project_id: string | null
+          requested_by_profile_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_type: string
+          conversation_id?: string | null
+          created_at?: string
+          error?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string
+          project_id?: string | null
+          requested_by_profile_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_type?: string
+          conversation_id?: string | null
+          created_at?: string
+          error?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string
+          project_id?: string | null
+          requested_by_profile_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_runs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_runs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_runs_requested_by_profile_id_fkey"
+            columns: ["requested_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_sessions: {
         Row: {
           created_at: string
@@ -187,6 +312,76 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          agent_type: string | null
+          body: string
+          conversation_id: string
+          created_at: string
+          edited_at: string | null
+          id: string
+          project_id: string
+          sender_profile_id: string | null
+          sender_type: string
+          status: string
+          structured_payload: Json
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          agent_type?: string | null
+          body?: string
+          conversation_id: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          project_id: string
+          sender_profile_id?: string | null
+          sender_type: string
+          status?: string
+          structured_payload?: Json
+          updated_at?: string
+          visibility: string
+        }
+        Update: {
+          agent_type?: string | null
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          project_id?: string
+          sender_profile_id?: string | null
+          sender_type?: string
+          status?: string
+          structured_payload?: Json
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           company: string
@@ -222,6 +417,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          participant_role: string
+          profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          participant_role: string
+          profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          participant_role?: string
+          profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       decision_logs: {
         Row: {
@@ -495,6 +732,60 @@ export type Database = {
           },
         ]
       }
+      project_assumptions: {
+        Row: {
+          body: string
+          client_visible: boolean
+          created_at: string
+          id: string
+          kind: string
+          project_id: string
+          source_message_id: string | null
+          status: string
+          supplier_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          client_visible?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          project_id: string
+          source_message_id?: string | null
+          status?: string
+          supplier_visible?: boolean
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          client_visible?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          project_id?: string
+          source_message_id?: string | null
+          status?: string
+          supplier_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assumptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assumptions_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_briefs: {
         Row: {
           ai_draft_notes: string
@@ -544,6 +835,54 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          project_id: string
+          status: string
+          supplier_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          project_id: string
+          status?: string
+          supplier_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          project_id?: string
+          status?: string
+          supplier_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_conversations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -629,6 +968,175 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_progress_updates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          project_id: string
+          source_message_id: string | null
+          status: string
+          supplier_id: string | null
+          update_type: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          project_id: string
+          source_message_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          update_type?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          source_message_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          update_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_progress_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_progress_updates_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_progress_updates_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_questions: {
+        Row: {
+          answer: string
+          asked_by_role: string
+          created_at: string
+          id: string
+          project_id: string
+          question: string
+          source_message_id: string | null
+          status: string
+          target_role: string
+          updated_at: string
+        }
+        Insert: {
+          answer?: string
+          asked_by_role: string
+          created_at?: string
+          id?: string
+          project_id: string
+          question: string
+          source_message_id?: string | null
+          status?: string
+          target_role: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          asked_by_role?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          question?: string
+          source_message_id?: string | null
+          status?: string
+          target_role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_questions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_questions_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_requirements: {
+        Row: {
+          category: string
+          client_visible: boolean
+          created_at: string
+          detail: string
+          id: string
+          project_id: string
+          source_message_id: string | null
+          status: string
+          supplier_visible: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          client_visible?: boolean
+          created_at?: string
+          detail?: string
+          id?: string
+          project_id: string
+          source_message_id?: string | null
+          status?: string
+          supplier_visible?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          client_visible?: boolean
+          created_at?: string
+          detail?: string
+          id?: string
+          project_id?: string
+          source_message_id?: string | null
+          status?: string
+          supplier_visible?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_requirements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_requirements_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]

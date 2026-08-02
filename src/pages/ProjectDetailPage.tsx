@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
 import {
   MutationKeys,
@@ -149,6 +150,20 @@ export function ProjectDetailPage({
   return (
     <>
       <PageHeader title="Project Command Center" subtitle="A single project view for summary, client context, payment gate, scope, pricing, suppliers, changes, files, and decisions." />
+      <ProjectChat
+        projectId={activeProject.id}
+        projectName={activeProject.name}
+        agent="agency_control"
+        title="Agency Control"
+        subtitle="Ask for summaries, drafts, risks and briefings. Anything that changes scope, price, assignment, approval, payment or readiness is returned as a proposed action for you to apply."
+        showVisibility
+        suggestions={[
+          "Summarize what the client wants.",
+          "What information is still missing?",
+          "Create a draft scope.",
+          "Prepare a supplier briefing.",
+        ]}
+      />
       <section className="detail-grid">
         <article className="card">
           <h2>{activeProject.name}</h2>
