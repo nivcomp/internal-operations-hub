@@ -342,6 +342,79 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   }, [runAction, clients, recordActivity]);
 
+  const createSupplier = useCallback((input: NewSupplierInput): Promise<Supplier> => {
+    return runAction(MutationKeys.createSupplier, "Supplier saved.", async () => {
+      const persisted = await createSupplierRow({
+        name: input.name,
+        email: input.email,
+        phone: input.phone || undefined,
+        country: input.country,
+        timezone: input.timezone,
+        status: input.status,
+      });
+      let profile: SupplierProfile;
+      try {
+        profile = await createSupplierProfileRow({
+          supplierId: persisted.id,
+          mainSkills: input.mainSkills,
+          hourlyRate: input.hourlyRate,
+          currency: input.currency,
+          weeklyAvailabilityHours: input.weeklyAvailabilityHours,
+          notes: input.notes,
+        });
+      } catch (err) {
+        // Roll the supplier row back so a failed save leaves no half-created record.
+        try { await deleteSupplierRow(persisted.id); } catch { /* surfaced by the error below */ }
+        throw err;
+      }
+      setSuppliers((current) => [...current, persisted]);
+      setSupplierProfiles((current) => [...current.filter((p) => p.supplierId !== persisted.id), profile]);
+      await recordActivity("Supplier created", `${persisted.name} was added as ${persisted.status.replace("_", " ")}.`);
+      return persisted;
+    });
+  }, [runAction, recordActivity]);
+
+  const submitClientChangeRequest = useCallback((projectId: string, clientId: string, input: { title: string; description: string }): Promise<ChangeRequest> => {
+    return runAction(MutationKeys.submitClientChangeRequest(projectId), "Change request sent to the agency.", async () => {
+      const persisted = await createClientChangeRequestRow({
+        projectId, clientId, title: input.title, description: input.description,
+      });
+      setChangeRequests((current) => [...current, persisted]);
+      await recordActivity("Client change request", `${persisted.title} was requested by the client.`);
+      return persisted;
+    });
+  }, [runAction, recordActivity]);
+
+  const updateTimeEntry = useCallback((timeEntryId: string, patch: { date: string; hours: number; description: string }) => {
+    return runAction(MutationKeys.updateTimeEntry(timeEntryId), "Time entry updated.", async () => {
+      const persisted = await updateTimeEntryRow(timeEntryId, patch);
+      setTimeEntries((current) => current.map((entry) => (entry.id === timeEntryId ? persisted : entry)));
+    });
+  }, [runAction]);
+
+  const updateApprovalStatus = useCallback((approvalId: string, status: "approved" | "rejected", notes?: string) => {
+    return runAction(MutationKeys.updateApprovalStatus(approvalId), `Approval ${status}.`, async () => {
+      const persisted = await updateApprovalStatusRow(approvalId, status, notes);
+      setApprovals((current) => current.map((approval) => (approval.id === approvalId ? persisted : approval)));
+      await recordActivity(
+        status === "approved" ? "Scope approved" : "Scope declined",
+        `${getProjectName(persisted.projectId, projects)} scope approval was ${status}.`,
+      );
+    });
+  }, [runAction, projects, recordActivity]);
+
+  const createProjectMessage = useCallback((
+    projectId: string,
+    body: string,
+    visibility: ProjectMessage["visibility"],
+    authorRole: ProjectMessage["authorRole"],
+  ) => {
+    return runAction(MutationKeys.createProjectMessage(projectId), "Message sent.", async () => {
+      const persisted = await createProjectMessageRow({ projectId, authorRole, body, visibility });
+      setProjectMessages((current) => [...current, persisted]);
+    });
+  }, [runAction]);
+
   const createChangeRequest = useCallback((projectId: string, clientId: string, input: NewChangeRequestInput): Promise<ChangeRequest> => {
     return runAction(MutationKeys.createChangeRequest(projectId), "Change request saved.", async () => {
       const persisted = await createChangeRequestRow({
@@ -498,7 +571,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     projects, projectBriefs, scopes, scopeItems, projectPricing, phasePricing,
     approvals, changeRequests, timeEntries, clientPayments, supplierPayments,
     hourBanks, projectMessages, decisionLogs, fileLinks, activityEntries,
-    createClient, createProject, createChangeRequest, createTimeEntry,
+    createClient, createSupplier, createProject, createChangeRequest,
+    submitClientChangeRequest, createTimeEntry, updateTimeEntry,
+    updateApprovalStatus, createProjectMessage,
     createClientPayment, markPaymentReceived, updateProjectSupplierAssignment,
     updateTimeEntryStatus, updateChangeRequestStatus,
     isPending, getError, getSuccess, clearMutationState,
