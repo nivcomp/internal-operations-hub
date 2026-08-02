@@ -115,6 +115,9 @@ export function DashboardPage({
         <section className="card quick-actions">
           <h2>Quick actions</h2>
           <div className="quick-actions-list">
+            <button type="button" onClick={() => onNavigate("clients")}>Add a client</button>
+            <button type="button" onClick={() => onNavigate("suppliers")}>Add a supplier</button>
+            <button type="button" onClick={() => onNavigate("access-management")}>Invite an account</button>
             <button type="button" onClick={() => onNavigate("action-queue")}>Open action queue</button>
             <button type="button" onClick={() => onNavigate("projects")}>Review projects</button>
             <button type="button" onClick={() => onNavigate("payments-hours")}>Payments &amp; hours</button>

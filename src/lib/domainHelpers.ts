@@ -6,6 +6,21 @@ export const currency = new Intl.NumberFormat("en-GB", {
   maximumFractionDigits: 0,
 });
 
+/** Formats a supplier rate in the currency recorded on their profile. */
+export function formatRate(amount: number, code: string) {
+  try {
+    return new Intl.NumberFormat("en-GB", { style: "currency", currency: code || "GBP", maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return currency.format(amount);
+  }
+}
+
+export const supplierStatusLabels: Record<Supplier["status"], string> = {
+  pending_review: "Pending",
+  approved: "Approved",
+  inactive: "Paused",
+};
+
 export const statusLabels: Record<ProjectStatus, string> = {
   lead_started: "Lead started",
   discovery_in_progress: "Discovery",

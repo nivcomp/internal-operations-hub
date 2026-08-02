@@ -67,6 +67,7 @@ export interface SupplierProfile {
   tools: string[];
   yearsOfExperience: number;
   hourlyRate: number;
+  currency: string;
   weeklyAvailabilityHours: number;
   portfolioLinks: string[];
   notes: string;
@@ -164,7 +165,7 @@ export interface ChangeRequest {
   requestedByClientId: string;
   title: string;
   description: string;
-  status: "submitted" | "agency_review" | "priced" | "client_approved" | "declined";
+  status: "requested" | "submitted" | "agency_review" | "priced" | "client_approved" | "declined";
   agencyPrice?: number;
   supplierCost?: number;
   approvedDate?: string;

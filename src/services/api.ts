@@ -64,6 +64,7 @@ export function mapSupplierProfile(r: Row): SupplierProfile {
     tools: r.tools ?? [],
     yearsOfExperience: Number(r.years_of_experience ?? 0),
     hourlyRate: Number(r.hourly_rate ?? 0),
+    currency: r.currency ?? "GBP",
     weeklyAvailabilityHours: Number(r.weekly_availability_hours ?? 0),
     portfolioLinks: r.portfolio_links ?? [],
     notes: r.notes ?? "",
@@ -545,3 +546,135 @@ export async function recordActivityRow(label: string, detail: string): Promise<
 
 // unused fallback to satisfy asString import lint
 void asString;
+
+// ----- supplier onboarding ---------------------------------------------------
+export async function createSupplierRow(input: {
+  name: string;
+  email: string;
+  phone?: string;
+  country: string;
+  timezone: string;
+  status: Supplier["status"];
+}): Promise<Supplier> {
+  const { data, error } = await client
+    .from("suppliers")
+    .insert({
+      name: input.name,
+      email: input.email,
+      phone: input.phone || null,
+      country: input.country,
+      timezone: input.timezone,
+      status: input.status,
+    })
+    .select("*")
+    .single();
+  if (error || !data) fail("createSupplier", error);
+  return mapSupplier(data);
+}
+
+export async function createSupplierProfileRow(input: {
+  supplierId: string;
+  mainSkills: string[];
+  hourlyRate: number;
+  currency: string;
+  weeklyAvailabilityHours: number;
+  notes: string;
+}): Promise<SupplierProfile> {
+  const { data, error } = await client
+    .from("supplier_profiles")
+    .upsert(
+      {
+        supplier_id: input.supplierId,
+        main_skills: input.mainSkills,
+        hourly_rate: input.hourlyRate,
+        currency: input.currency,
+        weekly_availability_hours: input.weeklyAvailabilityHours,
+        notes: input.notes,
+      },
+      { onConflict: "supplier_id" },
+    )
+    .select("*")
+    .single();
+  if (error || !data) fail("createSupplierProfile", error);
+  return mapSupplierProfile(data);
+}
+
+export async function deleteSupplierRow(id: string): Promise<void> {
+  const { error } = await client.from("suppliers").delete().eq("id", id);
+  if (error) fail("deleteSupplier", error);
+}
+
+// ----- portal actions --------------------------------------------------------
+export async function updateApprovalStatusRow(
+  id: string,
+  status: "approved" | "rejected",
+  notes?: string,
+): Promise<Approval> {
+  const patch: Row = { status };
+  if (status === "approved") patch.approved_date = new Date().toISOString().slice(0, 10);
+  if (notes !== undefined) patch.notes = notes;
+  const { data, error } = await client.from("approvals").update(patch).eq("id", id).select("*").single();
+  if (error || !data) fail("updateApprovalStatus", error);
+  return mapApproval(data);
+}
+
+export async function createProjectMessageRow(input: {
+  projectId: string;
+  authorRole: UserRole;
+  body: string;
+  visibility: Visibility;
+}): Promise<ProjectMessage> {
+  const { data, error } = await client
+    .from("project_messages")
+    .insert({
+      project_id: input.projectId,
+      author_role: input.authorRole,
+      body: input.body,
+      visibility: input.visibility,
+    })
+    .select("*")
+    .single();
+  if (error || !data) fail("createProjectMessage", error);
+  return mapProjectMessage(data);
+}
+
+/** Client-submitted change request. RLS requires a neutral status and no pricing. */
+export async function createClientChangeRequestRow(input: {
+  projectId: string;
+  clientId: string;
+  title: string;
+  description: string;
+}): Promise<ChangeRequest> {
+  const { data, error } = await client
+    .from("change_requests")
+    .insert({
+      project_id: input.projectId,
+      requested_by_client_id: input.clientId,
+      title: input.title,
+      description: input.description,
+      status: "requested",
+    })
+    .select("*")
+    .single();
+  if (error || !data) fail("createClientChangeRequest", error);
+  return mapChangeRequest(data);
+}
+
+/** Supplier edit of their own unapproved time entry. */
+export async function updateTimeEntryRow(
+  id: string,
+  patch: { date?: string; hours?: number; description?: string },
+): Promise<TimeEntry> {
+  const dbPatch: Row = {};
+  if (patch.date !== undefined) dbPatch.entry_date = patch.date;
+  if (patch.hours !== undefined) dbPatch.hours = patch.hours;
+  if (patch.description !== undefined) dbPatch.description = patch.description;
+  const { data, error } = await client
+    .from("supplier_time_entries")
+    .update(dbPatch)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error || !data) fail("updateTimeEntry", error);
+  return mapTimeEntry(data);
+}

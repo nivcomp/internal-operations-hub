@@ -1991,3 +1991,37 @@ Prepare the existing application for the first Lovable UI refinement pass withou
 
 **Next**  
 - Prepare the existing application for the first Lovable UI refinement pass while preserving all current business logic.
+
+## 2026-08-02 — Operational MVP usability
+
+**Work unit**  
+Make normal daily workflows completable in-app: supplier creation, client/supplier access, and actionable portals.
+
+**Main changes**  
+- Replaced `invite-user` with the `access-admin` edge function (list accounts with auth metadata, invite, regenerate copyable invitation link, enable/disable), plus `src/services/accessApi.ts` and a shared `AccessPanel` used by client and supplier detail pages.
+- Added supplier creation with profile fields on the Suppliers page, including a per-supplier rate currency.
+- Rebuilt Access Management with search, role/status filters, copyable invitation links, and activity toggles.
+- Rebuilt the client portal: approvals with approve/decline, approved scope, payment requests, paid hours, change-request submission and priced-request decisions, files, and messaging.
+- Rebuilt the supplier portal: assigned work with start-readiness, delivery instructions, time logging, editing of non-approved entries, approved value, files, and messaging. No client price or margin is exposed.
+- Added dashboard quick actions for add client, add supplier, and invite account.
+- Migration: added a narrow client UPDATE policy on `change_requests` plus a `SECURITY DEFINER` guard trigger so a client may only move a `priced` request to `client_approved`/`declined` and may not alter title, description, agency price, or supplier cost. Execute on the guard function is revoked from `anon`/`authenticated`.
+
+**Tests and results**  
+- `pnpm run build` passed (tsc + vite).
+- Supabase security linter: back to the pre-existing baseline (2 SECURITY DEFINER view errors and 8 SECURITY DEFINER function warnings that predate this work); no new findings.
+- No automated test suite exists in the repository.
+
+**Main files changed**  
+- `supabase/functions/access-admin/index.ts`
+- `src/services/accessApi.ts`, `src/services/api.ts`
+- `src/components/AccessPanel.tsx`
+- `src/context/AppDataContext.tsx`, `src/lib/domainHelpers.ts`, `src/types/domain.ts`
+- `src/pages/ClientPortalPage.tsx`, `src/pages/SupplierPortalPage.tsx`, `src/pages/SuppliersPage.tsx`, `src/pages/AccessManagementPage.tsx`, `src/pages/ClientDetailPage.tsx`, `src/pages/SupplierDetailPage.tsx`, `src/pages/DashboardPage.tsx`
+- `src/App.tsx`, `src/styles.css`
+
+**Limitations**  
+- Invitation emails rely on the default managed auth mailer; the copyable link is the reliable path.
+- Scope authoring is still read-only in the app.
+
+**Next**  
+- Agency-side scope authoring workspace (see `NEXT_TASK.md`).

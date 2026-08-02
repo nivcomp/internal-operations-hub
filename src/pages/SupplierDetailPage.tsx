@@ -1,7 +1,8 @@
+import { AccessPanel } from "../components/AccessPanel";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAppData } from "../context/AppDataContext";
-import { canWorkStart, currency, getProjectName, getSupplierById } from "../lib/domainHelpers";
+import { canWorkStart, formatRate, getProjectName, getSupplierById } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
 
 type SupplierDetailPageProps = {
@@ -21,7 +22,7 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
         <PageHeader title="Supplier Detail" subtitle="Select a supplier from the Suppliers page to inspect assigned work, time, and visibility rules." />
         <section className="empty-state">
           <h2>No supplier selected</h2>
-          <p>Open the Suppliers page and choose a supplier row.</p>
+          <p>Create a supplier before inviting a supplier user. Open the Suppliers page and add or choose a supplier.</p>
         </section>
       </>
     );
@@ -41,8 +42,8 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
           <dl className="meta-list">
             <div><dt>Country</dt><dd>{supplier.country}</dd></div>
             <div><dt>Timezone</dt><dd>{supplier.timezone}</dd></div>
-            <div><dt>Availability</dt><dd>{profile?.weeklyAvailabilityHours} hrs/week</dd></div>
-            <div><dt>Agency cost rate</dt><dd>{profile ? currency.format(profile.hourlyRate) : "Unknown"}/hr</dd></div>
+            <div><dt>Availability</dt><dd>{profile ? `${profile.weeklyAvailabilityHours} hrs/week` : "Not set"}</dd></div>
+            <div><dt>Agency cost rate</dt><dd>{profile ? `${formatRate(profile.hourlyRate, profile.currency)}/hr` : "Unknown"}</dd></div>
           </dl>
         </article>
         <article className="card warning-card">
@@ -55,6 +56,15 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
           </div>
         </article>
       </section>
+
+      <AccessPanel
+        kind="supplier"
+        targetId={supplier.id}
+        defaultEmail={supplier.email}
+        defaultName={supplier.name}
+        onOpenPortal={() => onSupplierPortalOpen(supplier.id)}
+      />
+
       <section className="card">
         <h2>Assigned projects</h2>
         {assignedProjects.length ? (
@@ -84,6 +94,9 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
       </section>
       <section className="card">
         <h2>Time entries</h2>
+        {entries.length === 0 ? (
+          <p className="muted-text">No time has been submitted by this supplier yet.</p>
+        ) : (
         <table>
           <thead>
             <tr>
@@ -104,6 +117,7 @@ export function SupplierDetailPage({ selectedSupplierId, projects, timeEntries, 
             ))}
           </tbody>
         </table>
+        )}
       </section>
     </>
   );

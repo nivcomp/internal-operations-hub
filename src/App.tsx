@@ -173,6 +173,7 @@ function AppShell() {
         changeRequests={changeRequests}
         clientPayments={clientPayments}
         hourBanks={hourBanks}
+        isPreview={role === "agency_admin"}
       />
     ),
     "supplier-portal": (
@@ -180,10 +181,13 @@ function AppShell() {
         selectedSupplierId={role === "supplier" ? profile?.supplierId : selectedSupplierId}
         projects={projects}
         timeEntries={timeEntries}
+        isPreview={role === "agency_admin"}
       />
     ),
     "ai-workbench": <AIWorkbenchPage />,
-    "access-management": <AccessManagementPage />,
+    "access-management": (
+      <AccessManagementPage onClientSelect={openClientDetail} onSupplierSelect={openSupplierDetail} />
+    ),
   } satisfies Record<ViewKey, JSX.Element>;
 
   return (

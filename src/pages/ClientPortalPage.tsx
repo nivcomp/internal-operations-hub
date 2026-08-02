@@ -1,6 +1,7 @@
+import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { useAppData } from "../context/AppDataContext";
+import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -11,364 +12,344 @@ type ClientPortalPageProps = {
   changeRequests: ChangeRequest[];
   clientPayments: ClientPayment[];
   hourBanks: HourBank[];
+  /** True when an agency admin is previewing the portal. */
+  isPreview: boolean;
+};
+
+const requestStatusLabels: Record<ChangeRequest["status"], string> = {
+  requested: "With the agency",
+  submitted: "With the agency",
+  agency_review: "With the agency",
+  priced: "Priced — your decision",
+  client_approved: "Approved",
+  declined: "Declined",
 };
 
 export function ClientPortalPage({
-  selectedClientId,
-  clients,
-  projects,
-  changeRequests,
-  clientPayments,
-  hourBanks,
+  selectedClientId, clients, projects, changeRequests, clientPayments, hourBanks, isPreview,
 }: ClientPortalPageProps) {
-  const { approvals, fileLinks, projectMessages, scopeItems, scopes } = useAppData();
-  const fallbackClient = clients[0];
-  const client = selectedClientId ? getClientById(selectedClientId, clients) ?? fallbackClient : fallbackClient;
-  const clientProjects = client ? projects.filter((project) => project.clientId === client.id) : [];
+  const {
+    approvals, fileLinks, projectMessages, scopeItems, scopes,
+    submitClientChangeRequest, updateApprovalStatus, updateChangeRequestStatus, createProjectMessage,
+    isPending, getError, getSuccess,
+  } = useAppData();
+
+  const client = selectedClientId ? getClientById(selectedClientId, clients) : undefined;
+  const clientProjects = useMemo(
+    () => (client ? projects.filter((project) => project.clientId === client.id) : []),
+    [client, projects],
+  );
   const clientProjectIds = clientProjects.map((project) => project.id);
-  const clientHourBanks = client ? hourBanks.filter((bank) => bank.clientId === client.id) : [];
-  const clientChangeRequests = changeRequests.filter((request) => clientProjectIds.includes(request.projectId));
-  const clientApprovals = approvals.filter((approval) => clientProjectIds.includes(approval.projectId));
-  const clientVisibleFiles = fileLinks.filter(
-    (file) => clientProjectIds.includes(file.projectId) && file.visibility === "client_visible",
+
+  const [activeProjectId, setActiveProjectId] = useState<string | undefined>();
+  const project = clientProjects.find((item) => item.id === activeProjectId) ?? clientProjects[0];
+
+  const [requestForm, setRequestForm] = useState({ title: "", description: "" });
+  const [messageBody, setMessageBody] = useState("");
+
+  if (!client) {
+    return (
+      <>
+        <PageHeader title="Client Workspace" subtitle="Your projects, approvals, payments and requests in one place." />
+        <section className="empty-state">
+          <h2>No client workspace available</h2>
+          <p>This account is not linked to a client record yet. Ask the agency to complete your access.</p>
+        </section>
+      </>
+    );
+  }
+
+  if (!project) {
+    return (
+      <>
+        <PageHeader title={`${client.company} workspace`} subtitle="Your projects, approvals, payments and requests in one place." />
+        <section className="empty-state">
+          <h2>No project exists for this client</h2>
+          <p>Once the agency creates your first project it will appear here with scope, approvals and payment status.</p>
+        </section>
+      </>
+    );
+  }
+
+  const approvalsForProject = approvals.filter((approval) => approval.projectId === project.id);
+  const pendingApprovals = approvalsForProject.filter(
+    (approval) => approval.status === "pending" && approval.approverRole === "client",
   );
-  const clientVisibleMessages = projectMessages.filter(
-    (message) => clientProjectIds.includes(message.projectId) && message.visibility === "client_visible",
+  const paymentsForProject = clientPayments.filter((payment) => payment.projectId === project.id);
+  const banks = hourBanks.filter((bank) => bank.clientId === client.id && (!bank.projectId || bank.projectId === project.id));
+  const requests = changeRequests.filter((request) => request.projectId === project.id);
+  const files = fileLinks.filter((file) => file.projectId === project.id && file.visibility === "client_visible");
+  const messages = projectMessages
+    .filter((message) => message.projectId === project.id && message.visibility === "client_visible")
+    .slice()
+    .sort((a, b) => a.createdDate.localeCompare(b.createdDate));
+  const approvedScopes = scopes.filter((scope) => scope.projectId === project.id && scope.status === "approved");
+  const visibleScopeItems = scopeItems.filter(
+    (item) => item.clientVisible && scopes.some((scope) => scope.id === item.scopeId && scope.projectId === project.id),
   );
-  const clientVisibleScopeItems = scopeItems
-    .map((item) => {
-      const scope = scopes.find((currentScope) => currentScope.id === item.scopeId);
-      return { item, scope };
-    })
-    .filter(({ item, scope }) => item.clientVisible && scope && clientProjectIds.includes(scope.projectId));
+
+  const requestKey = MutationKeys.submitClientChangeRequest(project.id);
+  const messageKey = MutationKeys.createProjectMessage(project.id);
+
+  async function handleRequestSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!requestForm.title.trim() || isPending(requestKey)) return;
+    try {
+      await submitClientChangeRequest(project.id, client!.id, {
+        title: requestForm.title.trim(),
+        description: requestForm.description.trim(),
+      });
+      setRequestForm({ title: "", description: "" });
+    } catch { /* values kept for retry */ }
+  }
+
+  async function handleMessageSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!messageBody.trim() || isPending(messageKey)) return;
+    try {
+      await createProjectMessage(project.id, messageBody.trim(), "client_visible", "client");
+      setMessageBody("");
+    } catch { /* value kept for retry */ }
+  }
 
   return (
     <>
-      <PageHeader title="Client Portal Placeholder" subtitle="A simple future client view for approvals, project status, paid-hour balance, files, and change requests." />
+      <PageHeader
+        title={`${client.company} workspace`}
+        subtitle={isPreview ? "Agency preview of exactly what this client can see." : "Your projects, approvals, payments and requests in one place."}
+      />
+
+      {clientProjects.length > 1 ? (
+        <div className="filter-row">
+          <label className="inline-label">
+            Project
+            <select value={project.id} onChange={(event) => setActiveProjectId(event.target.value)}>
+              {clientProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+        </div>
+      ) : null}
+
       <section className="card">
-        <h2>{client ? `${client.company} client view` : "No client available"}</h2>
-        <p>{selectedClientId ? `Viewing as ${client?.name}.` : `No client selected. Showing fallback client ${client?.company ?? "none"}.`}</p>
-        {clientProjects.length ? (
+        <h2>{project.name}</h2>
+        <p className="muted-text">{project.summary}</p>
+        <dl className="meta-list">
+          <div><dt>Status</dt><dd><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></dd></div>
+          <div><dt>Work readiness</dt><dd>{canWorkStart(project, scopes) ? "Ready to start" : "Waiting for approval, payment or paid hours"}</dd></div>
+          <div><dt>Open requests</dt><dd>{requests.filter((r) => r.status !== "declined" && r.status !== "client_approved").length}</dd></div>
+          <div><dt>Pending approvals</dt><dd>{pendingApprovals.length}</dd></div>
+        </dl>
+      </section>
+
+      <section className="card">
+        <h2>Approvals</h2>
+        {approvalsForProject.length === 0 ? (
+          <p className="muted-text">Nothing needs your approval right now.</p>
+        ) : (
           <table>
             <thead>
-              <tr>
-                <th>Project</th>
-                <th>Status</th>
-                <th>Approval</th>
-                <th>Payment</th>
-                <th>Start rule</th>
-              </tr>
+              <tr><th>Scope</th><th>Status</th><th>Notes</th><th>Approved</th><th /></tr>
             </thead>
             <tbody>
-              {clientProjects.map((project) => {
-                const approval = approvals.find((item) => item.projectId === project.id);
-                const payment = clientPayments.find((item) => item.projectId === project.id);
+              {approvalsForProject.map((approval) => {
+                const scope = scopes.find((item) => item.id === approval.scopeId);
+                const key = MutationKeys.updateApprovalStatus(approval.id);
+                const decidable = approval.status === "pending" && approval.approverRole === "client";
                 return (
-                  <tr key={project.id}>
-                    <td>{project.name}</td>
-                    <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></td>
-                    <td>{approval?.status ?? "Not requested"}</td>
-                    <td>{payment?.status ?? "Not due"}</td>
-                    <td>{canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours"}</td>
+                  <tr key={approval.id}>
+                    <td>{scope ? `v${scope.version}` : "Scope"}</td>
+                    <td><StatusBadge label={approval.status} tone={approval.status === "approved" ? "success" : approval.status === "rejected" ? "danger" : "warning"} /></td>
+                    <td>{approval.notes || "—"}</td>
+                    <td>{approval.approvedDate ?? "Pending"}</td>
+                    <td>
+                      {decidable ? (
+                        <div className="action-row compact">
+                          <button type="button" disabled={isPending(key)} onClick={() => void updateApprovalStatus(approval.id, "approved")}>
+                            {isPending(key) ? "Saving…" : "Approve"}
+                          </button>
+                          <button type="button" disabled={isPending(key)} onClick={() => void updateApprovalStatus(approval.id, "rejected")}>
+                            Decline
+                          </button>
+                          {getError(key) ? <span className="form-error">{getError(key)}</span> : null}
+                        </div>
+                      ) : "—"}
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        ) : (
-          <p>No client-visible projects are available for this client yet.</p>
         )}
       </section>
+
       <section className="card">
-        <h2>Scope items</h2>
-        {clientVisibleScopeItems.length ? (
-          <>
-            <p>Client-safe scope context: project, scope version, phase, item details, and acceptance notes only.</p>
-            <table>
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Project status</th>
-                <th>Project start rule</th>
-                <th>Scope</th>
-                <th>Phase</th>
-                <th>Item</th>
-                <th>Acceptance</th>
-              </tr>
-            </thead>
+        <h2>Approved scope</h2>
+        {approvedScopes.length === 0 ? (
+          <p className="muted-text">No scope has been approved yet.</p>
+        ) : (
+          approvedScopes.map((scope) => (
+            <div key={scope.id} className="scope-block">
+              <h3>Version {scope.version}</h3>
+              <p>{scope.clientFacingSummary}</p>
+            </div>
+          ))
+        )}
+        {visibleScopeItems.length ? (
+          <table>
+            <thead><tr><th>Phase</th><th>Item</th><th>Acceptance</th></tr></thead>
             <tbody>
-              {clientVisibleScopeItems.map(({ item, scope }) => (
+              {visibleScopeItems.map((item) => (
                 <tr key={item.id}>
-                  <td>{scope ? clientProjects.find((project) => project.id === scope.projectId)?.name ?? "Project" : "Project"}</td>
-                  <td>{scope && clientProjects.find((project) => project.id === scope.projectId) ? statusLabels[clientProjects.find((project) => project.id === scope.projectId)!.status] : "Project not found"}</td>
-                  <td>{scope && clientProjects.find((project) => project.id === scope.projectId) ? (canWorkStart(clientProjects.find((project) => project.id === scope.projectId)!, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
-                  <td>{scope ? `v${scope.version} · ${scope.status}` : "Scope"}</td>
                   <td>{item.phase}</td>
-                  <td>
-                    <strong>{item.title}</strong>
-                    <br />
-                    {item.description}
-                  </td>
+                  <td><strong>{item.title}</strong><br />{item.description}</td>
                   <td>{item.acceptanceNotes}</td>
                 </tr>
               ))}
             </tbody>
-            </table>
-          </>
-        ) : (
-          <p>No client-visible scope items are available for this client yet.</p>
-        )}
+          </table>
+        ) : null}
       </section>
-      <section className="card">
-        <h2>Scope approvals</h2>
-        {clientApprovals.length ? (
-          <>
-            <p>Client-safe approval context: project, scope version, approval state, notes, and approved date only.</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Project status</th>
-                  <th>Project start rule</th>
-                  <th>Scope</th>
-                  <th>Approval</th>
-                  <th>Notes</th>
-                  <th>Approved date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientApprovals.map((approval) => {
-                  const project = clientProjects.find((item) => item.id === approval.projectId);
-                  const scope = scopes.find((item) => item.id === approval.scopeId);
-                  return (
-                    <tr key={approval.id}>
-                      <td>{project?.name ?? "Project"}</td>
-                      <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
-                      <td>{scope ? `v${scope.version} - ${scope.status}` : "Scope not linked"}</td>
-                      <td>
-                        <StatusBadge
-                          label={approval.status}
-                          tone={approval.status === "approved" ? "success" : "warning"}
-                        />
-                      </td>
-                      <td>{approval.notes}</td>
-                      <td>{approval.approvedDate ?? "Pending"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </>
-        ) : (
-          <p>No scope approvals are visible for this client yet.</p>
-        )}
-      </section>
+
       <section className="detail-grid">
         <article className="card">
-          <h2>Payments and hour balance</h2>
-          {clientPayments.filter((payment) => clientProjectIds.includes(payment.projectId)).length ? (
-            <>
-              <p>Client-safe payment context: project, requested amount, payment status, due date, received date, and payment notes only.</p>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Project</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Due</th>
-                    <th>Received</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientPayments
-                    .filter((payment) => clientProjectIds.includes(payment.projectId))
-                    .map((payment) => {
-                      const project = clientProjects.find((item) => item.id === payment.projectId);
-                      return (
-                        <tr key={payment.id}>
-                          <td>{project?.name ?? "Project"}</td>
-                          <td>{currency.format(payment.amount)}</td>
-                          <td><StatusBadge label={payment.status} tone={payment.status === "received" ? "success" : "warning"} /></td>
-                          <td>{payment.dueDate ?? "Not set"}</td>
-                          <td>{payment.receivedDate ?? "Not received"}</td>
-                          <td>{payment.notes}</td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </>
+          <h2>Payment requests</h2>
+          {paymentsForProject.length === 0 ? (
+            <p className="muted-text">No payment has been requested for this project.</p>
           ) : (
-            <p>No client payment requests are visible yet.</p>
+            <table>
+              <thead><tr><th>Amount</th><th>Status</th><th>Due</th><th>Notes</th></tr></thead>
+              <tbody>
+                {paymentsForProject.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{currency.format(payment.amount)}</td>
+                    <td><StatusBadge label={payment.status} tone={payment.status === "received" ? "success" : "warning"} /></td>
+                    <td>{payment.dueDate ?? "Not set"}</td>
+                    <td>{payment.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </article>
         <article className="card">
           <h2>Paid hours</h2>
-          {clientHourBanks.length ? (
-            <>
-              <p>Client-safe hour-bank context: project, purchased hours, used hours, usage, remaining hours, and expiry only.</p>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Project</th>
-                    <th>Project status</th>
-                    <th>Project start rule</th>
-                    <th>Purchased</th>
-                    <th>Used</th>
-                    <th>Usage</th>
-                    <th>Remaining</th>
-                    <th>Expiry</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientHourBanks.map((bank) => {
-                    const project = clientProjects.find((item) => item.id === bank.projectId);
-                    const usagePercent = bank.hoursPurchased > 0
-                      ? Math.round((bank.hoursUsed / bank.hoursPurchased) * 100)
-                      : 0;
-                    return (
-                      <tr key={bank.id}>
-                        <td>{project?.name ?? "General"}</td>
-                        <td>{project ? statusLabels[project.status] : "General hour bank"}</td>
-                        <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "General hour bank"}</td>
-                        <td>{bank.hoursPurchased} hrs</td>
-                        <td>{bank.hoursUsed} hrs</td>
-                        <td>{usagePercent}% used</td>
-                        <td>{bank.hoursRemaining} hrs</td>
-                        <td>{bank.expiryDate ?? "No expiry"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </>
+          {banks.length === 0 ? (
+            <p className="muted-text">You do not have a paid-hour balance.</p>
           ) : (
-            <p>No paid hour bank is visible for this client.</p>
+            <table>
+              <thead><tr><th>Purchased</th><th>Used</th><th>Remaining</th><th>Expiry</th></tr></thead>
+              <tbody>
+                {banks.map((bank) => (
+                  <tr key={bank.id}>
+                    <td>{bank.hoursPurchased} hrs</td>
+                    <td>{bank.hoursUsed} hrs</td>
+                    <td>{bank.hoursRemaining} hrs</td>
+                    <td>{bank.expiryDate ?? "No expiry"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </article>
       </section>
+
       <section className="card">
         <h2>Change requests</h2>
-        {clientChangeRequests.length ? (
-          <>
-            <p>Project context: project, project status, and project start rule. Change request context: request status, pricing state, approval date, work readiness, and rule.</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Request</th>
-                  <th>Description</th>
-                  <th>Project</th>
-                  <th>Project status</th>
-                  <th>Project start rule</th>
-                  <th>Status</th>
-                  <th>Client price</th>
-                  <th>Pricing state</th>
-                  <th>Approved date</th>
-                  <th>Work readiness</th>
-                  <th>Rule</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientChangeRequests.map((request) => {
-                  const project = clientProjects.find((item) => item.id === request.projectId);
-                  return (
-                    <tr key={request.id}>
-                      <td>{request.title}</td>
-                      <td>{request.description}</td>
-                      <td>{project?.name ?? "Project"}</td>
-                      <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project, scopes) ? "Project ready" : "Project waiting for approval, payment, or paid hours") : "Project not found"}</td>
-                      <td><StatusBadge label={request.status} tone={request.status === "client_approved" ? "success" : "warning"} /></td>
-                      <td>{request.agencyPrice ? currency.format(request.agencyPrice) : "Awaiting agency pricing"}</td>
-                      <td>{request.agencyPrice ? "Priced" : "Awaiting agency pricing"}</td>
-                      <td>{request.approvedDate ?? "Pending approval"}</td>
-                      <td>{request.status === "client_approved" ? "Ready for work review" : "Blocked until priced and approved"}</td>
-                      <td>{request.status === "client_approved" ? "Approved change can become work" : "Needs agency pricing and client approval before work starts"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </>
+        {requests.length === 0 ? (
+          <p className="muted-text">No change requests yet. Use the form below to ask for a change.</p>
         ) : (
-          <p>No change requests are visible for this client.</p>
+          <table>
+            <thead><tr><th>Request</th><th>Status</th><th>Price</th><th /></tr></thead>
+            <tbody>
+              {requests.map((request) => {
+                const key = MutationKeys.updateChangeRequestStatus(request.id);
+                return (
+                  <tr key={request.id}>
+                    <td><strong>{request.title}</strong><br />{request.description}</td>
+                    <td><StatusBadge label={requestStatusLabels[request.status]} tone={request.status === "client_approved" ? "success" : request.status === "declined" ? "danger" : "warning"} /></td>
+                    <td>{request.agencyPrice != null ? currency.format(request.agencyPrice) : "Awaiting pricing"}</td>
+                    <td>
+                      {request.status === "priced" ? (
+                        <div className="action-row compact">
+                          <button type="button" disabled={isPending(key)} onClick={() => void updateChangeRequestStatus(request.id, "client_approved")}>
+                            {isPending(key) ? "Saving…" : "Approve"}
+                          </button>
+                          <button type="button" disabled={isPending(key)} onClick={() => void updateChangeRequestStatus(request.id, "declined")}>
+                            Decline
+                          </button>
+                          {getError(key) ? <span className="form-error">{getError(key)}</span> : null}
+                        </div>
+                      ) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
+
+        <form className="form-grid" onSubmit={handleRequestSubmit}>
+          <label className="span-2">
+            What would you like to change?
+            <input value={requestForm.title} onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })} />
+          </label>
+          <label className="span-2">
+            Details
+            <textarea value={requestForm.description} onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })} />
+          </label>
+          <div className="form-actions">
+            <button className="primary-button" type="submit" disabled={isPending(requestKey)}>
+              {isPending(requestKey) ? "Sending…" : "Submit change request"}
+            </button>
+          </div>
+          {getError(requestKey) ? <p className="form-error" role="alert">{getError(requestKey)}</p> : null}
+          {getSuccess(requestKey) && !getError(requestKey) ? <p className="form-success">{getSuccess(requestKey)}</p> : null}
+        </form>
+        <p className="muted-text">The agency reviews and prices every request before it becomes work.</p>
       </section>
+
       <section className="card">
-        <h2>Files and links</h2>
-        {clientVisibleFiles.length ? (
-          <>
-            <p>Client-safe file context: project, file type, and client-visible links only.</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Project</th>
-                  <th>Project status</th>
-                  <th>Project start rule</th>
-                  <th>Type</th>
-                  <th>Link</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientVisibleFiles.map((file) => {
-                  const project = clientProjects.find((item) => item.id === file.projectId);
-                  return (
-                    <tr key={file.id}>
-                      <td>{file.title}</td>
-                      <td>{project?.name ?? "Project"}</td>
-                      <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
-                      <td>{file.fileType}</td>
-                      <td><a href={file.url}>Open</a></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </>
+        <h2>Files</h2>
+        {files.length === 0 ? (
+          <p className="muted-text">No files have been shared with you yet.</p>
         ) : (
-          <p>No client-visible files or links are available for this client yet.</p>
+          <ul className="link-list">
+            {files.map((file) => (
+              <li key={file.id}>
+                <a href={file.url} target="_blank" rel="noreferrer">{file.title}</a>
+                <span className="muted-text"> · {file.fileType}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
+
       <section className="card">
         <h2>Messages</h2>
-        {clientVisibleMessages.length ? (
-          <>
-            <p>Client-safe message context: project, sender role, message body, and date for client-visible updates only.</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Project status</th>
-                  <th>Project start rule</th>
-                  <th>From</th>
-                  <th>Message</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientVisibleMessages.map((message) => {
-                  const project = clientProjects.find((item) => item.id === message.projectId);
-                  return (
-                    <tr key={message.id}>
-                      <td>{project?.name ?? "Project"}</td>
-                      <td>{project ? statusLabels[project.status] : "Project not found"}</td>
-                      <td>{project ? (canWorkStart(project, scopes) ? "Ready" : "Waiting for approval, payment, or paid hours") : "Project not found"}</td>
-                      <td>{message.authorRole}</td>
-                      <td>{message.body}</td>
-                      <td>{message.createdDate}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </>
+        {messages.length === 0 ? (
+          <p className="muted-text">No messages yet.</p>
         ) : (
-          <p>No client-visible project messages are available yet.</p>
+          <div className="message-list">
+            {messages.map((message) => (
+              <div key={message.id} className="message-item">
+                <div><strong>{message.authorRole === "client" ? "You" : "Agency"}</strong><p>{message.body}</p></div>
+                <span>{message.createdDate}</span>
+              </div>
+            ))}
+          </div>
         )}
+        <form className="form-grid" onSubmit={handleMessageSubmit}>
+          <label className="span-2">
+            Send a message to the agency
+            <textarea value={messageBody} onChange={(e) => setMessageBody(e.target.value)} />
+          </label>
+          <div className="form-actions">
+            <button className="primary-button" type="submit" disabled={isPending(messageKey)}>
+              {isPending(messageKey) ? "Sending…" : "Send message"}
+            </button>
+          </div>
+          {getError(messageKey) ? <p className="form-error" role="alert">{getError(messageKey)}</p> : null}
+        </form>
       </section>
     </>
   );

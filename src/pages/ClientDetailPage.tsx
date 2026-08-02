@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { AccessPanel } from "../components/AccessPanel";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData, type NewProjectInput } from "../context/AppDataContext";
@@ -100,6 +101,12 @@ export function ClientDetailPage({
 
       <section className="card">
         <h2>Projects</h2>
+        {clientProjects.length === 0 ? (
+          <div className="empty-state inline-empty-state">
+            <h3>No project exists for this client</h3>
+            <p>Create the first project below to start scope, pricing and approvals.</p>
+          </div>
+        ) : (
         <table>
           <thead>
             <tr>
@@ -125,7 +132,16 @@ export function ClientDetailPage({
             })}
           </tbody>
         </table>
+        )}
       </section>
+
+      <AccessPanel
+        kind="client"
+        targetId={activeClient.id}
+        defaultEmail={activeClient.email}
+        defaultName={activeClient.name}
+        onOpenPortal={() => onClientPortalOpen(activeClient.id)}
+      />
 
       <section className="card form-panel">
         <h2>Create project for this client</h2>
