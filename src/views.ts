@@ -14,6 +14,7 @@ export const views = [
   { key: "client-portal", label: "Client Portal" },
   { key: "supplier-portal", label: "Supplier Portal" },
   { key: "ai-workbench", label: "AI Workbench" },
+  { key: "access-management", label: "Access Management" },
 ] as const;
 
 export type ViewKey = (typeof views)[number]["key"];

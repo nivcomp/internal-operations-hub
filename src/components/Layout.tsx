@@ -5,6 +5,10 @@ import { views } from "../views";
 type LayoutProps = {
   activeView: ViewKey;
   onNavigate: (view: ViewKey) => void;
+  allowedViews: ViewKey[];
+  accountLabel: string;
+  accountRole: string;
+  onSignOut: () => void;
   children: ReactNode;
 };
 
@@ -17,15 +21,25 @@ const navGroups: NavGroup[] = [
   { label: "Suppliers", keys: ["suppliers", "supplier-detail", "supplier-time", "supplier-portal"] },
   { label: "Finance", keys: ["pricing-margin", "payments-hours"] },
   { label: "Tools", keys: ["ai-workbench"] },
+  { label: "Admin", keys: ["access-management"] },
 ];
 
 const labelFor = (key: ViewKey) =>
   views.find((v) => v.key === key)?.label ?? key;
 
-export function Layout({ activeView, onNavigate, children }: LayoutProps) {
+export function Layout({
+  activeView, onNavigate, allowedViews, accountLabel, accountRole, onSignOut, children,
+}: LayoutProps) {
+  const groups = useMemo(
+    () =>
+      navGroups
+        .map((g) => ({ ...g, keys: g.keys.filter((k) => allowedViews.includes(k)) }))
+        .filter((g) => g.keys.length > 0),
+    [allowedViews],
+  );
   const activeGroup = useMemo(
-    () => navGroups.find((g) => g.keys.includes(activeView))?.label,
-    [activeView],
+    () => groups.find((g) => g.keys.includes(activeView))?.label,
+    [activeView, groups],
   );
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(navGroups.map((g) => [g.label, g.label === (activeGroup ?? "Overview")])),
@@ -50,7 +64,7 @@ export function Layout({ activeView, onNavigate, children }: LayoutProps) {
           </div>
         </div>
         <nav className="nav-groups" aria-label="Internal app navigation">
-          {navGroups.map((group) => {
+          {groups.map((group) => {
             const isOpen = openGroups[group.label] ?? false;
             const hasActive = group.keys.includes(activeView);
             return (
@@ -82,6 +96,13 @@ export function Layout({ activeView, onNavigate, children }: LayoutProps) {
             );
           })}
         </nav>
+        <div className="sidebar-account">
+          <div>
+            <strong>{accountLabel}</strong>
+            <span>{accountRole.replace("_", " ")}</span>
+          </div>
+          <button type="button" onClick={onSignOut}>Sign out</button>
+        </div>
       </aside>
       <main className="main-panel">{children}</main>
     </div>
