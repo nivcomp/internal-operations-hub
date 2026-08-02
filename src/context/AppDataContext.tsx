@@ -1,10 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   createChangeRequestRow,
+  createClientChangeRequestRow,
   createClientPaymentRow,
   createClientRow,
+  createProjectMessageRow,
   createProjectRow,
+  createSupplierProfileRow,
+  createSupplierRow,
   createTimeEntryRow,
+  deleteSupplierRow,
   fetchActivityLogs,
   fetchApprovals,
   fetchChangeRequests,
@@ -28,8 +33,10 @@ import {
   markClientPaymentReceivedRow,
   recordActivityRow,
   setProjectSupplierAssignmentRow,
+  updateApprovalStatusRow,
   updateChangeRequestStatusRow,
   updateProjectRow,
+  updateTimeEntryRow,
   updateTimeEntryStatusRow,
 } from "../services/api";
 import { currency, getProjectName, getSupplierName } from "../lib/domainHelpers";
@@ -63,6 +70,19 @@ export type NewProjectInput = Pick<Project, "name" | "summary" | "budgetSignal">
 export type NewChangeRequestInput = Pick<ChangeRequest, "title" | "description" | "agencyPrice" | "supplierCost">;
 export type NewTimeEntryInput = Pick<TimeEntry, "supplierId" | "date" | "hours" | "description">;
 export type NewClientPaymentInput = Pick<ClientPayment, "amount" | "dueDate" | "notes">;
+export type NewSupplierInput = {
+  name: string;
+  email: string;
+  phone: string;
+  country: string;
+  timezone: string;
+  status: Supplier["status"];
+  mainSkills: string[];
+  hourlyRate: number;
+  currency: string;
+  weeklyAvailabilityHours: number;
+  notes: string;
+};
 export type ActivityEntry = {
   id: string;
   createdAt: string;
@@ -108,10 +128,15 @@ export type AppDataValue = {
 
   // Mutations
   createClient: (input: NewClientInput) => Promise<Client>;
+  createSupplier: (input: NewSupplierInput) => Promise<Supplier>;
   createProject: (clientId: string, input: NewProjectInput) => Promise<Project>;
   createChangeRequest: (projectId: string, clientId: string, input: NewChangeRequestInput) => Promise<ChangeRequest>;
+  submitClientChangeRequest: (projectId: string, clientId: string, input: { title: string; description: string }) => Promise<ChangeRequest>;
   createTimeEntry: (projectId: string, input: NewTimeEntryInput) => Promise<TimeEntry>;
+  updateTimeEntry: (timeEntryId: string, patch: { date: string; hours: number; description: string }) => Promise<void>;
   createClientPayment: (projectId: string, input: NewClientPaymentInput) => Promise<ClientPayment>;
+  updateApprovalStatus: (approvalId: string, status: "approved" | "rejected", notes?: string) => Promise<void>;
+  createProjectMessage: (projectId: string, body: string, visibility: ProjectMessage["visibility"], authorRole: ProjectMessage["authorRole"]) => Promise<void>;
   markPaymentReceived: (paymentId: string) => Promise<void>;
   updateProjectSupplierAssignment: (projectId: string, supplierId: string, assigned: boolean) => Promise<void>;
   updateTimeEntryStatus: (timeEntryId: string, status: "approved" | "rejected") => Promise<void>;
@@ -125,11 +150,16 @@ export type AppDataValue = {
 // from any component. Format: <domain>:<action>[:<id>].
 export const MutationKeys = {
   createClient: "client:create",
+  createSupplier: "supplier:create",
   createProject: (clientId: string) => `project:create:${clientId}`,
   createChangeRequest: (projectId: string) => `changeRequest:create:${projectId}`,
+  submitClientChangeRequest: (projectId: string) => `changeRequest:client:${projectId}`,
   updateChangeRequestStatus: (id: string) => `changeRequest:status:${id}`,
   createTimeEntry: (projectId: string) => `timeEntry:create:${projectId}`,
+  updateTimeEntry: (id: string) => `timeEntry:update:${id}`,
   updateTimeEntryStatus: (id: string) => `timeEntry:status:${id}`,
+  updateApprovalStatus: (id: string) => `approval:status:${id}`,
+  createProjectMessage: (projectId: string) => `message:create:${projectId}`,
   createClientPayment: (projectId: string) => `payment:create:${projectId}`,
   markPaymentReceived: (id: string) => `payment:receive:${id}`,
   updateProjectSupplierAssignment: (projectId: string, supplierId: string) =>
