@@ -1262,3 +1262,9 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .chat-composer { display: grid; gap: 0.5rem; }
 .chat-composer textarea { width: 100%; resize: vertical; }
 .chat-suggestions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.ghost-button {
+  background: transparent; border: 1px solid var(--border, #e2e8f0);
+  color: inherit; border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.82rem; cursor: pointer;
+}
+.ghost-button:hover:not(:disabled) { background: var(--surface-subtle, #f1f5f9); }
+.ghost-button:disabled { opacity: 0.5; cursor: not-allowed; }
