@@ -64,6 +64,7 @@ export function mapSupplierProfile(r: Row): SupplierProfile {
     tools: r.tools ?? [],
     yearsOfExperience: Number(r.years_of_experience ?? 0),
     hourlyRate: Number(r.hourly_rate ?? 0),
+    currency: r.currency ?? "GBP",
     weeklyAvailabilityHours: Number(r.weekly_availability_hours ?? 0),
     portfolioLinks: r.portfolio_links ?? [],
     notes: r.notes ?? "",

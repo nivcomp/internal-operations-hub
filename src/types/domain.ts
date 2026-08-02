@@ -67,6 +67,7 @@ export interface SupplierProfile {
   tools: string[];
   yearsOfExperience: number;
   hourlyRate: number;
+  currency: string;
   weeklyAvailabilityHours: number;
   portfolioLinks: string[];
   notes: string;
