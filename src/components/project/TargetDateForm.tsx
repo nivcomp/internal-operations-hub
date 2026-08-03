@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppData } from "../../context/AppDataContext";
+import { useCopilotForm } from "../../context/CopilotContext";
+import { onCopilotFormIntent } from "../../lib/copilotForms";
 import { StatusBadge } from "../StatusBadge";
 import {
   datePriorityLabels, deliveryRangeLabel, emptySchedule, formatDate, REQUESTED_DATE_DISCLAIMER,
@@ -38,6 +40,47 @@ export function TargetDateForm({ project, readOnly = false }: { project: Project
   const commercials = buildProjectCommercials({ project, schedule, supplierProfiles });
   const status = schedule.approvedDeliveryDate ? "approved" : commercials.feasibility.status;
 
+  // The copilot may describe and pre-fill this form, but only the user can save it.
+  const formRef = useRef<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement | null>(null);
+  useCopilotForm(
+    `target-date:${project.id}`,
+    readOnly ? null : {
+      formSection: "Target completion date",
+      fields: [
+        { name: "requestedCompletionDate", label: "Requested completion date", filled: Boolean(form.requestedCompletionDate), required: true, value: form.requestedCompletionDate },
+        { name: "datePriority", label: "Date priority", filled: true, value: form.datePriority },
+        { name: "dateReason", label: "Why this date is needed", filled: Boolean(form.dateReason), value: form.dateReason.slice(0, 120) },
+        { name: "partialDeliveryOk", label: "Partial delivery acceptable", filled: true, value: form.partialDeliveryOk ? "yes" : "no" },
+        { name: "phaseOneDate", label: "First phase date", filled: Boolean(form.phaseOneDate), value: form.phaseOneDate },
+      ],
+      missing: [
+        ...(form.requestedCompletionDate ? [] : ["No requested completion date entered"]),
+        ...(form.dateReason ? [] : ["No reason given for the date"]),
+      ],
+      notes: ["A requested date is a request only; the agency approves the delivery date."],
+    },
+  );
+
+  useEffect(() => {
+    if (readOnly) return;
+    return onCopilotFormIntent("*", (intent) => {
+      if (intent.kind === "focus") {
+        document.querySelector<HTMLElement>(`[data-copilot-field="${intent.field}"]`)?.focus();
+        return;
+      }
+      setForm((current) => {
+        if (intent.field === "requestedCompletionDate") return { ...current, requestedCompletionDate: intent.value };
+        if (intent.field === "phaseOneDate") return { ...current, phaseOneDate: intent.value };
+        if (intent.field === "dateReason") return { ...current, dateReason: intent.value };
+        if (intent.field === "datePriority" && priorities.includes(intent.value as DatePriority)) {
+          return { ...current, datePriority: intent.value as DatePriority };
+        }
+        if (intent.field === "partialDeliveryOk") return { ...current, partialDeliveryOk: intent.value === "yes" };
+        return current;
+      });
+    });
+  }, [readOnly]);
+
   async function submit() {
     await saveProjectSchedule(project.id, {
       requestedCompletionDate: form.requestedCompletionDate || null,
@@ -68,11 +111,11 @@ export function TargetDateForm({ project, readOnly = false }: { project: Project
         <>
           <div className="form-grid">
             <label>Requested completion date
-              <input type="date" value={form.requestedCompletionDate}
+              <input type="date" data-copilot-field="requestedCompletionDate" ref={formRef as any} value={form.requestedCompletionDate}
                 onChange={(e) => setForm({ ...form, requestedCompletionDate: e.target.value })} />
             </label>
             <label>How important is this date?
-              <select value={form.datePriority} onChange={(e) => setForm({ ...form, datePriority: e.target.value as DatePriority })}>
+              <select data-copilot-field="datePriority" value={form.datePriority} onChange={(e) => setForm({ ...form, datePriority: e.target.value as DatePriority })}>
                 {priorities.map((p) => <option key={p} value={p}>{datePriorityLabels[p]}</option>)}
               </select>
             </label>
@@ -85,12 +128,12 @@ export function TargetDateForm({ project, readOnly = false }: { project: Project
             </label>
             {form.partialDeliveryOk ? (
               <label>Date needed for the first phase
-                <input type="date" value={form.phaseOneDate}
+                <input type="date" data-copilot-field="phaseOneDate" value={form.phaseOneDate}
                   onChange={(e) => setForm({ ...form, phaseOneDate: e.target.value })} />
               </label>
             ) : null}
             <label className="span-2">Why is this date needed?
-              <textarea placeholder="Campaign launch, event, contract deadline…" value={form.dateReason}
+              <textarea data-copilot-field="dateReason" placeholder="Campaign launch, event, contract deadline…" value={form.dateReason}
                 onChange={(e) => setForm({ ...form, dateReason: e.target.value })} />
             </label>
           </div>
