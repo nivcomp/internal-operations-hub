@@ -2,9 +2,10 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from "react";
 import {
-  cancelCopilotAction, clearCopilotThread, confirmCopilotAction, loadCopilotHistory,
+  cancelCopilotAction, cancelOperatorActions, clearCopilotThread, confirmCopilotAction,
+  confirmOperatorActions, loadCopilotHistory, loadOperatorQueue, retryOperatorActions,
   saveCopilotPreferences, sendCopilotMessage, synthesizeSpeech, transcribeAudio,
-  type CopilotChip, type CopilotMessage, type CopilotPendingAction,
+  type CopilotChip, type CopilotMessage, type CopilotOperatorAction, type CopilotPendingAction,
   type CopilotScreenHint, type CopilotUsage,
 } from "../services/copilotApi";
 import { playBase64Audio, startRecording, stopSpeech, type Recorder } from "../lib/voice";
@@ -19,6 +20,13 @@ type CopilotApi = {
   label: string;
   messages: CopilotMessage[];
   pendingActions: CopilotPendingAction[];
+  operatorMode: boolean;
+  operatorActions: CopilotOperatorAction[];
+  operatorBusy: boolean;
+  confirmOperator: (ids: string[]) => Promise<void>;
+  retryOperator: (ids: string[]) => Promise<void>;
+  cancelOperator: (ids: string[]) => Promise<void>;
+  refreshOperatorQueue: () => Promise<void>;
   usage: CopilotUsage | null;
   loading: boolean;
   sending: boolean;
@@ -65,6 +73,9 @@ export function CopilotProvider({
   const [label, setLabel] = useState("Helping you in the workspace");
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [pendingActions, setPendingActions] = useState<CopilotPendingAction[]>([]);
+  const [operatorMode, setOperatorMode] = useState(false);
+  const [operatorActions, setOperatorActions] = useState<CopilotOperatorAction[]>([]);
+  const [operatorBusy, setOperatorBusy] = useState(false);
   const [usage, setUsage] = useState<CopilotUsage | null>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -132,6 +143,8 @@ export function CopilotProvider({
         setLabel(result.label);
         setMessages(result.messages);
         setUsage(result.usage);
+        setOperatorMode(result.operatorMode === true);
+        setOperatorActions(result.operatorActions ?? []);
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message);
@@ -174,6 +187,10 @@ export function CopilotProvider({
         result.userMessage, result.assistantMessage,
       ]);
       setPendingActions(result.pendingActions ?? []);
+      if (result.operatorMode) setOperatorMode(true);
+      if (result.operatorActions?.length) {
+        setOperatorActions((current) => [...result.operatorActions!, ...current]);
+      }
       setUsage(result.usage);
       if (voiceReplies || viaVoice) void speak(result.assistantMessage.body);
     } catch (err) {
@@ -240,6 +257,51 @@ export function CopilotProvider({
     setPendingActions((current) => current.filter((action) => action.id !== draftId));
   }, []);
 
+  const refreshOperatorQueue = useCallback(async () => {
+    try {
+      const result = await loadOperatorQueue(hintRef.current);
+      setOperatorActions(result.actions ?? []);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }, []);
+
+  // Multi-step plans execute in order on the server and stop at the first failure.
+  const runOperator = useCallback(async (
+    ids: string[],
+    runner: typeof confirmOperatorActions,
+  ) => {
+    if (!ids.length || operatorBusy) return;
+    setOperatorBusy(true);
+    setError(null);
+    try {
+      const result = await runner(hintRef.current, ids);
+      setOperatorActions(result.actions ?? []);
+      const failed = result.results.find((item) => !item.ok && !item.skipped);
+      if (failed?.error) setError(failed.error);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setOperatorBusy(false);
+    }
+  }, [operatorBusy]);
+
+  const confirmOperator = useCallback((ids: string[]) => runOperator(ids, confirmOperatorActions), [runOperator]);
+  const retryOperator = useCallback((ids: string[]) => runOperator(ids, retryOperatorActions), [runOperator]);
+
+  const cancelOperator = useCallback(async (ids: string[]) => {
+    if (!ids.length) return;
+    try {
+      await cancelOperatorActions(hintRef.current, ids);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    setOperatorActions((current) => current.map((action) =>
+      ids.includes(action.id) && ["proposed", "awaiting_confirmation", "failed"].includes(action.status)
+        ? { ...action, status: "cancelled" as const }
+        : action));
+  }, []);
+
   const clear = useCallback(async () => {
     try {
       await clearCopilotThread(hintRef.current);
@@ -256,11 +318,15 @@ export function CopilotProvider({
 
   const value = useMemo<CopilotApi>(() => ({
     open, setOpen, label, messages, pendingActions, usage, loading, sending, error,
+    operatorMode, operatorActions, operatorBusy, confirmOperator, retryOperator,
+    cancelOperator, refreshOperatorQueue,
     observation, chips, recording, transcribing, speaking, voiceReplies, setVoiceReplies,
     send, startVoice, stopVoice, cancelVoice, stopSpeaking: () => { stopSpeech(); setSpeaking(false); },
     confirm, dismiss, clear, registerScreen, setFormHint, runChip: onChip,
   }), [
     open, label, messages, pendingActions, usage, loading, sending, error, observation, chips,
+    operatorMode, operatorActions, operatorBusy, confirmOperator, retryOperator, cancelOperator,
+    refreshOperatorQueue,
     recording, transcribing, speaking, voiceReplies, setVoiceReplies, send, startVoice, stopVoice,
     cancelVoice, confirm, dismiss, clear, registerScreen, setFormHint, onChip,
   ]);
