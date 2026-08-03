@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { safeRedirect } from "../_shared/publicUrl.ts";
 
 // Server-side access administration for agency admins only.
 // Never exposes the service-role key; every branch re-checks the caller's role.
@@ -71,8 +72,7 @@ Deno.serve(async (req) => {
   let body: Body;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
 
-  const redirectTo =
-    typeof body.redirectTo === "string" && body.redirectTo.startsWith("http") ? body.redirectTo : undefined;
+  const redirectTo = safeRedirect(body.redirectTo, "/reset-password");
 
   // ---- helpers -------------------------------------------------------------
   async function authUsers() {

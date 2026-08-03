@@ -1,5 +1,6 @@
 import { supabase } from "../integrations/supabase/client";
 import { redirectUrl } from "./accessApi";
+import { publicUrl } from "../config/publicUrl";
 
 export type RegistrationRole = "client" | "supplier";
 
@@ -90,7 +91,7 @@ export async function reviewRegistration(input: {
 
 /** Public registration link for a role, e.g. /join/client?c=<code>. */
 export function publicRegistrationLink(settings: RegistrationSettings): string {
-  return `${window.location.origin}/join/${settings.role}?c=${settings.path_code}`;
+  return publicUrl(`/join/${settings.role}?c=${settings.path_code}`);
 }
 
 // ---- unauthenticated calls (used by the public join page) -------------------
@@ -131,7 +132,7 @@ export function submitPublicRegistration(input: {
 }) {
   return callPublic<{ submitted: boolean; emailed: boolean; notice: string }>({
     action: "submit",
-    redirectTo: `${window.location.origin}/`,
+    redirectTo: publicUrl("/"),
     ...input,
   });
 }

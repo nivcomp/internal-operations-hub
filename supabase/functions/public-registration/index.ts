@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { safeRedirect } from "../_shared/publicUrl.ts";
 
 // Public self-registration for clients and suppliers.
 // This function is intentionally reachable without a session, so every branch is
@@ -226,8 +227,7 @@ Deno.serve(async (req) => {
   }).select("id").maybeSingle();
   if (insertError || !inserted) return json({ error: "Could not save your registration." }, 400);
 
-  const redirectTo =
-    typeof body.redirectTo === "string" && body.redirectTo.startsWith("http") ? body.redirectTo : undefined;
+  const redirectTo = safeRedirect(body.redirectTo, "/");
 
   // Confirmation email: a magic link proves the address is real. No profile is
   // created here — provisioning happens in `claim`, after the link is clicked.
