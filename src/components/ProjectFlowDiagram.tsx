@@ -177,9 +177,15 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(rect.width / layout.width, rect.height / layout.height)));
+    // Never shrink below a readable size: a long single-row flow stays legible
+    // and is panned horizontally instead of being scaled to nothing.
+    const raw = Math.min(rect.width / layout.width, rect.height / layout.height);
+    const next = Math.min(1, Math.max(0.6, raw));
     setZoom(next);
-    setOffset({ x: (rect.width - layout.width * next) / 2, y: (rect.height - layout.height * next) / 2 });
+    setOffset({
+      x: Math.min(0, (rect.width - layout.width * next) / 2),
+      y: Math.max(0, (rect.height - layout.height * next) / 2),
+    });
   }, [layout.width, layout.height]);
 
   useEffect(() => { fit(); }, [fit]);

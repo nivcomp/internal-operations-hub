@@ -1427,7 +1427,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .flow-canvas {
   position: relative;
-  height: 460px;
+  height: 420px;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background:
