@@ -194,8 +194,92 @@ async function loadMessages(agent: AgentType, conversationId: string, role: stri
   return data ?? [];
 }
 
+const fmt = (n: number) => Math.round(n).toLocaleString("en-GB");
+
+/** Estimate context, filtered per role. This is the only place estimate data enters a prompt. */
+function estimateContext(agent: AgentType, bundle: Bundle, supplierId: string | null): string[] {
+  const est = bundle.estimate;
+  const lines: string[] = [];
+  if (!est) {
+    lines.push(agent === "agency_control"
+      ? "Estimate: none exists for this project yet."
+      : "Estimate: the agency has not published an estimate for this project yet.");
+    return lines;
+  }
+  const cur = est.currency ?? "GBP";
+  const s = snapshot(est, bundle.items, bundle.allocations, bundle.adjustments);
+
+  if (agent === "project_guide") {
+    if (!est.client_visible) {
+      lines.push("Estimate: the agency is still preparing it. No numbers may be shared yet.");
+      return lines;
+    }
+    lines.push(`Estimate status: ${est.status}`);
+    if (est.final_fixed_price != null && est.approved_by_yaniv) {
+      lines.push(`APPROVED FIXED PRICE: ${cur} ${fmt(Number(est.final_fixed_price))}. Scope: ${est.fixed_price_scope || "(see scope)"}. Exclusions: ${est.fixed_price_exclusions || "(none listed)"}. Payment milestones: ${est.payment_milestones || "(not set)"}.`);
+      lines.push(`Change rule: ${est.change_request_rule || "Anything outside the fixed scope is a change request the agency prices."}`);
+    } else {
+      lines.push(`Estimated budget range (not a final price): ${cur} ${fmt(s.budget.min)} – ${cur} ${fmt(s.budget.max)}`);
+      lines.push(`Estimated effort range: ${s.hours.totalMin}–${s.hours.totalMax} hours`);
+    }
+    if (est.show_hourly_rate_to_client) lines.push(`Client hourly rate used: ${cur} ${est.client_calculation_rate}/hour`);
+    if (est.delivery_range_label) lines.push(`Indicative delivery: ${est.delivery_range_label}`);
+    else {
+      const weeks = calendarWeeks(s.hours.totalMin, s.hours.totalMax, 20);
+      lines.push(`Indicative delivery: about ${weeks.min}–${weeks.max} weeks of elapsed time`);
+    }
+    if (est.validity_date) lines.push(`Estimate valid until: ${est.validity_date}`);
+    for (const item of bundle.items.filter((i) => i.client_visible)) {
+      const unit = perUnitHours(item);
+      lines.push(`Client-visible item${item.client_optional ? " (OPTIONAL)" : ""}: "${item.client_visible_label || item.title}" — ${item.client_visible_description || item.description}. Effort ${round(unit.min)}–${round(unit.max)} hrs per unit, quantity ${item.quantity}${item.client_optional ? `, max quantity ${item.max_quantity}, group ${item.option_group || "-"}, tier ${item.option_tier}` : ""}. Uncertainty driver: ${item.risk_notes || "standard"}.`);
+    }
+    for (const sc of bundle.scenarios) {
+      lines.push(`Saved scenario "${sc.name}": ${cur} ${fmt(Number(sc.estimated_budget_min))}–${fmt(Number(sc.estimated_budget_max))}, ${sc.estimated_hours_min}–${sc.estimated_hours_max} hrs. Notes: ${sc.client_notes}`);
+    }
+    lines.push("Supplier cost, agency margin and internal cost are deliberately excluded and must never be stated or estimated.");
+    return lines;
+  }
+
+  if (agent === "work_assistant") {
+    const mine = bundle.items.filter((i) => i.supplier_id === supplierId);
+    lines.push(`Estimate status: ${est.status}. Work items assigned to you: ${mine.length}.`);
+    for (const item of mine) {
+      const review = bundle.reviews.find((r) => r.item_id === item.id && r.supplier_id === supplierId);
+      lines.push(`Assigned estimate item "${item.title}" [${item.project_phase}] — ${item.description}. Agency estimate ${item.estimated_hours_min}–${item.estimated_hours_max} hrs (complexity ${item.complexity_level}, quantity ${item.quantity}). Dependencies: ${item.dependency_notes || "none stated"}. Risk: ${item.risk_notes || "none stated"}. Acceptance: ${item.acceptance_criteria || "not defined"}. Review status: ${review ? `${review.status}/${review.supplier_decision || "no decision"}${review.suggested_hours_max != null ? ` (you suggested ${review.suggested_hours_min}–${review.suggested_hours_max} hrs)` : ""}` : "not requested yet"}.`);
+    }
+    lines.push("Client budget, client hourly rate, agency margin and total project price are deliberately excluded and must never be stated or estimated.");
+    return lines;
+  }
+
+  // agency_control — full internal view
+  lines.push(`Estimate v${est.version} (${est.status}), currency ${cur}, client_visible=${est.client_visible}, approved_by_yaniv=${est.approved_by_yaniv}`);
+  lines.push(`Settings: client rate ${est.client_calculation_rate}/h, Yaniv internal cost ${est.yaniv_internal_hourly_cost}/h, external costs ${est.external_costs}, target margin ${est.target_margin_percent}%, buffers risk ${est.risk_buffer_percent}% / management ${est.management_buffer_percent}% / testing ${est.testing_buffer_percent}% / contingency ${est.contingency_percent}%, rounding ${est.estimate_rounding_increment}`);
+  lines.push(`Computed: effort ${s.hours.totalMin}–${s.hours.totalMax} hrs (direct ${s.hours.directMin}–${s.hours.directMax}), client budget ${cur} ${fmt(s.budget.min)}–${fmt(s.budget.max)}, internal cost ${cur} ${fmt(s.internal.min)}–${fmt(s.internal.max)} (supplier ${fmt(s.internal.supplierMax)}, Yaniv ${fmt(s.internal.yanivMax)}, external ${fmt(s.internal.external)}), recommended fixed price ${cur} ${fmt(s.recommended)}, current expected margin ${s.margin}% vs target ${est.target_margin_percent}%`);
+  if (est.final_fixed_price != null) lines.push(`Final fixed price: ${cur} ${fmt(Number(est.final_fixed_price))}`);
+  if (s.hours.unassignedMax > 0) lines.push(`Unassigned non-Yaniv effort: ${s.hours.unassignedMin}–${s.hours.unassignedMax} hrs (no supplier chosen — internal cost may be understated).`);
+  for (const item of bundle.items) {
+    lines.push(`Estimate item id=${item.id} "${item.title}" [${item.project_phase}] role=${item.responsible_role} supplier=${item.supplier_id ?? "unassigned"} base ${item.base_hours}h ×${item.quantity} complexity ${item.complexity_level}(${item.complexity_multiplier}) uncertainty ${item.uncertainty_multiplier} integration ${item.integration_multiplier} => ${item.estimated_hours_min}–${item.estimated_hours_max} hrs. client_visible=${item.client_visible} optional=${item.client_optional} tier=${item.option_tier} ai_generated=${item.ai_generated}. Risk: ${item.risk_notes || "-"}. Dependencies: ${item.dependency_notes || "-"}.`);
+  }
+  for (const a of bundle.allocations) {
+    lines.push(`Role allocation ${a.role}${a.supplier_id ? ` (supplier ${a.supplier_id})` : ""}: ${a.estimated_hours_min}–${a.estimated_hours_max} hrs at internal ${a.internal_hourly_cost}/h${a.fixed_internal_cost != null ? ` fixed ${a.fixed_internal_cost}` : ""} => ${fmt(Number(a.calculated_internal_cost_min))}–${fmt(Number(a.calculated_internal_cost_max))}`);
+  }
+  for (const adj of bundle.adjustments) {
+    lines.push(`Adjustment "${adj.label}" ${adj.kind} ${adj.amount} (client_visible=${adj.client_visible})`);
+  }
+  for (const r of bundle.reviews) {
+    const item = bundle.items.find((i) => i.id === r.item_id);
+    lines.push(`Supplier review id=${r.id} for "${item?.title ?? r.item_id}": ${r.status}/${r.supplier_decision || "no decision"}${r.suggested_hours_max != null ? ` suggested ${r.suggested_hours_min}–${r.suggested_hours_max} hrs` : ""}${r.fixed_quote ? ` fixed quote ${r.fixed_quote}` : ""}. Assumptions: ${r.assumptions || "-"}. Missing info: ${r.missing_information || "-"}. Risk: ${r.delivery_risk || "-"}.`);
+  }
+  for (const sc of bundle.scenarios) {
+    lines.push(`Client scenario "${sc.name}": ${sc.estimated_hours_min}–${sc.estimated_hours_max} hrs, ${cur} ${fmt(Number(sc.estimated_budget_min))}–${fmt(Number(sc.estimated_budget_max))}${sc.is_promoted ? " (promoted)" : ""}. Client notes: ${sc.client_notes}`);
+  }
+  return lines;
+}
+
+const round = (n: number) => Math.round(n * 10) / 10;
+
 /** Role-safe project context. Pricing separation is enforced here, server-side. */
-async function buildContext(agent: AgentType, project: any, supplierId: string | null) {
+async function buildContext(agent: AgentType, project: any, supplierId: string | null, bundle: Bundle) {
   const lines: string[] = [
     `Project: ${project.name}`,
     `Status: ${project.status}`,
@@ -261,6 +345,9 @@ async function buildContext(agent: AgentType, project: any, supplierId: string |
     lines.push(`Work approved and funded: ${project.payment_gate_status !== "blocked" ? "yes" : "not yet"}`);
     lines.push("Client price, client hourly rate, agency margin and internal client notes are deliberately not included and must never be stated.");
   }
+
+  lines.push("--- ESTIMATE ---");
+  lines.push(...estimateContext(agent, bundle, supplierId));
 
   return lines.join("\n");
 }
