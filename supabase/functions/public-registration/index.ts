@@ -168,15 +168,15 @@ Deno.serve(async (req) => {
     return json({ open: true, role, introText: settings?.intro_text ?? "" });
   }
 
-  if (action !== "submit") return json({ error: "Unknown action." }, 400);
+  if (action !== "submit" && action !== "register") return json({ error: "Unknown action." }, 400);
   if (!linkOpen) return json({ error: "This registration link is closed." }, 403);
 
   // ---- bot and abuse protection ---------------------------------------------
   if (clean(body.website, 200)) {
     await audit("registration_blocked", { reason: "honeypot" });
-    return json({ ok: true, submitted: true }); // silent for bots
+    return json({ ok: true, status: "ready" }); // silent for bots
   }
-  if (typeof body.elapsedMs === "number" && body.elapsedMs < 2500) {
+  if (typeof body.elapsedMs === "number" && body.elapsedMs < 2000) {
     await audit("registration_blocked", { reason: "too_fast" });
     return json({ error: "Please take a moment and try again." }, 429);
   }
@@ -186,10 +186,13 @@ Deno.serve(async (req) => {
   const company = clean(body.company, 160);
   const phone = clean(body.phone, 40);
   const message = clean(body.message, 1000);
+  const language = body.language === "he" ? "he" : "en";
+  const timezone = clean(body.timezone, 80);
 
   if (!EMAIL_RE.test(email)) return json({ error: "Please enter a valid email address." }, 400);
   if (contactName.length < 2) return json({ error: "Please enter your name." }, 400);
   if (role === "client" && company.length < 2) return json({ error: "Please enter your company name." }, 400);
+  if (body.consent !== true) return json({ error: "Please accept the privacy terms." }, 400);
 
   const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -197,7 +200,7 @@ Deno.serve(async (req) => {
   const { count: perIp } = await admin
     .from("public_registrations").select("id", { count: "exact", head: true })
     .eq("ip_hash", ipHash).gte("created_at", hourAgo);
-  if ((perIp ?? 0) >= 3) {
+  if ((perIp ?? 0) >= 5) {
     await audit("registration_throttled", { reason: "ip_hourly" }, { email });
     return json({ error: "Too many attempts from this device. Please try again later." }, 429);
   }
@@ -210,30 +213,7 @@ Deno.serve(async (req) => {
     return json({ error: "This link has reached today's limit. Please try again tomorrow." }, 429);
   }
 
-  const { data: duplicate } = await admin
-    .from("public_registrations").select("id, status")
-    .ilike("email", email).in("status", ["awaiting_confirmation", "confirmed", "converted"]).maybeSingle();
-  if (duplicate) {
-    await audit("registration_duplicate", {}, { email, registration_id: duplicate.id });
-    return json({
-      ok: true, submitted: true, duplicate: true,
-      notice: "We already have a registration for this email. Check your inbox for the confirmation link.",
-    });
-  }
-
-  const { data: inserted, error: insertError } = await admin.from("public_registrations").insert({
-    role, company, contact_name: contactName, email, phone, message,
-    ip_hash: ipHash, user_agent: userAgent, status: "awaiting_confirmation",
-  }).select("id").maybeSingle();
-  if (insertError || !inserted) return json({ error: "Could not save your registration." }, 400);
-
-  const redirectTo = safeRedirect(body.redirectTo, "/");
-
-  // ---- immediate access for a brand-new email address --------------------------
-  // A person who is not already known to the system is let straight in so they can
-  // start with the assistant. This never grants access to an existing account:
-  // if the address already has a login, we fall back to the emailed link below.
-  const anonForSignIn = createClient(SUPABASE_URL, ANON_KEY);
+  // ---- an address that already has a login never registers twice --------------
   let existingUserId: string | null = null;
   {
     let page = 1;
@@ -247,102 +227,36 @@ Deno.serve(async (req) => {
       page += 1;
     }
   }
-
-  if (!existingUserId) {
-    // Creating the login and its one-time entry token in a single call. The
-    // password is random and never shared: the person enters through the token
-    // and can set their own password later from the account screen.
-    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-      type: "signup",
-      email,
-      password: crypto.randomUUID(),
-      options: { redirectTo },
-    });
-    const userId = linkData?.user?.id ?? null;
-    const tokenHash = (linkData?.properties?.hashed_token as string | undefined) ?? null;
-    if (linkError) console.error("[public-registration] generateLink failed", linkError.message);
-
-    if (!linkError && userId && tokenHash) {
-      let clientId: string | null = null;
-      let supplierId: string | null = null;
-
-      if (role === "client") {
-        const { data: created } = await admin.from("clients").insert({
-          name: contactName,
-          company: company || contactName,
-          email,
-          phone: phone || null,
-          status: "lead",
-          notes: "Self-registered through the public client link.",
-        }).select("id").maybeSingle();
-        clientId = created?.id ?? null;
-      } else {
-        const { data: created } = await admin.from("suppliers").insert({
-          name: contactName,
-          email,
-          phone: phone || null,
-          status: "pending_review",
-        }).select("id").maybeSingle();
-        supplierId = created?.id ?? null;
-      }
-
-      const { error: profileError } = await admin.from("profiles").upsert({
-        id: userId,
-        email,
-        full_name: contactName,
-        role,
-        client_id: clientId,
-        supplier_id: supplierId,
-        is_active: true,
-      });
-      if (profileError) console.error("[public-registration] profile upsert failed", profileError.message);
-
-      if (!profileError) {
-        const now = new Date().toISOString();
-        await admin.from("public_registrations").update({
-          status: "converted",
-          confirmed_at: now,
-          converted_at: now,
-          profile_id: userId,
-          client_id: clientId,
-          supplier_id: supplierId,
-          seen_by_admin: false,
-        }).eq("id", inserted.id);
-
-        await audit("registration_submitted", { immediateAccess: true }, {
-          email, registration_id: inserted.id,
-        });
-
-        return json({
-          ok: true,
-          submitted: true,
-          immediateAccess: true,
-          tokenHash,
-          notice: "You're in — let's get started.",
-        });
-      }
-
-      // Provisioning did not complete: remove the half-created login so the
-      // emailed-link path below stays the single way in.
-      await admin.auth.admin.deleteUser(userId);
-    }
+  if (existingUserId) {
+    await audit("registration_duplicate", {}, { email });
+    return json({ ok: true, status: "email_exists" });
   }
 
-  // Confirmation email: a magic link proves the address is real. No profile is
-  // created here — provisioning happens in `claim`, after the link is clicked.
-  const { error: otpError } = await anonForSignIn.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
-  });
+  // The intake row is the only thing stored here. The password is created by
+  // Supabase Auth from the browser and never reaches this function.
+  const { data: existingRow } = await admin
+    .from("public_registrations").select("id")
+    .ilike("email", email).in("status", ["awaiting_confirmation", "confirmed"])
+    .order("created_at", { ascending: false }).maybeSingle();
 
-  await audit("registration_submitted", { emailed: !otpError }, { email, registration_id: inserted.id });
+  const payload = {
+    role, company, contact_name: contactName, email, phone, message,
+    preferred_language: language, timezone, consent_at: new Date().toISOString(),
+    ip_hash: ipHash, user_agent: userAgent, status: "awaiting_confirmation",
+    source: "public_registration",
+  };
 
-  return json({
-    ok: true,
-    submitted: true,
-    emailed: !otpError,
-    notice: otpError
-      ? "Your details were received. We will be in touch shortly."
-      : "Check your inbox — click the confirmation link to continue.",
-  });
+  let registrationId = existingRow?.id ?? null;
+  if (registrationId) {
+    await admin.from("public_registrations").update(payload).eq("id", registrationId);
+  } else {
+    const { data: inserted, error: insertError } = await admin
+      .from("public_registrations").insert(payload).select("id").maybeSingle();
+    if (insertError || !inserted) return json({ error: "Could not save your registration." }, 400);
+    registrationId = inserted.id;
+  }
+
+  await audit("registration_submitted", { language }, { email, registration_id: registrationId });
+
+  return json({ ok: true, status: "ready", registrationId });
 });
