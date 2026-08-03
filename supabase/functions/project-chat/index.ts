@@ -4,7 +4,7 @@ import {
   ACTION_SPECS, applyAction, loadBundle, validateAction,
   type ActionKind, type Bundle, type Ctx,
 } from "./actions.ts";
-import { calendarWeeks, computeHours, perUnitHours, snapshot } from "./estimation.ts";
+import { calendarWeeks, perUnitHours, snapshot } from "./estimation.ts";
 
 type AgentType = "project_guide" | "agency_control" | "work_assistant";
 
