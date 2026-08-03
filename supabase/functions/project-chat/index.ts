@@ -709,20 +709,21 @@ Deno.serve(async (req) => {
       });
     }
     if (spam.isSpam) {
-      await admin.from("ai_usage_limits").insert({
-        scope_type: "profile", scope_id: profile.id, is_paused: true,
+      const pausePatch = {
+        is_paused: true,
         paused_reason: "Automatic pause after repeated identical or unrelated prompts.",
         paused_until: new Date(Date.now() + 60 * 60_000).toISOString(),
-        note: "Created automatically by the AI guard.",
-      }).select("id").maybeSingle().then(async ({ error }: any) => {
-        if (error) {
-          await admin.from("ai_usage_limits").update({
-            is_paused: true,
-            paused_reason: "Automatic pause after repeated identical or unrelated prompts.",
-            paused_until: new Date(Date.now() + 60 * 60_000).toISOString(),
-          }).eq("scope_type", "profile").eq("scope_id", profile.id);
-        }
-      });
+      };
+      const { data: existingLimit } = await admin.from("ai_usage_limits")
+        .select("id").eq("scope_type", "profile").eq("scope_id", profile.id).maybeSingle();
+      if (existingLimit) {
+        await admin.from("ai_usage_limits").update(pausePatch).eq("id", existingLimit.id);
+      } else {
+        await admin.from("ai_usage_limits").insert({
+          scope_type: "profile", scope_id: profile.id, ...pausePatch,
+          note: "Created automatically by the AI guard.",
+        });
+      }
       await raiseAlert(admin, {
         alert_type: "repeated_spam", severity: "critical", profile_id: profile.id, project_id: projectId,
         title: "AI access paused automatically",
