@@ -40,6 +40,10 @@ import {
   updateTimeEntryStatusRow,
 } from "../services/api";
 import { currency, getProjectName, getSupplierName } from "../lib/domainHelpers";
+import {
+  fetchEstimateSummaries, fetchProjectSchedules, saveProjectScheduleRow, type EstimateSummary,
+} from "../services/scheduleApi";
+import type { ProjectSchedule } from "../lib/scheduling";
 import type {
   Approval,
   ChangeRequest,
@@ -115,6 +119,8 @@ export type AppDataValue = {
   scopeItems: ScopeItem[];
   projectPricing: ProjectPricing[];
   phasePricing: PhasePricing[];
+  projectSchedules: ProjectSchedule[];
+  estimateSummaries: EstimateSummary[];
   approvals: Approval[];
   changeRequests: ChangeRequest[];
   timeEntries: TimeEntry[];
@@ -144,6 +150,8 @@ export type AppDataValue = {
     changeRequestId: string,
     status: "priced" | "client_approved" | "declined",
   ) => Promise<void>;
+  saveProjectSchedule: (projectId: string, patch: Partial<ProjectSchedule>) => Promise<ProjectSchedule>;
+  refreshCommercials: () => Promise<void>;
 } & MutationHelpers;
 
 // Mutation keys — stable strings used to look up pending/error/success state
@@ -164,6 +172,7 @@ export const MutationKeys = {
   markPaymentReceived: (id: string) => `payment:receive:${id}`,
   updateProjectSupplierAssignment: (projectId: string, supplierId: string) =>
     `assignment:${projectId}:${supplierId}`,
+  saveProjectSchedule: (projectId: string) => `schedule:save:${projectId}`,
 } as const;
 
 const AppDataContext = createContext<AppDataValue | null>(null);
@@ -201,6 +210,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [decisionLogs, setDecisionLogs] = useState<DecisionLog[]>([]);
   const [fileLinks, setFileLinks] = useState<FileLink[]>([]);
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
+  const [projectSchedules, setProjectSchedules] = useState<ProjectSchedule[]>([]);
+  const [estimateSummaries, setEstimateSummaries] = useState<EstimateSummary[]>([]);
 
   // Mutation state (per-key)
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -293,6 +304,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setDecisionLogs(dl);
       setFileLinks(fl);
       setActivityEntries(al);
+      try {
+        const [sched, estSummaries] = await Promise.all([fetchProjectSchedules(), fetchEstimateSummaries()]);
+        setProjectSchedules(sched);
+        setEstimateSummaries(estSummaries);
+      } catch (err) {
+        // Commercial rollups are additive; never block the operational data load.
+        console.error("[AppData] commercial rollup load failed", err);
+      }
       setStatus("ready");
     } catch (err) {
       console.error("[AppData] load failed", err);
@@ -565,17 +584,42 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   }, [runAction, changeRequests, recordActivity]);
 
+  const refreshCommercials = useCallback(async () => {
+    try {
+      const [sched, estSummaries] = await Promise.all([fetchProjectSchedules(), fetchEstimateSummaries()]);
+      setProjectSchedules(sched);
+      setEstimateSummaries(estSummaries);
+    } catch (err) {
+      console.error("[AppData] commercial refresh failed", err);
+    }
+  }, []);
+
+  const saveProjectSchedule = useCallback((projectId: string, patch: Partial<ProjectSchedule>) => {
+    return runAction(MutationKeys.saveProjectSchedule(projectId), "Schedule saved.", async () => {
+      const persisted = await saveProjectScheduleRow(projectId, patch);
+      setProjectSchedules((current) => {
+        const exists = current.some((row) => row.projectId === projectId);
+        return exists
+          ? current.map((row) => (row.projectId === projectId ? persisted : row))
+          : [...current, persisted];
+      });
+      return persisted;
+    });
+  }, [runAction]);
+
   const value: AppDataValue = {
     status, error, reload: () => void loadAll(),
     clients, suppliers, supplierProfiles, supplierSkillSuggestions,
     projects, projectBriefs, scopes, scopeItems, projectPricing, phasePricing,
     approvals, changeRequests, timeEntries, clientPayments, supplierPayments,
     hourBanks, projectMessages, decisionLogs, fileLinks, activityEntries,
+    projectSchedules, estimateSummaries,
     createClient, createSupplier, createProject, createChangeRequest,
     submitClientChangeRequest, createTimeEntry, updateTimeEntry,
     updateApprovalStatus, createProjectMessage,
     createClientPayment, markPaymentReceived, updateProjectSupplierAssignment,
     updateTimeEntryStatus, updateChangeRequestStatus,
+    saveProjectSchedule, refreshCommercials,
     isPending, getError, getSuccess, clearMutationState,
   };
 
