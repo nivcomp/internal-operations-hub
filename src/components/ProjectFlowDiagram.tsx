@@ -42,9 +42,12 @@ export function layoutGraph(graph: FlowGraph, hiddenParents: Set<string>): Layou
   });
 
   const index = new Map(placed.map((n) => [n.id, n]));
-  const edges = graph.edges
-    .map((e) => ({ from: index.get(e.from), to: index.get(e.to), label: e.label }))
-    .filter((e): e is { from: Placed; to: Placed; label?: string } => Boolean(e.from && e.to));
+  const edges: Layout["edges"] = [];
+  for (const edge of graph.edges) {
+    const from = index.get(edge.from);
+    const to = index.get(edge.to);
+    if (from && to) edges.push({ from, to, label: edge.label });
+  }
 
   return {
     nodes: placed,
