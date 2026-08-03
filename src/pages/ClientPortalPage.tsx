@@ -154,9 +154,6 @@ export function ClientPortalPage({
         suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Summarise what we agreed so far"]}
       />
 
-      <section className="card">
-        <h2>Approvals</h2>
-      </section>
       <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
       <section className="card">
         <h2>Approvals</h2>
