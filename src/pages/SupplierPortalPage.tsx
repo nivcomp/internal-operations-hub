@@ -130,15 +130,19 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
           <p className="muted-text">You have no assigned projects yet. The agency will assign work here.</p>
         ) : (
           <table>
-            <thead><tr><th>Project</th><th>Status</th><th>Can I start?</th></tr></thead>
+            <thead><tr><th>Project</th><th>Status</th><th>Can I start?</th><th>Agency delivery target</th></tr></thead>
             <tbody>
-              {assigned.map((project) => (
+              {assigned.map((project) => {
+                const schedule = projectSchedules.find((s) => s.projectId === project.id);
+                return (
                 <tr key={project.id}>
                   <td>{project.name}</td>
                   <td><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></td>
                   <td>{canWorkStart(project, scopes) ? "Yes — approved and funded" : "Not yet — waiting on the agency"}</td>
+                  <td>{formatDate(schedule?.approvedDeliveryDate ?? schedule?.recommendedDeliveryEnd ?? null)}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
