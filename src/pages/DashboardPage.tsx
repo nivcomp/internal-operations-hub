@@ -5,6 +5,8 @@ import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAppData, type ActivityEntry } from "../context/AppDataContext";
 import { canWorkStart, currency, getClient, marginAmount, statusLabels } from "../lib/domainHelpers";
+import { buildProjectCommercials, needsScheduleAttention } from "../lib/projectCommercials";
+import { formatDate, riskTone, targetDateStatusLabels } from "../lib/scheduling";
 import type { ChangeRequest, Client, Project, TimeEntry } from "../types/domain";
 import type { ViewKey } from "../views";
 
@@ -27,7 +29,20 @@ export function DashboardPage({
   onNavigate,
   onProjectSelect,
 }: DashboardPageProps) {
-  const { scopes, projectPricing, supplierPayments } = useAppData();
+  const {
+    scopes, projectPricing, supplierPayments, projectSchedules, estimateSummaries, supplierProfiles,
+  } = useAppData();
+
+  const scheduleRows = useMemo(() => projects.map((project) => ({
+    project,
+    commercials: buildProjectCommercials({
+      project,
+      schedule: projectSchedules.find((s) => s.projectId === project.id),
+      summary: estimateSummaries.find((s) => s.projectId === project.id),
+      supplierProfiles,
+    }),
+  })).filter((row) => needsScheduleAttention(row.commercials, row.project)),
+  [projects, projectSchedules, estimateSummaries, supplierProfiles]);
   const metrics = useMemo(() => {
     const totals = marginAmount(projectPricing);
     return {
@@ -63,6 +78,36 @@ export function DashboardPage({
         <StatCard label="Supplier time waiting" value={metrics.supplierTimeWaiting} tone={metrics.supplierTimeWaiting > 0 ? "warning" : "default"} />
         <StatCard label="Active projects" value={metrics.activeProjects} tone={metrics.activeProjects > 0 ? "success" : "default"} />
         <StatCard label="Open change requests" value={metrics.openChanges} />
+      </section>
+
+      <section className="card dashboard-attention">
+        <h2>Projects requiring schedule attention</h2>
+        {scheduleRows.length === 0 ? (
+          <p className="muted-text">Every active project has a reviewed date and a client calculation rate.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Requested date</th>
+                <th>Recommended delivery</th>
+                <th>Date status</th>
+                <th>Next action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scheduleRows.map(({ project, commercials }) => (
+                <tr key={project.id} className="clickable-row" onClick={() => onProjectSelect(project.id)}>
+                  <td>{project.name}</td>
+                  <td>{formatDate(commercials.schedule.requestedCompletionDate)}</td>
+                  <td>{formatDate(commercials.feasibility.recommendedEnd)}</td>
+                  <td><StatusBadge label={targetDateStatusLabels[commercials.feasibility.status]} tone={riskTone(commercials.feasibility.status)} /></td>
+                  <td>{commercials.nextAction}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       <section className="card dashboard-attention">
