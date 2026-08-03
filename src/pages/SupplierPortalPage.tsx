@@ -5,6 +5,7 @@ import ProjectInsights from "../components/ProjectInsights";
 import { StatusBadge } from "../components/StatusBadge";
 import { SupplierEstimateReview } from "../components/estimation/SupplierEstimateReview";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
+import { formatDate } from "../lib/scheduling";
 import { canWorkStart, formatRate, getProjectName, statusLabels } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
 
