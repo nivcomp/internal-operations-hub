@@ -5,12 +5,34 @@
  * join routes must still render when auth configuration is unavailable in a
  * static deployment, instead of crashing before React mounts.
  */
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
 export type RegistrationRole = "client" | "supplier";
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "jvluliwmugamojdqstha";
 const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bHVsaXdtdWdhbW9qZHFzdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzMTA5NjcsImV4cCI6MjA5OTg4Njk2N30.YoCrQU5j_K45TN4XMBJk4R-Ssha6-W53mOh9-VTXBuI";
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)
+  || `https://${PROJECT_ID}.supabase.co`;
 const FUNCTIONS_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/public-registration`;
+
+/**
+ * Dedicated auth client for the public join screens.
+ *
+ * The shared app client is built purely from build-time environment variables,
+ * so a bundle published without them throws "supabaseUrl is required" before any
+ * request is sent. This client always has a working address, and it writes the
+ * session to the same storage key, so the app picks the session up as usual.
+ */
+let authClient: SupabaseClient | null = null;
+function getAuthClient(): SupabaseClient {
+  if (!authClient) {
+    authClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+      auth: { storage: localStorage, persistSession: true, autoRefreshToken: true },
+    });
+  }
+  return authClient;
+}
 
 async function callPublic<T>(payload: Record<string, unknown>): Promise<T> {
   const response = await fetch(FUNCTIONS_URL, {
