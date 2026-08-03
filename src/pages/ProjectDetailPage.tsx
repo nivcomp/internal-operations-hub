@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
+import { EstimateControl } from "../components/estimation/EstimateControl";
 import {
   MutationKeys,
   useAppData,
