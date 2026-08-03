@@ -5,6 +5,7 @@ import ProjectInsights from "../components/ProjectInsights";
 import { StatusBadge } from "../components/StatusBadge";
 import { BudgetSimulator } from "../components/estimation/BudgetSimulator";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
+import { TargetDateForm } from "../components/project/TargetDateForm";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
