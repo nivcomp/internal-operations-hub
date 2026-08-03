@@ -923,6 +923,86 @@ export type Database = {
           },
         ]
       }
+      copilot_messages: {
+        Row: {
+          body: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          payload: Json
+          profile_id: string
+          project_id: string | null
+          scope_key: string
+          sender: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          payload?: Json
+          profile_id: string
+          project_id?: string | null
+          scope_key?: string
+          sender: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          payload?: Json
+          profile_id?: string
+          project_id?: string | null
+          scope_key?: string
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_messages_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copilot_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_state: {
+        Row: {
+          preferences: Json
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          preferences?: Json
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          preferences?: Json
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_state_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decision_logs: {
         Row: {
           created_at: string
