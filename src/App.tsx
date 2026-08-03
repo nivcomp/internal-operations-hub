@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { OnboardingProvider, useOnboarding } from "./context/OnboardingContext";
 import { ClientOnboardingWizard } from "./components/onboarding/ClientOnboardingWizard";
 import { SupplierOnboardingWizard } from "./components/onboarding/SupplierOnboardingWizard";
+import { AiOnboardingWorkspace } from "./components/onboarding/AiOnboardingWorkspace";
 import { AgencyHomePage } from "./pages/home/AgencyHomePage";
 import { ClientHomePage } from "./pages/home/ClientHomePage";
 import { SupplierHomePage } from "./pages/home/SupplierHomePage";
@@ -371,6 +372,7 @@ function OnboardingGate() {
   const { profile } = useAuth();
   const { loading, needsOnboarding, refresh } = useOnboarding();
   const { reload } = useAppData();
+  const [useClassicForm, setUseClassicForm] = useState(false);
 
   async function finishOnboarding() {
     await refresh();
@@ -385,11 +387,19 @@ function OnboardingGate() {
     );
   }
 
-  if (needsOnboarding && profile?.role === "client") {
-    return <ClientOnboardingWizard onDone={() => void finishOnboarding()} />;
-  }
-  if (needsOnboarding && profile?.role === "supplier") {
-    return <SupplierOnboardingWizard onDone={() => void finishOnboarding()} />;
+  if (needsOnboarding && (profile?.role === "client" || profile?.role === "supplier")) {
+    if (useClassicForm) {
+      return profile.role === "client"
+        ? <ClientOnboardingWizard onDone={() => void finishOnboarding()} />
+        : <SupplierOnboardingWizard onDone={() => void finishOnboarding()} />;
+    }
+    return (
+      <AiOnboardingWorkspace
+        role={profile.role}
+        onDone={() => void finishOnboarding()}
+        onUseForm={() => setUseClassicForm(true)}
+      />
+    );
   }
 
   return <AppShell />;
