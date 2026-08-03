@@ -1,6 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { safeRedirect } from "../_shared/publicUrl.ts";
 
 // Public self-registration for clients and suppliers.
 // This function is intentionally reachable without a session, so every branch is
@@ -12,7 +11,7 @@ import { safeRedirect } from "../_shared/publicUrl.ts";
 type Role = "client" | "supplier";
 
 type Body = {
-  action?: "info" | "submit" | "claim";
+  action?: "info" | "submit" | "register" | "claim";
   role?: string;
   code?: string;
   company?: string;
@@ -23,6 +22,9 @@ type Body = {
   website?: string; // honeypot — must stay empty
   elapsedMs?: number;
   redirectTo?: string;
+  language?: string;
+  timezone?: string;
+  consent?: boolean;
 };
 
 const json = (body: unknown, status = 200) =>
