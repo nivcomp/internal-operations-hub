@@ -213,7 +213,7 @@ export function ProjectDetailPage({
           <ProjectInsights projectId={activeProject.id} role="agency_admin" allowModeSwitch />
         </>
       ) : null}
-      {tab === "overview" ? (
+      {tab === "overview" || tab === "money" ? (
         <>
       <section className="detail-grid">
         <article className="card">
@@ -251,7 +251,9 @@ export function ProjectDetailPage({
           ) : null}
         </article>
       </section>
-      {!payment ? (
+        </>
+      ) : null}
+      {tab === "money" && !payment ? (
         <section className="card form-panel">
           <h2>Create payment request</h2>
           <form className="form-grid" onSubmit={handlePaymentSubmit}>
