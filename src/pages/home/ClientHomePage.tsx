@@ -44,8 +44,8 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
         ? { label: "Review the payment request", detail: "Work starts once payment is confirmed.", view: "client-portal" as ViewKey }
         : { label: "Continue project definition", detail: "Yaniv is reviewing your brief. You can add detail any time.", view: "client-portal" as ViewKey };
 
-  const budgetRange = estimate
-    ? `${Math.round(estimate.clientLow ?? 0).toLocaleString()} – ${Math.round(estimate.clientHigh ?? 0).toLocaleString()}`
+  const budgetRange = estimate && estimate.clientVisible
+    ? `${Math.round(estimate.estimatedBudgetMin).toLocaleString()} – ${Math.round(estimate.estimatedBudgetMax).toLocaleString()} ${estimate.currency}`
     : project.budgetSignal || "Being prepared";
 
   return (
@@ -89,7 +89,7 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
         />
       </div>
 
-      <Disclosure summary="More details">
+      <Disclosure title="More details">
         <p>Open the full project view for scope, messages, files and change requests.</p>
         <button type="button" onClick={() => onNavigate("client-portal")}>Open full project view</button>
       </Disclosure>
