@@ -67,8 +67,8 @@ export function ProjectDetailPage({
         <EmptyState
           title="No project selected"
           description="Open a project to inspect its summary, payment gate, scope, suppliers, changes, files and decisions."
-          primaryAction={{ label: "Browse projects", onClick: () => nav.navigate("projects") }}
-          secondaryAction={{ label: "Search (⌘K)", onClick: () => nav.navigate("dashboard") }}
+          action={{ label: "Browse projects", onClick: () => nav.navigate("projects") }}
+          secondaryAction={{ label: "Back to dashboard", onClick: () => nav.navigate("dashboard") }}
         />
       </>
     );
