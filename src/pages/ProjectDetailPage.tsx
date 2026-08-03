@@ -12,6 +12,7 @@ import { TargetDateForm } from "../components/project/TargetDateForm";
 import { buildProjectCommercials } from "../lib/projectCommercials";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Tabs, type TabDef } from "../components/ui/Tabs";
+import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
 import { useNav } from "../context/NavContext";
 import {
   MutationKeys,
