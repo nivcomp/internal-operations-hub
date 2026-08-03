@@ -159,6 +159,7 @@ export function ClientPortalPage({
       <ProjectInsights projectId={project.id} role="client" />
 
       <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
+      <TargetDateForm project={project} readOnly={isPreview} />
       <section className="card">
         <h2>Approvals</h2>
         {approvalsForProject.length === 0 ? (
