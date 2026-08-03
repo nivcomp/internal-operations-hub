@@ -12,10 +12,10 @@ import {
   updateEstimate, updateEstimateItem, updateSupplierReview,
 } from "../../services/estimationApi";
 import {
-import { onEstimationChanged } from "../../lib/estimationEvents";
   complexityLevels, complexityMultipliers, estimateStatusLabels, responsibleRoles, roleLabels,
   type EstimateBundle, type EstimateItem, type ProjectEstimate,
 } from "../../types/estimation";
+import { onEstimationChanged } from "../../lib/estimationEvents";
 
 const emptyBundle: EstimateBundle = { estimates: [], items: [], allocations: [], reviews: [], adjustments: [], scenarios: [] };
 
