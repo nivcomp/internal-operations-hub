@@ -389,7 +389,8 @@ async function callModel(
       input,
       stream: true,
       store: false,
-      max_output_tokens: Math.max(600, Math.min(maxOutputTokens, 8000)),
+      // Reasoning tokens are drawn from the same budget, so a headroom is added.
+      max_output_tokens: Math.max(2500, Math.min(maxOutputTokens + 2000, 10000)),
       reasoning: { effort: "low", summary: "auto" },
     }),
   });
