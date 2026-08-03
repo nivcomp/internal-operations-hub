@@ -2110,3 +2110,32 @@ See `NEXT_TASK.md`.
 - Main changes: new `copilot_operator_actions` queue and `copilot_audit_log` tables; `archived_at` on clients/projects/suppliers; new `supabase/functions/_shared/operator.ts` catalog of 33 typed admin actions with entity resolution, risk classification, dependency-aware delete/archive safety and business-rule checks; agency-wide snapshot in `copilot/context.ts`; operator prompt, queue endpoints (`operator_queue|confirm|cancel|retry`) and deferred multi-step plan resolution in `copilot/index.ts`; Operator Mode badge, risk cards and action queue in `CopilotDock.tsx`.
 - Tests: `pnpm run build` passed; live edge-function tests as agency_admin — cross-project question, client creation + confirmation, Hebrew two-step plan (create project + requested date) executed in order, delete-with-history refusal, `paid_ready_to_start` blocked without approved scope/payment, audit + activity rows verified in the database.
 - Known limitations: scope publication, estimate publishing/fixed price and change-request pricing still run through the existing project-chat proposal pipeline; supplier payments and printable flow-diagram export are not operator actions yet.
+
+### 2026-08-03 — Public registration blank-screen fix
+
+**Work unit**  
+Restore the public client/supplier registration routes on the custom domain.
+
+**Changes**  
+- Reproduced the blank page on `project.stat.ninja/join/supplier` and identified the pre-render crash: `supabaseUrl is required`.
+- Added a public-registration-only API module that does not import or initialize the authenticated app client.
+- Changed the application entry point to dynamically load public join routes separately from the authenticated application bundle.
+- Preserved the canonical production-domain redirect, public-link validation, throttling, honeypot, and daily-limit behavior.
+
+**Tests**  
+- `pnpm run build` passed; Vite emitted a separate `JoinPage` chunk.
+- Playwright loaded `/join/supplier?c=fd6bac99f4a7` at 1280×1800, rendered the complete supplier form, and reported no page errors or failed requests.
+- The repaired build was verified locally; the custom domain continues serving the previous deployment until this change is published.
+
+**Files**  
+- `src/main.tsx`
+- `src/pages/JoinPage.tsx`
+- `src/services/publicRegistrationApi.ts`
+- `NEXT_TASK.md`
+- `WORK_LOG.md`
+
+**Commit**  
+- Not committed: repository Git state is managed by the platform in this environment.
+
+**Next**  
+- Extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing through the existing confirmation pipeline.

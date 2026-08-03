@@ -3,7 +3,7 @@ import {
   checkPublicLink,
   submitPublicRegistration,
   type RegistrationRole,
-} from "../services/registrationApi";
+} from "../services/publicRegistrationApi";
 
 /**
  * Public self-registration page (/join/client, /join/supplier).
