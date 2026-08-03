@@ -5,12 +5,34 @@
  * join routes must still render when auth configuration is unavailable in a
  * static deployment, instead of crashing before React mounts.
  */
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
 export type RegistrationRole = "client" | "supplier";
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "jvluliwmugamojdqstha";
 const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bHVsaXdtdWdhbW9qZHFzdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzMTA5NjcsImV4cCI6MjA5OTg4Njk2N30.YoCrQU5j_K45TN4XMBJk4R-Ssha6-W53mOh9-VTXBuI";
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)
+  || `https://${PROJECT_ID}.supabase.co`;
 const FUNCTIONS_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/public-registration`;
+
+/**
+ * Dedicated auth client for the public join screens.
+ *
+ * The shared app client is built purely from build-time environment variables,
+ * so a bundle published without them throws "supabaseUrl is required" before any
+ * request is sent. This client always has a working address, and it writes the
+ * session to the same storage key, so the app picks the session up as usual.
+ */
+let authClient: SupabaseClient | null = null;
+function getAuthClient(): SupabaseClient {
+  if (!authClient) {
+    authClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+      auth: { storage: localStorage, persistSession: true, autoRefreshToken: true },
+    });
+  }
+  return authClient;
+}
 
 async function callPublic<T>(payload: Record<string, unknown>): Promise<T> {
   const response = await fetch(FUNCTIONS_URL, {
@@ -56,11 +78,7 @@ export function prepareRegistration(input: RegistrationIntake) {
   });
 }
 
-/**
- * Creates the real Auth account with the password the person chose. The
- * authenticated client is imported lazily so the public screen never depends on
- * it while rendering.
- */
+/** Creates the real Auth account with the password the person chose. */
 export async function createAccount(input: {
   email: string;
   password: string;
@@ -68,8 +86,7 @@ export async function createAccount(input: {
   language: "he" | "en";
   redirectTo: string;
 }): Promise<{ signedIn: boolean; needsVerification: boolean; error?: string }> {
-  const { supabase } = await import("../integrations/supabase/client");
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await getAuthClient().auth.signUp({
     email: input.email,
     password: input.password,
     options: {
@@ -77,15 +94,23 @@ export async function createAccount(input: {
       data: { full_name: input.fullName, preferred_language: input.language },
     },
   });
-  if (error) return { signedIn: false, needsVerification: false, error: error.message };
+  if (error) {
+    const he = input.language === "he";
+    const raw = error.message || "";
+    const friendly = /already registered|already exists/i.test(raw)
+      ? (he ? "כתובת המייל הזו כבר רשומה. אפשר להתחבר עם הסיסמה הקיימת." : "This email is already registered — please sign in instead.")
+      : /password/i.test(raw)
+        ? (he ? "הסיסמה חלשה מדי. בחרו סיסמה באורך 8 תווים לפחות." : "That password is too weak — use at least 8 characters.")
+        : (he ? "לא הצלחנו ליצור את החשבון כרגע. נסו שוב בעוד רגע." : "We could not create the account right now. Please try again.");
+    return { signedIn: false, needsVerification: false, error: friendly };
+  }
   if (data.session) return { signedIn: true, needsVerification: false };
   return { signedIn: false, needsVerification: true };
 }
 
 /** Provisions the isolated profile + client/supplier record for the new session. */
 export async function claimAccount(role: RegistrationRole): Promise<boolean> {
-  const { supabase } = await import("../integrations/supabase/client");
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getAuthClient().auth.getSession();
   const token = data.session?.access_token;
   if (!token) return false;
   const response = await fetch(FUNCTIONS_URL, {
@@ -102,8 +127,7 @@ export async function claimAccount(role: RegistrationRole): Promise<boolean> {
 }
 
 export async function resendVerification(email: string, redirectTo: string): Promise<string | null> {
-  const { supabase } = await import("../integrations/supabase/client");
-  const { error } = await supabase.auth.resend({
+  const { error } = await getAuthClient().auth.resend({
     type: "signup",
     email,
     options: { emailRedirectTo: redirectTo },
