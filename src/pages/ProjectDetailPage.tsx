@@ -6,6 +6,10 @@ import ProjectInsights from "../components/ProjectInsights";
 import { ProjectTimeline } from "../components/ProjectTimeline";
 import { StatusBadge } from "../components/StatusBadge";
 import { EstimateControl } from "../components/estimation/EstimateControl";
+import { CommercialSettingsPanel } from "../components/project/CommercialSettingsPanel";
+import { ProjectControlSummary } from "../components/project/ProjectControlSummary";
+import { TargetDateForm } from "../components/project/TargetDateForm";
+import { buildProjectCommercials } from "../lib/projectCommercials";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Tabs, type TabDef } from "../components/ui/Tabs";
 import { useNav } from "../context/NavContext";
@@ -41,7 +45,7 @@ const initialChangeForm: NewChangeRequestInput = { title: "", description: "", a
 const initialTimeForm: NewTimeEntryInput = { supplierId: "", date: new Date().toISOString().slice(0, 10), hours: 1, description: "" };
 const initialPaymentForm: NewClientPaymentInput = { amount: 0, dueDate: "", notes: "" };
 
-type ProjectTab = "overview" | "scope" | "estimate" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "files";
+type ProjectTab = "overview" | "scope" | "estimate" | "commercial" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "files";
 
 export function ProjectDetailPage({
   selectedProjectId, clients, projects, changeRequests, timeEntries, clientPayments,
@@ -50,6 +54,7 @@ export function ProjectDetailPage({
 }: ProjectDetailPageProps) {
   const {
     scopes, scopeItems, projectBriefs, projectPricing, fileLinks, decisionLogs, suppliers, supplierProfiles,
+    projectSchedules, estimateSummaries,
     isPending, getError, getSuccess,
   } = useAppData();
   const [changeForm, setChangeForm] = useState<NewChangeRequestInput>(initialChangeForm);
@@ -166,6 +171,7 @@ export function ProjectDetailPage({
     { key: "overview", label: "Overview" },
     { key: "scope", label: "Scope", badge: items.length || undefined },
     { key: "estimate", label: "Estimate" },
+    { key: "commercial", label: "Commercial & dates" },
     { key: "suppliers", label: "Suppliers", badge: activeProject.assignedSupplierIds.length || undefined, attention: pendingTime > 0 },
     { key: "money", label: "Money", attention: Boolean(payment && payment.status !== "received") },
     { key: "changes", label: "Changes", badge: projectChanges.length || undefined, attention: pendingChanges > 0 },
@@ -193,6 +199,24 @@ export function ProjectDetailPage({
       />
       <PageHeader title={activeProject.name} subtitle={`${client?.company ?? "Unassigned client"} · ${statusLabels[activeProject.status]} · ${ready ? "Ready to start" : "Start blocked"}`} />
       <Tabs tabs={tabs} active={tab} onChange={setTab} ariaLabel="Project workspace sections" />
+      {tab === "overview" || tab === "commercial" ? (
+        <ProjectControlSummary
+          commercials={buildProjectCommercials({
+            project: activeProject,
+            schedule: projectSchedules.find((s) => s.projectId === activeProject.id),
+            summary: estimateSummaries.find((s) => s.projectId === activeProject.id),
+            supplierProfiles,
+          })}
+          assignedSupplierNames={activeProject.assignedSupplierIds.map((id) => getSupplierName(id, suppliers)).join(", ")}
+          onOpenDetails={tab === "overview" ? () => setTab("commercial") : undefined}
+        />
+      ) : null}
+      {tab === "commercial" ? (
+        <>
+          <CommercialSettingsPanel project={activeProject} />
+          <TargetDateForm project={activeProject} readOnly />
+        </>
+      ) : null}
       {tab === "assistant" ? (
         <>
           <ProjectChat
