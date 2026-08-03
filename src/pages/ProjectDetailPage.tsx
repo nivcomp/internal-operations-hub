@@ -1,9 +1,14 @@
 import { type FormEvent, useState } from "react";
+import { DetailNav } from "../components/DetailNav";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
 import ProjectInsights from "../components/ProjectInsights";
+import { ProjectTimeline } from "../components/ProjectTimeline";
 import { StatusBadge } from "../components/StatusBadge";
 import { EstimateControl } from "../components/estimation/EstimateControl";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Tabs, type TabDef } from "../components/ui/Tabs";
+import { useNav } from "../context/NavContext";
 import {
   MutationKeys,
   useAppData,
@@ -36,6 +41,8 @@ const initialChangeForm: NewChangeRequestInput = { title: "", description: "", a
 const initialTimeForm: NewTimeEntryInput = { supplierId: "", date: new Date().toISOString().slice(0, 10), hours: 1, description: "" };
 const initialPaymentForm: NewClientPaymentInput = { amount: 0, dueDate: "", notes: "" };
 
+type ProjectTab = "overview" | "scope" | "estimate" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "files";
+
 export function ProjectDetailPage({
   selectedProjectId, clients, projects, changeRequests, timeEntries, clientPayments,
   onChangeRequestCreate, onChangeRequestStatusChange, onClientPaymentCreate, onPaymentReceived,
@@ -49,16 +56,20 @@ export function ProjectDetailPage({
   const [timeForm, setTimeForm] = useState<NewTimeEntryInput>(initialTimeForm);
   const [paymentForm, setPaymentForm] = useState<NewClientPaymentInput>(initialPaymentForm);
   const [supplierToAssign, setSupplierToAssign] = useState("");
+  const [tab, setTab] = useState<ProjectTab>("overview");
+  const nav = useNav();
   const project = selectedProjectId ? getProjectById(selectedProjectId, projects) : undefined;
 
   if (!project) {
     return (
       <>
         <PageHeader title="Project Detail" subtitle="Select a project from the Projects page or a Client Detail page to open its command center." />
-        <section className="empty-state">
-          <h2>No project selected</h2>
-          <p>Choose a project row to inspect summary, payment gate, scope, suppliers, changes, files, and decisions.</p>
-        </section>
+        <EmptyState
+          title="No project selected"
+          description="Open a project to inspect its summary, payment gate, scope, suppliers, changes, files and decisions."
+          primaryAction={{ label: "Browse projects", onClick: () => nav.navigate("projects") }}
+          secondaryAction={{ label: "Search (⌘K)", onClick: () => nav.navigate("dashboard") }}
+        />
       </>
     );
   }
