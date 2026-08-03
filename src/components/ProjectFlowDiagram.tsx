@@ -183,7 +183,7 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
     const next = Math.min(1, Math.max(0.6, raw));
     setZoom(next);
     setOffset({
-      x: Math.min(0, (rect.width - layout.width * next) / 2),
+      x: layout.width * next > rect.width ? 0 : (rect.width - layout.width * next) / 2,
       y: Math.max(0, (rect.height - layout.height * next) / 2),
     });
   }, [layout.width, layout.height]);
@@ -299,6 +299,7 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
         <div
           ref={containerRef}
           className="flow-canvas"
+          style={{ height: Math.min(460, Math.max(250, layout.height + 40)) }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
