@@ -170,41 +170,41 @@ export function AIUsagePage() {
       <PageHeader
         title="AI usage and alerts"
         subtitle="Cost, token consumption, abuse alerts and the limits that protect the account."
-        actions={<button type="button" className="btn-ghost" onClick={() => void load()} disabled={loading}>Refresh</button>}
+        actions={<button type="button" className="ghost-button" onClick={() => void load()} disabled={loading}>Refresh</button>}
       />
 
-      {error ? <div className="alert alert-danger">{error}</div> : null}
-      {notice ? <div className="alert alert-success">{notice}</div> : null}
-      {loading ? <p className="muted">Loading AI usage…</p> : null}
+      {error ? <div className="form-error">{error}</div> : null}
+      {notice ? <div className="form-success">{notice}</div> : null}
+      {loading ? <p className="muted-text">Loading AI usage…</p> : null}
 
-      <section className="kpi-grid">
-        <article className="kpi"><span className="kpi-label">Messages today</span><strong className="kpi-value">{summary.todayMessages}</strong></article>
-        <article className="kpi"><span className="kpi-label">Messages this month</span><strong className="kpi-value">{summary.monthMessages}</strong></article>
-        <article className="kpi"><span className="kpi-label">Tokens today</span><strong className="kpi-value">{summary.todayTokens.toLocaleString()}</strong></article>
-        <article className="kpi"><span className="kpi-label">Tokens this month</span><strong className="kpi-value">{summary.monthTokens.toLocaleString()}</strong></article>
-        <article className="kpi"><span className="kpi-label">Estimated cost (month)</span><strong className="kpi-value">${summary.monthCost.toFixed(2)}</strong></article>
-        <article className="kpi"><span className="kpi-label">Blocked / off-topic</span><strong className="kpi-value">{summary.rejected} / {summary.unrelated}</strong></article>
+      <section className="stats-grid">
+        <article className="stat-card"><span className="section-eyebrow">Messages today</span><strong className="stat-value">{summary.todayMessages}</strong></article>
+        <article className="stat-card"><span className="section-eyebrow">Messages this month</span><strong className="stat-value">{summary.monthMessages}</strong></article>
+        <article className="stat-card"><span className="section-eyebrow">Tokens today</span><strong className="stat-value">{summary.todayTokens.toLocaleString()}</strong></article>
+        <article className="stat-card"><span className="section-eyebrow">Tokens this month</span><strong className="stat-value">{summary.monthTokens.toLocaleString()}</strong></article>
+        <article className="stat-card"><span className="section-eyebrow">Estimated cost (month)</span><strong className="stat-value">${summary.monthCost.toFixed(2)}</strong></article>
+        <article className="stat-card"><span className="section-eyebrow">Blocked / off-topic</span><strong className="stat-value">{summary.rejected} / {summary.unrelated}</strong></article>
       </section>
 
       <section className="card">
         <h3>Open alerts</h3>
         {openAlerts.length === 0 ? (
-          <p className="muted">No open alerts. Threshold, burst and off-topic events will appear here.</p>
+          <p className="muted-text">No open alerts. Threshold, burst and off-topic events will appear here.</p>
         ) : (
           <table className="data-table">
             <thead><tr><th>Alert</th><th>Severity</th><th>Who</th><th>When</th><th></th></tr></thead>
             <tbody>
               {openAlerts.map((alert) => (
                 <tr key={alert.id}>
-                  <td><strong>{alert.title}</strong><div className="muted small">{alert.detail}</div></td>
+                  <td><strong>{alert.title}</strong><div className="muted-text small">{alert.detail}</div></td>
                   <td><StatusBadge status={alert.severity} tone={severityTone[alert.severity] ?? "info"} /></td>
                   <td className="small">
                     {alert.profile_id ?? "—"}
-                    {alert.project_id ? <div className="muted">{projects.find((p) => p.id === alert.project_id)?.name ?? ""}</div> : null}
+                    {alert.project_id ? <div className="muted-text">{projects.find((p) => p.id === alert.project_id)?.name ?? ""}</div> : null}
                   </td>
                   <td className="small">{new Date(alert.created_at).toLocaleString()}</td>
                   <td>
-                    <button type="button" className="btn-ghost" onClick={() => void ack(alert)} disabled={busy === `ack:${alert.id}`}>
+                    <button type="button" className="ghost-button" onClick={() => void ack(alert)} disabled={busy === `ack:${alert.id}`}>
                       Acknowledge
                     </button>
                   </td>
@@ -217,7 +217,7 @@ export function AIUsagePage() {
 
       <section className="card">
         <h3>Usage by user</h3>
-        {perUser.length === 0 ? <p className="muted">No AI activity in the last 30 days.</p> : (
+        {perUser.length === 0 ? <p className="muted-text">No AI activity in the last 30 days.</p> : (
           <table className="data-table">
             <thead><tr><th>User</th><th>Role</th><th>Messages</th><th>Tokens</th><th>Cost</th><th>Blocked</th></tr></thead>
             <tbody>
@@ -238,7 +238,7 @@ export function AIUsagePage() {
 
       <section className="card">
         <h3>Usage by project</h3>
-        {perProject.length === 0 ? <p className="muted">No project-linked AI activity yet.</p> : (
+        {perProject.length === 0 ? <p className="muted-text">No project-linked AI activity yet.</p> : (
           <table className="data-table">
             <thead><tr><th>Project</th><th>Messages</th><th>Tokens</th><th>Cost</th></tr></thead>
             <tbody>
@@ -257,7 +257,7 @@ export function AIUsagePage() {
 
       <section className="card">
         <h3>Limits</h3>
-        <p className="muted small">
+        <p className="muted-text small">
           A user is checked against the most specific limit that applies: their own profile, then their role, then the global default.
         </p>
         {limits.map((limit) => {
@@ -269,13 +269,13 @@ export function AIUsagePage() {
                 <div>
                   <strong>{scopeLabel(limit)}</strong>
                   {limit.is_paused ? <StatusBadge status="paused" tone="danger" /> : null}
-                  {limit.paused_reason ? <div className="muted small">{limit.paused_reason}</div> : null}
+                  {limit.paused_reason ? <div className="muted-text small">{limit.paused_reason}</div> : null}
                 </div>
                 <div className="flow-actions">
-                  <button type="button" className="btn-ghost" onClick={() => void togglePause(limit)} disabled={busy === `pause:${limit.id}`}>
+                  <button type="button" className="ghost-button" onClick={() => void togglePause(limit)} disabled={busy === `pause:${limit.id}`}>
                     {limit.is_paused ? "Resume AI" : "Pause AI"}
                   </button>
-                  <button type="button" className="btn-primary" onClick={() => void saveLimit(limit)} disabled={!dirty || busy === `limit:${limit.id}`}>
+                  <button type="button" className="primary-button" onClick={() => void saveLimit(limit)} disabled={!dirty || busy === `limit:${limit.id}`}>
                     {busy === `limit:${limit.id}` ? "Saving…" : "Save"}
                   </button>
                 </div>
@@ -283,7 +283,7 @@ export function AIUsagePage() {
               <div className="limit-grid">
                 {NUMERIC_FIELDS.map((field) => (
                   <label key={String(field.key)} title={field.help}>
-                    <span className="muted small">{field.label}</span>
+                    <span className="muted-text small">{field.label}</span>
                     <input
                       type="number"
                       min={0}
@@ -305,7 +305,7 @@ export function AIUsagePage() {
 
       <section className="card">
         <h3>Recent AI requests</h3>
-        {events.length === 0 ? <p className="muted">No requests recorded yet.</p> : (
+        {events.length === 0 ? <p className="muted-text">No requests recorded yet.</p> : (
           <table className="data-table">
             <thead><tr><th>When</th><th>Role</th><th>Agent</th><th>Classification</th><th>Outcome</th><th>Tokens</th><th>Cost</th></tr></thead>
             <tbody>
@@ -319,7 +319,7 @@ export function AIUsagePage() {
                     {event.outcome === "success"
                       ? <StatusBadge status="success" tone="success" />
                       : <StatusBadge status={event.outcome.replace(/_/g, " ")} tone="warning" />}
-                    {event.rejection_reason ? <div className="muted small">{event.rejection_reason}</div> : null}
+                    {event.rejection_reason ? <div className="muted-text small">{event.rejection_reason}</div> : null}
                   </td>
                   <td>{Number(event.total_tokens ?? 0).toLocaleString()}</td>
                   <td>${Number(event.estimated_cost ?? 0).toFixed(4)}</td>
@@ -328,7 +328,7 @@ export function AIUsagePage() {
             </tbody>
           </table>
         )}
-        <p className="muted small">
+        <p className="muted-text small">
           {clients.length + suppliers.length} external accounts can reach the AI chat. Limits above apply to all of them.
         </p>
       </section>

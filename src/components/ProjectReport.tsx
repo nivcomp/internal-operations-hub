@@ -20,7 +20,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="muted small">{text}</p>;
+  return <p className="muted-text small">{text}</p>;
 }
 
 /**
@@ -53,8 +53,8 @@ export default function ProjectReport({
       <div className="report-toolbar no-print">
         <strong>{title}</strong>
         <div className="flow-actions">
-          <button type="button" className="btn-primary" onClick={() => window.print()}>Print / Save as PDF</button>
-          {onClose ? <button type="button" className="btn-ghost" onClick={onClose}>Close</button> : null}
+          <button type="button" className="primary-button" onClick={() => window.print()}>Print / Save as PDF</button>
+          {onClose ? <button type="button" className="ghost-button" onClick={onClose}>Close</button> : null}
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export default function ProjectReport({
         <header className="report-header">
           <div>
             <h1>{view.project.name}</h1>
-            <p className="muted">
+            <p className="muted-text">
               {title}
               {mode !== "supplier" && (view.clientCompany || view.clientName)
                 ? ` · ${view.clientCompany || view.clientName}`
@@ -98,7 +98,7 @@ export default function ProjectReport({
                     <tr key={item.id}>
                       <td>
                         <strong>{item.title}</strong>
-                        {item.description ? <div className="muted small">{item.description}</div> : null}
+                        {item.description ? <div className="muted-text small">{item.description}</div> : null}
                       </td>
                       <td>{item.project_phase}</td>
                       <td>{hours(item.estimated_hours_min)}–{hours(item.estimated_hours_max)}</td>
@@ -128,7 +128,7 @@ export default function ProjectReport({
                     <tr key={item.id}>
                       <td>
                         <strong>{item.title}</strong>
-                        {item.description ? <div className="muted small">{item.description}</div> : null}
+                        {item.description ? <div className="muted-text small">{item.description}</div> : null}
                       </td>
                       <td>{item.project_phase}</td>
                       <td>{hours(item.estimated_hours_min)}–{hours(item.estimated_hours_max)}</td>
@@ -153,7 +153,7 @@ export default function ProjectReport({
                 <li key={item.id}>
                   <strong>{item.title}</strong>
                   {item.selected_by_client ? " (selected)" : " (not selected)"}
-                  {item.description ? <div className="muted small">{item.description}</div> : null}
+                  {item.description ? <div className="muted-text small">{item.description}</div> : null}
                 </li>
               ))}
             </ul>
@@ -181,7 +181,7 @@ export default function ProjectReport({
                 Estimated range: {money(est.estimated_budget_min, currency)} – {money(est.estimated_budget_max, currency)}
               </p>
             )}
-            <p className="muted small">
+            <p className="muted-text small">
               Estimated effort {hours(est.estimated_hours_min)}–{hours(est.estimated_hours_max)}.
               {est.validity_date ? ` Valid until ${est.validity_date}.` : ""}
             </p>
@@ -235,7 +235,7 @@ export default function ProjectReport({
                       {" — "}{r.status.replace(/_/g, " ")}
                       {r.suggested_hours_min != null ? ` · suggested ${hours(r.suggested_hours_min)}–${hours(r.suggested_hours_max ?? r.suggested_hours_min)}` : ""}
                       {r.fixed_quote != null ? ` · quote ${money(r.fixed_quote, currency)}` : ""}
-                      {r.delivery_risk ? <div className="muted small">Risk: {r.delivery_risk}</div> : null}
+                      {r.delivery_risk ? <div className="muted-text small">Risk: {r.delivery_risk}</div> : null}
                     </li>
                   ))}
                 </ul>
@@ -277,7 +277,7 @@ export default function ProjectReport({
               <tbody>
                 {view.changeRequests.map((cr: any) => (
                   <tr key={cr.id}>
-                    <td><strong>{cr.title}</strong><div className="muted small">{cr.description}</div></td>
+                    <td><strong>{cr.title}</strong><div className="muted-text small">{cr.description}</div></td>
                     <td>{cr.status.replace(/_/g, " ")}</td>
                     <td>{cr.agency_price != null ? money(cr.agency_price, currency) : "Not priced"}</td>
                     {mode === "internal" ? <td>{cr.supplier_cost != null ? money(cr.supplier_cost, currency) : "—"}</td> : null}

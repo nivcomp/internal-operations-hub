@@ -247,18 +247,18 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
       <header className="flow-toolbar">
         <div>
           <h3 style={{ margin: 0 }}>{title ?? "Project flow"}</h3>
-          <p className="muted" style={{ margin: "2px 0 0" }}>
+          <p className="muted-text" style={{ margin: "2px 0 0" }}>
             {layout.nodes.length} steps · scroll to zoom, drag to pan
           </p>
         </div>
         <div className="flow-actions">
-          <button type="button" className="btn-ghost" onClick={() => setMode(mode === "diagram" ? "list" : "diagram")}>
+          <button type="button" className="ghost-button" onClick={() => setMode(mode === "diagram" ? "list" : "diagram")}>
             {mode === "diagram" ? "List view" : "Diagram view"}
           </button>
           {phaseNodes.length > 0 && (
             <button
               type="button"
-              className="btn-ghost"
+              className="ghost-button"
               onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(phaseNodes.map((n) => n.id)))}
             >
               {allCollapsed ? "Expand phases" : "Collapse phases"}
@@ -266,10 +266,10 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
           )}
           {mode === "diagram" && (
             <>
-              <button type="button" className="btn-ghost" onClick={() => zoomAtCenter(1 / 1.2)} aria-label="Zoom out">−</button>
-              <span className="muted" style={{ minWidth: 44, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-              <button type="button" className="btn-ghost" onClick={() => zoomAtCenter(1.2)} aria-label="Zoom in">+</button>
-              <button type="button" className="btn-ghost" onClick={fit}>Fit</button>
+              <button type="button" className="ghost-button" onClick={() => zoomAtCenter(1 / 1.2)} aria-label="Zoom out">−</button>
+              <span className="muted-text" style={{ minWidth: 44, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+              <button type="button" className="ghost-button" onClick={() => zoomAtCenter(1.2)} aria-label="Zoom in">+</button>
+              <button type="button" className="ghost-button" onClick={fit}>Fit</button>
             </>
           )}
         </div>
@@ -281,8 +281,8 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
             <li key={node.id} className={`flow-list-item state-${node.state}`}>
               <span className="flow-kind">{node.kind.replace(/_/g, " ")}</span>
               <strong>{node.title}</strong>
-              {node.subtitle ? <span className="muted"> — {node.subtitle}</span> : null}
-              {node.detail ? <p className="muted small">{node.detail}</p> : null}
+              {node.subtitle ? <span className="muted-text"> — {node.subtitle}</span> : null}
+              {node.detail ? <p className="muted-text small">{node.detail}</p> : null}
             </li>
           ))}
         </ol>
@@ -326,15 +326,15 @@ export default function ProjectFlowDiagram({ graph, title }: { graph: FlowGraph;
           <div>
             <span className="flow-kind">{selected.kind.replace(/_/g, " ")}</span>
             <strong> {selected.title}</strong>
-            {selected.subtitle ? <div className="muted small">{selected.subtitle}</div> : null}
+            {selected.subtitle ? <div className="muted-text small">{selected.subtitle}</div> : null}
             {selected.detail ? <p className="small" style={{ margin: "6px 0 0" }}>{selected.detail}</p> : null}
             {selected.meta?.length ? (
               <ul className="flow-meta">
-                {selected.meta.map((m) => <li key={m.label}><span className="muted">{m.label}:</span> {m.value}</li>)}
+                {selected.meta.map((m) => <li key={m.label}><span className="muted-text">{m.label}:</span> {m.value}</li>)}
               </ul>
             ) : null}
           </div>
-          <button type="button" className="btn-ghost" onClick={() => setSelected(null)}>Close</button>
+          <button type="button" className="ghost-button" onClick={() => setSelected(null)}>Close</button>
         </aside>
       ) : null}
     </section>
