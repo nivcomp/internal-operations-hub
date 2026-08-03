@@ -15,3 +15,10 @@ export function onEstimationChanged(projectId: string, handler: () => void) {
   window.addEventListener(EVENT, listener);
   return () => window.removeEventListener(EVENT, listener);
 }
+
+/** Listener for screens that are not scoped to a single project (e.g. supplier work lists). */
+export function onAnyEstimationChanged(handler: () => void) {
+  const listener = () => handler();
+  window.addEventListener(EVENT, listener);
+  return () => window.removeEventListener(EVENT, listener);
+}
