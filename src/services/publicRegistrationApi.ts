@@ -83,7 +83,7 @@ export async function createAccount(input: {
 }
 
 /** Provisions the isolated profile + client/supplier record for the new session. */
-export async function claimAccount(): Promise<boolean> {
+export async function claimAccount(role: RegistrationRole): Promise<boolean> {
   const { supabase } = await import("../integrations/supabase/client");
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -95,7 +95,7 @@ export async function claimAccount(): Promise<boolean> {
       apikey: PUBLISHABLE_KEY,
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ action: "claim" }),
+    body: JSON.stringify({ action: "claim", role }),
   });
   const body = await response.json().catch(() => ({}));
   return Boolean(body?.claimed);
