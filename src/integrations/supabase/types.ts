@@ -498,6 +498,420 @@ export type Database = {
           },
         ]
       }
+      estimate_adjustments: {
+        Row: {
+          amount: number
+          client_visible: boolean
+          created_at: string
+          estimate_id: string
+          id: string
+          kind: string
+          label: string
+          notes: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          client_visible?: boolean
+          created_at?: string
+          estimate_id: string
+          id?: string
+          kind?: string
+          label: string
+          notes?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_visible?: boolean
+          created_at?: string
+          estimate_id?: string
+          id?: string
+          kind?: string
+          label?: string
+          notes?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_adjustments_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_items: {
+        Row: {
+          acceptance_criteria: string
+          base_hours: number
+          client_optional: boolean
+          client_visible: boolean
+          client_visible_description: string
+          client_visible_label: string
+          complexity_level: string
+          complexity_multiplier: number
+          created_at: string
+          dependency_notes: string
+          description: string
+          estimate_id: string
+          estimated_hours_max: number
+          estimated_hours_min: number
+          id: string
+          integration_multiplier: number
+          max_quantity: number
+          option_group: string
+          option_tier: string
+          project_phase: string
+          quantity: number
+          responsible_role: string
+          risk_notes: string
+          selected_by_client: boolean
+          sort_order: number
+          supplier_id: string | null
+          title: string
+          uncertainty_multiplier: number
+          updated_at: string
+        }
+        Insert: {
+          acceptance_criteria?: string
+          base_hours?: number
+          client_optional?: boolean
+          client_visible?: boolean
+          client_visible_description?: string
+          client_visible_label?: string
+          complexity_level?: string
+          complexity_multiplier?: number
+          created_at?: string
+          dependency_notes?: string
+          description?: string
+          estimate_id: string
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          id?: string
+          integration_multiplier?: number
+          max_quantity?: number
+          option_group?: string
+          option_tier?: string
+          project_phase?: string
+          quantity?: number
+          responsible_role?: string
+          risk_notes?: string
+          selected_by_client?: boolean
+          sort_order?: number
+          supplier_id?: string | null
+          title: string
+          uncertainty_multiplier?: number
+          updated_at?: string
+        }
+        Update: {
+          acceptance_criteria?: string
+          base_hours?: number
+          client_optional?: boolean
+          client_visible?: boolean
+          client_visible_description?: string
+          client_visible_label?: string
+          complexity_level?: string
+          complexity_multiplier?: number
+          created_at?: string
+          dependency_notes?: string
+          description?: string
+          estimate_id?: string
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          id?: string
+          integration_multiplier?: number
+          max_quantity?: number
+          option_group?: string
+          option_tier?: string
+          project_phase?: string
+          quantity?: number
+          responsible_role?: string
+          risk_notes?: string
+          selected_by_client?: boolean
+          sort_order?: number
+          supplier_id?: string | null
+          title?: string
+          uncertainty_multiplier?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_items_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_role_allocations: {
+        Row: {
+          calculated_internal_cost_max: number
+          calculated_internal_cost_min: number
+          created_at: string
+          estimate_id: string
+          estimated_hours_max: number
+          estimated_hours_min: number
+          fixed_internal_cost: number | null
+          id: string
+          internal_hourly_cost: number
+          notes: string
+          role: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          calculated_internal_cost_max?: number
+          calculated_internal_cost_min?: number
+          created_at?: string
+          estimate_id: string
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          fixed_internal_cost?: number | null
+          id?: string
+          internal_hourly_cost?: number
+          notes?: string
+          role: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          calculated_internal_cost_max?: number
+          calculated_internal_cost_min?: number
+          created_at?: string
+          estimate_id?: string
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          fixed_internal_cost?: number | null
+          id?: string
+          internal_hourly_cost?: number
+          notes?: string
+          role?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_role_allocations_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_role_allocations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_scenarios: {
+        Row: {
+          client_notes: string
+          created_at: string
+          estimate_id: string
+          estimated_budget_max: number
+          estimated_budget_min: number
+          estimated_hours_max: number
+          estimated_hours_min: number
+          id: string
+          is_promoted: boolean
+          name: string
+          project_id: string
+          selections: Json
+          updated_at: string
+        }
+        Insert: {
+          client_notes?: string
+          created_at?: string
+          estimate_id: string
+          estimated_budget_max?: number
+          estimated_budget_min?: number
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          id?: string
+          is_promoted?: boolean
+          name: string
+          project_id: string
+          selections?: Json
+          updated_at?: string
+        }
+        Update: {
+          client_notes?: string
+          created_at?: string
+          estimate_id?: string
+          estimated_budget_max?: number
+          estimated_budget_min?: number
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          id?: string
+          is_promoted?: boolean
+          name?: string
+          project_id?: string
+          selections?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_scenarios_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_scenarios_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_supplier_reviews: {
+        Row: {
+          agency_notes: string
+          assumptions: string
+          created_at: string
+          delivery_risk: string
+          dependencies: string
+          estimate_id: string
+          fixed_quote: number | null
+          id: string
+          item_id: string
+          missing_information: string
+          proposed_duration_days: number | null
+          status: string
+          suggested_hours_max: number | null
+          suggested_hours_min: number | null
+          supplier_decision: string
+          supplier_id: string
+          updated_at: string
+          weekly_availability_hours: number | null
+        }
+        Insert: {
+          agency_notes?: string
+          assumptions?: string
+          created_at?: string
+          delivery_risk?: string
+          dependencies?: string
+          estimate_id: string
+          fixed_quote?: number | null
+          id?: string
+          item_id: string
+          missing_information?: string
+          proposed_duration_days?: number | null
+          status?: string
+          suggested_hours_max?: number | null
+          suggested_hours_min?: number | null
+          supplier_decision?: string
+          supplier_id: string
+          updated_at?: string
+          weekly_availability_hours?: number | null
+        }
+        Update: {
+          agency_notes?: string
+          assumptions?: string
+          created_at?: string
+          delivery_risk?: string
+          dependencies?: string
+          estimate_id?: string
+          fixed_quote?: number | null
+          id?: string
+          item_id?: string
+          missing_information?: string
+          proposed_duration_days?: number | null
+          status?: string
+          suggested_hours_max?: number | null
+          suggested_hours_min?: number | null
+          supplier_decision?: string
+          supplier_id?: string
+          updated_at?: string
+          weekly_availability_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_supplier_reviews_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_supplier_reviews_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "estimate_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_supplier_reviews_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_versions: {
+        Row: {
+          created_at: string
+          estimate_id: string
+          id: string
+          note: string
+          project_id: string
+          snapshot: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          estimate_id: string
+          id?: string
+          note?: string
+          project_id: string
+          snapshot?: Json
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          estimate_id?: string
+          id?: string
+          note?: string
+          project_id?: string
+          snapshot?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_versions_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           added_by: string
@@ -883,6 +1297,131 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_estimates: {
+        Row: {
+          approved_by_yaniv: boolean
+          change_request_rule: string
+          client_calculation_rate: number
+          client_visible: boolean
+          contingency_percent: number
+          created_at: string
+          currency: string
+          delivery_end_date: string | null
+          delivery_range_label: string
+          delivery_start_date: string | null
+          estimate_rounding_increment: number
+          estimated_budget_max: number
+          estimated_budget_min: number
+          estimated_hours_max: number
+          estimated_hours_min: number
+          external_costs: number
+          final_fixed_price: number | null
+          fixed_price_exclusions: string
+          fixed_price_scope: string
+          id: string
+          internal_cost: number
+          management_buffer_percent: number
+          minimum_billing_unit: number
+          notes: string
+          payment_milestones: string
+          project_id: string
+          recommended_fixed_price: number
+          risk_buffer_percent: number
+          show_hourly_rate_to_client: boolean
+          status: string
+          target_margin_percent: number
+          testing_buffer_percent: number
+          updated_at: string
+          validity_date: string | null
+          version: number
+          yaniv_internal_hourly_cost: number
+        }
+        Insert: {
+          approved_by_yaniv?: boolean
+          change_request_rule?: string
+          client_calculation_rate?: number
+          client_visible?: boolean
+          contingency_percent?: number
+          created_at?: string
+          currency?: string
+          delivery_end_date?: string | null
+          delivery_range_label?: string
+          delivery_start_date?: string | null
+          estimate_rounding_increment?: number
+          estimated_budget_max?: number
+          estimated_budget_min?: number
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          external_costs?: number
+          final_fixed_price?: number | null
+          fixed_price_exclusions?: string
+          fixed_price_scope?: string
+          id?: string
+          internal_cost?: number
+          management_buffer_percent?: number
+          minimum_billing_unit?: number
+          notes?: string
+          payment_milestones?: string
+          project_id: string
+          recommended_fixed_price?: number
+          risk_buffer_percent?: number
+          show_hourly_rate_to_client?: boolean
+          status?: string
+          target_margin_percent?: number
+          testing_buffer_percent?: number
+          updated_at?: string
+          validity_date?: string | null
+          version?: number
+          yaniv_internal_hourly_cost?: number
+        }
+        Update: {
+          approved_by_yaniv?: boolean
+          change_request_rule?: string
+          client_calculation_rate?: number
+          client_visible?: boolean
+          contingency_percent?: number
+          created_at?: string
+          currency?: string
+          delivery_end_date?: string | null
+          delivery_range_label?: string
+          delivery_start_date?: string | null
+          estimate_rounding_increment?: number
+          estimated_budget_max?: number
+          estimated_budget_min?: number
+          estimated_hours_max?: number
+          estimated_hours_min?: number
+          external_costs?: number
+          final_fixed_price?: number | null
+          fixed_price_exclusions?: string
+          fixed_price_scope?: string
+          id?: string
+          internal_cost?: number
+          management_buffer_percent?: number
+          minimum_billing_unit?: number
+          notes?: string
+          payment_milestones?: string
+          project_id?: string
+          recommended_fixed_price?: number
+          risk_buffer_percent?: number
+          show_hourly_rate_to_client?: boolean
+          status?: string
+          target_margin_percent?: number
+          testing_buffer_percent?: number
+          updated_at?: string
+          validity_date?: string | null
+          version?: number
+          yaniv_internal_hourly_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_estimates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]

@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
+import { BudgetSimulator } from "../components/estimation/BudgetSimulator";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
@@ -153,6 +154,7 @@ export function ClientPortalPage({
         suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Summarise what we agreed so far"]}
       />
 
+      <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
       <section className="card">
         <h2>Approvals</h2>
         {approvalsForProject.length === 0 ? (

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
+import { SupplierEstimateReview } from "../components/estimation/SupplierEstimateReview";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { canWorkStart, formatRate, getProjectName, statusLabels } from "../lib/domainHelpers";
 import type { Project, TimeEntry } from "../types/domain";
@@ -170,6 +171,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
         );
       })()}
 
+      <SupplierEstimateReview supplierId={supplier.id} readOnly={isPreview} />
       <section className="card">
         <h2>Delivery instructions</h2>
         {items.length === 0 ? (
