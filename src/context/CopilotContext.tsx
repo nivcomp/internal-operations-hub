@@ -176,6 +176,8 @@ export function CopilotProvider({
     }
   }, []);
 
+  const refreshQueueRef = useRef<() => Promise<void>>(async () => {});
+
   const send = useCallback(async (text: string, viaVoice = false) => {
     const value = text.trim();
     if (!value || sending) return;
@@ -198,11 +200,8 @@ export function CopilotProvider({
       if (result.operatorMode) setOperatorMode(true);
       setSlotMemory(result.slotMemory ?? null);
       if (result.operatorActions?.length) {
-        setOperatorActions((current) => {
-          const fresh = result.operatorActions!;
-          const ids = new Set(fresh.map((a) => a.id));
-          return [...fresh, ...current.filter((a) => !ids.has(a.id))];
-        });
+        // Re-read the whole queue so superseded proposals cannot linger as open.
+        void refreshQueueRef.current();
       }
       setUsage(result.usage);
       if (voiceReplies || viaVoice) void speak(result.assistantMessage.body);
@@ -280,6 +279,7 @@ export function CopilotProvider({
       setError((err as Error).message);
     }
   }, []);
+  refreshQueueRef.current = refreshOperatorQueue;
 
   // Multi-step plans execute in order on the server and stop at the first failure.
   const runOperator = useCallback(async (
