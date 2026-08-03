@@ -577,19 +577,40 @@ export const OPERATOR_ACTIONS: Record<string, Spec> = {
       const estimate = await liveEstimate(ctx, found.row.id);
       if (!estimate) return { error: "This project has no estimate yet, so there is no rate to set." };
       if (estimate.final_fixed_price) return { error: "A fixed price is already approved; the rate can no longer be changed." };
+      const currency = text(input?.currency, 8).toUpperCase() || String(estimate.currency ?? "GBP").toUpperCase();
+      if (!["ILS", "GBP", "USD", "EUR"].includes(currency)) {
+        return { error: `I do not support the currency "${currency}". Use ILS, GBP, USD or EUR.` };
+      }
       return built({
-        summary: `Set calculation rate to ${rate}`, risk: "high",
-        targetId: found.row.id, targetLabel: projectLabel(found.row), payload: { rate, estimateId: estimate.id },
+        summary: `Set calculation rate to ${currency} ${rate} per hour`, risk: "high",
+        targetId: found.row.id, targetLabel: projectLabel(found.row),
+        payload: { rate, currency, estimateId: estimate.id },
         preview: {
-          fields: [{ label: "Client calculation rate", current: String(estimate.client_calculation_rate ?? "not set"), proposed: String(rate) }],
-          impact: ["Changes the client-facing budget of every estimate line."],
+          fields: [
+            {
+              label: "Client calculation rate",
+              current: Number(estimate.client_calculation_rate)
+                ? `${estimate.currency ?? ""} ${estimate.client_calculation_rate} per hour`.trim()
+                : "Not configured",
+              proposed: `${currency} ${rate} per hour`,
+            },
+          ],
+          impact: ["The project budget estimate will be recalculated from this rate."],
         },
       });
     },
     async execute(ctx, b) {
-      const previous = (await ctx.admin.from("project_estimates").select("client_calculation_rate").eq("id", b.payload.estimateId).maybeSingle()).data;
-      await updateRow(ctx, "project_estimates", String(b.payload.estimateId), { client_calculation_rate: b.payload.rate });
-      return { summary: `Calculation rate set to ${b.payload.rate}.`, previous, next: { client_calculation_rate: b.payload.rate } };
+      const previous = (await ctx.admin.from("project_estimates")
+        .select("client_calculation_rate, currency").eq("id", b.payload.estimateId).maybeSingle()).data;
+      const patch: Record<string, unknown> = { client_calculation_rate: b.payload.rate };
+      if (b.payload.currency) patch.currency = b.payload.currency;
+      const saved = await updateRow(ctx, "project_estimates", String(b.payload.estimateId), patch);
+      if (!saved) throw new Error("The estimate could not be updated — it may have been replaced.");
+      return {
+        summary: `Calculation rate set to ${saved.currency ?? ""} ${saved.client_calculation_rate} per hour.`.trim(),
+        previous,
+        next: { client_calculation_rate: saved.client_calculation_rate, currency: saved.currency },
+      };
     },
   },
 

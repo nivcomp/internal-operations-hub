@@ -5,8 +5,9 @@ import {
   cancelCopilotAction, cancelOperatorActions, clearCopilotThread, confirmCopilotAction,
   confirmOperatorActions, loadCopilotHistory, loadOperatorQueue, retryOperatorActions,
   saveCopilotPreferences, sendCopilotMessage, synthesizeSpeech, transcribeAudio,
+  clearCopilotSlotMemory,
   type CopilotChip, type CopilotMessage, type CopilotOperatorAction, type CopilotPendingAction,
-  type CopilotScreenHint, type CopilotUsage,
+  type CopilotScreenHint, type CopilotSlotMemory, type CopilotUsage,
 } from "../services/copilotApi";
 import { playBase64Audio, startRecording, stopSpeech, type Recorder } from "../lib/voice";
 
@@ -23,6 +24,10 @@ type CopilotApi = {
   operatorMode: boolean;
   operatorActions: CopilotOperatorAction[];
   operatorBusy: boolean;
+  slotMemory: CopilotSlotMemory | null;
+  clearSlotMemory: () => Promise<void>;
+  transcript: string;
+  clearTranscript: () => void;
   confirmOperator: (ids: string[]) => Promise<void>;
   retryOperator: (ids: string[]) => Promise<void>;
   cancelOperator: (ids: string[]) => Promise<void>;
@@ -76,6 +81,8 @@ export function CopilotProvider({
   const [operatorMode, setOperatorMode] = useState(false);
   const [operatorActions, setOperatorActions] = useState<CopilotOperatorAction[]>([]);
   const [operatorBusy, setOperatorBusy] = useState(false);
+  const [slotMemory, setSlotMemory] = useState<CopilotSlotMemory | null>(null);
+  const [transcript, setTranscript] = useState("");
   const [usage, setUsage] = useState<CopilotUsage | null>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -145,6 +152,7 @@ export function CopilotProvider({
         setUsage(result.usage);
         setOperatorMode(result.operatorMode === true);
         setOperatorActions(result.operatorActions ?? []);
+        setSlotMemory(result.slotMemory ?? null);
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message);
@@ -168,6 +176,8 @@ export function CopilotProvider({
     }
   }, []);
 
+  const refreshQueueRef = useRef<() => Promise<void>>(async () => {});
+
   const send = useCallback(async (text: string, viaVoice = false) => {
     const value = text.trim();
     if (!value || sending) return;
@@ -188,8 +198,10 @@ export function CopilotProvider({
       ]);
       setPendingActions(result.pendingActions ?? []);
       if (result.operatorMode) setOperatorMode(true);
+      setSlotMemory(result.slotMemory ?? null);
       if (result.operatorActions?.length) {
-        setOperatorActions((current) => [...result.operatorActions!, ...current]);
+        // Re-read the whole queue so superseded proposals cannot linger as open.
+        void refreshQueueRef.current();
       }
       setUsage(result.usage);
       if (voiceReplies || viaVoice) void speak(result.assistantMessage.body);
@@ -231,13 +243,15 @@ export function CopilotProvider({
         setError("I could not hear that. Please try again.");
         return;
       }
-      await send(text, true);
+      // The transcript is shown for review first, so a misheard price or name
+      // can be corrected before any action is proposed.
+      setTranscript(text);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setTranscribing(false);
     }
-  }, [send]);
+  }, []);
 
   const confirm = useCallback(async (draftId: string) => {
     try {
@@ -265,6 +279,7 @@ export function CopilotProvider({
       setError((err as Error).message);
     }
   }, []);
+  refreshQueueRef.current = refreshOperatorQueue;
 
   // Multi-step plans execute in order on the server and stop at the first failure.
   const runOperator = useCallback(async (
@@ -277,6 +292,7 @@ export function CopilotProvider({
     try {
       const result = await runner(hintRef.current, ids);
       setOperatorActions(result.actions ?? []);
+      setSlotMemory(result.slotMemory ?? null);
       const failed = result.results.find((item) => !item.ok && !item.skipped);
       if (failed?.error) setError(failed.error);
     } catch (err) {
@@ -300,6 +316,17 @@ export function CopilotProvider({
       ids.includes(action.id) && ["proposed", "awaiting_confirmation", "failed"].includes(action.status)
         ? { ...action, status: "cancelled" as const }
         : action));
+    setSlotMemory((current) =>
+      current && current.operator_action_id && ids.includes(current.operator_action_id) ? null : current);
+  }, []);
+
+  const clearSlotMemory = useCallback(async () => {
+    try {
+      await clearCopilotSlotMemory(hintRef.current);
+    } catch {
+      /* the pending memory expires on its own */
+    }
+    setSlotMemory(null);
   }, []);
 
   const clear = useCallback(async () => {
@@ -307,6 +334,7 @@ export function CopilotProvider({
       await clearCopilotThread(hintRef.current);
       setMessages([]);
       setPendingActions([]);
+      setSlotMemory(null);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -319,14 +347,15 @@ export function CopilotProvider({
   const value = useMemo<CopilotApi>(() => ({
     open, setOpen, label, messages, pendingActions, usage, loading, sending, error,
     operatorMode, operatorActions, operatorBusy, confirmOperator, retryOperator,
-    cancelOperator, refreshOperatorQueue,
+    cancelOperator, refreshOperatorQueue, slotMemory, clearSlotMemory,
+    transcript, clearTranscript: () => setTranscript(""),
     observation, chips, recording, transcribing, speaking, voiceReplies, setVoiceReplies,
     send, startVoice, stopVoice, cancelVoice, stopSpeaking: () => { stopSpeech(); setSpeaking(false); },
     confirm, dismiss, clear, registerScreen, setFormHint, runChip: onChip,
   }), [
     open, label, messages, pendingActions, usage, loading, sending, error, observation, chips,
     operatorMode, operatorActions, operatorBusy, confirmOperator, retryOperator, cancelOperator,
-    refreshOperatorQueue,
+    refreshOperatorQueue, slotMemory, clearSlotMemory, transcript,
     recording, transcribing, speaking, voiceReplies, setVoiceReplies, send, startVoice, stopVoice,
     cancelVoice, confirm, dismiss, clear, registerScreen, setFormHint, onChip,
   ]);
