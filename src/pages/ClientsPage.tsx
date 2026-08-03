@@ -21,16 +21,21 @@ const initialForm: NewClientInput = {
 
 export function ClientsPage({ clients, onClientCreate, onClientSelect }: ClientsPageProps) {
   const [form, setForm] = useState<NewClientInput>(initialForm);
+  const [formError, setFormError] = useState<string | null>(null);
   const { isPending, getError, getSuccess } = useAppData();
   const key = MutationKeys.createClient;
   const saving = isPending(key);
-  const error = getError(key);
+  const error = formError ?? getError(key);
   const success = getSuccess(key);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
-    if (!form.name.trim() || !form.company.trim() || !form.email.trim()) return;
+    if (!form.name.trim() || !form.company.trim() || !form.email.trim()) {
+      setFormError("Name, company and email are required.");
+      return;
+    }
+    setFormError(null);
     try {
       await onClientCreate({
         ...form,
@@ -54,15 +59,15 @@ export function ClientsPage({ clients, onClientCreate, onClientSelect }: Clients
         <form className="form-grid" onSubmit={handleSubmit}>
           <label>
             Name
-            <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+            <input value={form.name} onChange={(event) => { setFormError(null); setForm({ ...form, name: event.target.value }); }} />
           </label>
           <label>
             Company
-            <input value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} />
+            <input value={form.company} onChange={(event) => { setFormError(null); setForm({ ...form, company: event.target.value }); }} />
           </label>
           <label>
             Email
-            <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+            <input type="email" value={form.email} onChange={(event) => { setFormError(null); setForm({ ...form, email: event.target.value }); }} />
           </label>
           <label>
             Phone

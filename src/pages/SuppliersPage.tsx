@@ -26,11 +26,12 @@ export function SuppliersPage({ onSupplierSelect }: SuppliersPageProps) {
   const { suppliers, supplierProfiles, createSupplier, isPending, getError, getSuccess } = useAppData();
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   const key = MutationKeys.createSupplier;
   const saving = isPending(key);
-  const error = getError(key);
+  const error = formError ?? getError(key);
   const success = getSuccess(key);
 
   function openForm() {
@@ -39,13 +40,18 @@ export function SuppliersPage({ onSupplierSelect }: SuppliersPageProps) {
   }
 
   function set<K extends keyof typeof emptyForm>(field: K, value: (typeof emptyForm)[K]) {
+    setFormError(null);
     setForm((current) => ({ ...current, [field]: value }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
-    if (!form.name.trim() || !form.email.trim()) return;
+    if (!form.name.trim() || !form.email.trim()) {
+      setFormError("Supplier name and email are required.");
+      return;
+    }
+    setFormError(null);
     try {
       const persisted = await createSupplier({
         name: form.name.trim(),
