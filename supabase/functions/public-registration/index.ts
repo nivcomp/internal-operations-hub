@@ -256,8 +256,13 @@ Deno.serve(async (req) => {
     });
     const userId = createdUser?.user?.id ?? null;
 
-    if (createUserError) console.error("[public-registration] createUser failed", createUserError.message);
-    if (createUserError) return json({ error: `debug createUser: ${JSON.stringify({ msg: createUserError.message, code: (createUserError as { code?: string }).code, status: createUserError.status, name: createUserError.name })}` }, 400);
+    if (createUserError) {
+      const probeUsers = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
+      const probeLink = await admin.auth.admin.generateLink({
+        type: "signup", email, password: crypto.randomUUID(), options: { redirectTo },
+      });
+      return json({ error: `debug: create=${createUserError.name}/${createUserError.status} list=${probeUsers.error ? probeUsers.error.name + "/" + probeUsers.error.status : "ok:" + probeUsers.data.users.length} link=${probeLink.error ? probeLink.error.name + "/" + probeLink.error.status + "/" + probeLink.error.message : "ok"}` }, 400);
+    }
 
     if (!createUserError && userId) {
       let clientId: string | null = null;
