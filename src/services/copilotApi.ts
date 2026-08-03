@@ -60,6 +60,38 @@ export type CopilotUsage = {
   maximumMessageLength: number;
 };
 
+export type OperatorRisk = "low" | "medium" | "high";
+
+export type CopilotOperatorAction = {
+  id: string;
+  plan_id: string | null;
+  plan_title: string | null;
+  plan_step: number;
+  action_type: string;
+  action_label: string;
+  target_type: string;
+  target_id: string | null;
+  target_label: string;
+  source_command: string;
+  source: string;
+  risk_level: OperatorRisk;
+  requires_confirmation: boolean;
+  status:
+    | "proposed" | "awaiting_confirmation" | "approved" | "executing"
+    | "completed" | "partially_completed" | "failed" | "cancelled";
+  payload: Record<string, unknown>;
+  preview: {
+    fields?: { label: string; current?: string; proposed?: string }[];
+    impact?: string[];
+    related?: string[];
+    recommendation?: string;
+  };
+  result: { summary?: string } | null;
+  failure_reason: string | null;
+  created_at: string;
+  executed_at: string | null;
+};
+
 async function call<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) {
@@ -87,6 +119,8 @@ export function loadCopilotHistory(screen: CopilotScreenHint) {
     messages: CopilotMessage[];
     preferences: Record<string, unknown>;
     usage: CopilotUsage;
+    operatorMode?: boolean;
+    operatorActions?: CopilotOperatorAction[];
   }>("copilot", { action: "history", screen });
 }
 
@@ -100,7 +134,35 @@ export function sendCopilotMessage(screen: CopilotScreenHint, text: string, viaV
     pendingActions: CopilotPendingAction[];
     rejectedActions: { kind: string; reason: string }[];
     usage: CopilotUsage;
+    operatorMode?: boolean;
+    operatorActions?: CopilotOperatorAction[];
   }>("copilot", { action: "send", screen, text, viaVoice });
+}
+
+export function loadOperatorQueue(screen: CopilotScreenHint) {
+  return call<{ actions: CopilotOperatorAction[] }>("copilot", { action: "operator_queue", screen });
+}
+
+export function confirmOperatorActions(screen: CopilotScreenHint, ids: string[]) {
+  return call<{
+    ok: boolean;
+    status: "completed" | "partially_completed" | "failed";
+    results: { id: string; ok: boolean; summary?: string; error?: string; skipped?: boolean }[];
+    actions: CopilotOperatorAction[];
+  }>("copilot", { action: "operator_confirm", screen, ids });
+}
+
+export function retryOperatorActions(screen: CopilotScreenHint, ids: string[]) {
+  return call<{
+    ok: boolean;
+    status: "completed" | "partially_completed" | "failed";
+    results: { id: string; ok: boolean; summary?: string; error?: string }[];
+    actions: CopilotOperatorAction[];
+  }>("copilot", { action: "operator_retry", screen, ids });
+}
+
+export function cancelOperatorActions(screen: CopilotScreenHint, ids: string[]) {
+  return call<{ ok: true }>("copilot", { action: "operator_cancel", screen, ids });
 }
 
 export function confirmCopilotAction(screen: CopilotScreenHint, draftId: string) {

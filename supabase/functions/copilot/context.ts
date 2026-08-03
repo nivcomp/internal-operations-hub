@@ -274,3 +274,78 @@ export async function allowedTargets(admin: any, profile: any) {
   }
   return { projects, clients, suppliers };
 }
+/**
+ * System-wide snapshot for Operator Mode. Agency admins only — it deliberately
+ * contains internal pricing and margin, which no other role may ever receive.
+ */
+export async function buildOperatorSnapshot(admin: any): Promise<string> {
+  const lines: string[] = ["--- SYSTEM SNAPSHOT (agency-wide, internal) ---"];
+  const [
+    { data: projects }, { data: clients }, { data: suppliers }, { data: assignments },
+    { data: payments }, { data: times }, { data: schedules }, { data: estimates },
+    { data: changes }, { data: activity },
+  ] = await Promise.all([
+    admin.from("projects").select("id, name, status, client_id, payment_gate_status, archived_at, updated_at")
+      .order("updated_at", { ascending: false }).limit(80),
+    admin.from("clients").select("id, name, company, status, archived_at").limit(120),
+    admin.from("suppliers").select("id, name, status, archived_at").limit(120),
+    admin.from("project_supplier_assignments").select("project_id, supplier_id").limit(300),
+    admin.from("payments").select("project_id, amount, currency, status, due_date").limit(200),
+    admin.from("supplier_time_entries").select("id, project_id, supplier_id, hours, status").eq("status", "submitted").limit(200),
+    admin.from("project_schedule").select("project_id, requested_completion_date, approved_delivery_date, target_date_status").limit(200),
+    admin.from("project_estimates").select("project_id, version, client_calculation_rate, target_margin_percent, estimated_budget_min, estimated_budget_max, internal_cost, status, final_fixed_price").limit(200),
+    admin.from("change_requests").select("project_id, title, status").limit(100),
+    admin.from("activity_logs").select("label, detail, created_at").order("created_at", { ascending: false }).limit(15),
+  ]);
+
+  const clientById = new Map((clients ?? []).map((c: any) => [c.id, c]));
+  const supplierById = new Map((suppliers ?? []).map((s: any) => [s.id, s]));
+  const assignedByProject = new Map<string, string[]>();
+  for (const a of assignments ?? []) {
+    const list = assignedByProject.get(a.project_id) ?? [];
+    list.push(str(supplierById.get(a.supplier_id)?.name ?? "unknown", 60));
+    assignedByProject.set(a.project_id, list);
+  }
+  const scheduleByProject = new Map((schedules ?? []).map((s: any) => [s.project_id, s]));
+  const estimateByProject = new Map<string, any>();
+  for (const e of estimates ?? []) {
+    const current = estimateByProject.get(e.project_id);
+    if (!current || Number(e.version) > Number(current.version)) estimateByProject.set(e.project_id, e);
+  }
+
+  lines.push(`Clients: ${(clients ?? []).length} | Suppliers: ${(suppliers ?? []).length} | Projects: ${(projects ?? []).length}`);
+  for (const p of projects ?? []) {
+    const client = clientById.get(p.client_id);
+    const sch = scheduleByProject.get(p.id);
+    const est = estimateByProject.get(p.id);
+    const pays = (payments ?? []).filter((x: any) => x.project_id === p.id);
+    const parts = [
+      `Project "${str(p.name)}" [id ${p.id}]`,
+      `client ${str(client?.company || client?.name || "unknown", 60)}${client ? ` [id ${client.id}]` : ""}`,
+      `status ${p.status}`,
+      `payment gate ${p.payment_gate_status}`,
+      `suppliers ${(assignedByProject.get(p.id) ?? []).join(", ") || "NONE"}`,
+    ];
+    if (p.archived_at) parts.push("ARCHIVED");
+    if (sch?.requested_completion_date) parts.push(`requested ${sch.requested_completion_date} (${sch.target_date_status})`);
+    if (sch?.approved_delivery_date) parts.push(`approved delivery ${sch.approved_delivery_date}`);
+    if (est) {
+      parts.push(`estimate v${est.version} rate ${est.client_calculation_rate ?? "NOT SET"} margin target ${est.target_margin_percent ?? "?"}% budget ${est.estimated_budget_min ?? "?"}-${est.estimated_budget_max ?? "?"} internal cost ${est.internal_cost ?? "?"}${est.final_fixed_price ? " FIXED PRICE APPROVED" : ""}`);
+    } else parts.push("no estimate yet");
+    if (pays.length) parts.push(`payments ${pays.map((x: any) => `${x.currency ?? ""}${x.amount}:${x.status}`).join(", ")}`);
+    else parts.push("no payment record");
+    lines.push(parts.join(" | "));
+  }
+  for (const c of clients ?? []) {
+    lines.push(`Client "${str(c.company || c.name)}" [id ${c.id}] status ${c.status}${c.archived_at ? " ARCHIVED" : ""}`);
+  }
+  for (const s of suppliers ?? []) {
+    lines.push(`Supplier "${str(s.name)}" [id ${s.id}] status ${s.status}${s.archived_at ? " ARCHIVED" : ""}`);
+  }
+  const submittedHours = (times ?? []).reduce((sum: number, t: any) => sum + Number(t.hours ?? 0), 0);
+  lines.push(`Time awaiting approval: ${(times ?? []).length} entries, ${submittedHours}h`);
+  for (const cr of changes ?? []) lines.push(`Change request "${str(cr.title)}" (${cr.status}) on project ${cr.project_id}`);
+  lines.push("--- RECENT ACTIVITY ---");
+  for (const a of activity ?? []) lines.push(`${str(a.created_at, 30)}: ${str(a.label, 80)} — ${str(a.detail, 200)}`);
+  return lines.join("\n");
+}

@@ -847,6 +847,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          archived_at: string | null
           company: string
           created_at: string
           email: string
@@ -858,6 +859,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           company: string
           created_at?: string
           email: string
@@ -869,6 +871,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           company?: string
           created_at?: string
           email?: string
@@ -916,6 +919,81 @@ export type Database = {
           },
           {
             foreignKeyName: "conversation_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_audit_log: {
+        Row: {
+          action_type: string
+          actor_role: string
+          command: string
+          confirmed: boolean
+          created_at: string
+          execution_result: string
+          failure_reason: string | null
+          id: string
+          interpreted_intent: string
+          new_value: Json | null
+          operator_action_id: string | null
+          previous_value: Json | null
+          profile_id: string | null
+          source: string
+          target_id: string | null
+          target_label: string
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          actor_role?: string
+          command?: string
+          confirmed?: boolean
+          created_at?: string
+          execution_result?: string
+          failure_reason?: string | null
+          id?: string
+          interpreted_intent?: string
+          new_value?: Json | null
+          operator_action_id?: string | null
+          previous_value?: Json | null
+          profile_id?: string | null
+          source?: string
+          target_id?: string | null
+          target_label?: string
+          target_type?: string
+        }
+        Update: {
+          action_type?: string
+          actor_role?: string
+          command?: string
+          confirmed?: boolean
+          created_at?: string
+          execution_result?: string
+          failure_reason?: string | null
+          id?: string
+          interpreted_intent?: string
+          new_value?: Json | null
+          operator_action_id?: string | null
+          previous_value?: Json | null
+          profile_id?: string | null
+          source?: string
+          target_id?: string | null
+          target_label?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_audit_log_operator_action_id_fkey"
+            columns: ["operator_action_id"]
+            isOneToOne: false
+            referencedRelation: "copilot_operator_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copilot_audit_log_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -973,6 +1051,92 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_operator_actions: {
+        Row: {
+          action_label: string
+          action_type: string
+          confirmed_at: string | null
+          created_at: string
+          executed_at: string | null
+          failure_reason: string | null
+          id: string
+          payload: Json
+          plan_id: string | null
+          plan_step: number
+          plan_title: string | null
+          preview: Json
+          profile_id: string
+          requires_confirmation: boolean
+          result: Json | null
+          risk_level: string
+          source: string
+          source_command: string
+          status: string
+          target_id: string | null
+          target_label: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string
+          action_type: string
+          confirmed_at?: string | null
+          created_at?: string
+          executed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          payload?: Json
+          plan_id?: string | null
+          plan_step?: number
+          plan_title?: string | null
+          preview?: Json
+          profile_id: string
+          requires_confirmation?: boolean
+          result?: Json | null
+          risk_level?: string
+          source?: string
+          source_command?: string
+          status?: string
+          target_id?: string | null
+          target_label?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string
+          action_type?: string
+          confirmed_at?: string | null
+          created_at?: string
+          executed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          payload?: Json
+          plan_id?: string | null
+          plan_step?: number
+          plan_title?: string | null
+          preview?: Json
+          profile_id?: string
+          requires_confirmation?: boolean
+          result?: Json | null
+          risk_level?: string
+          source?: string
+          source_command?: string
+          status?: string
+          target_id?: string | null
+          target_label?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_operator_actions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2526,6 +2690,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          archived_at: string | null
           budget_signal: string
           client_id: string
           created_at: string
@@ -2537,6 +2702,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           budget_signal?: string
           client_id: string
           created_at?: string
@@ -2548,6 +2714,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           budget_signal?: string
           client_id?: string
           created_at?: string
@@ -2860,6 +3027,7 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          archived_at: string | null
           country: string
           created_at: string
           email: string
@@ -2871,6 +3039,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           country?: string
           created_at?: string
           email: string
@@ -2882,6 +3051,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           country?: string
           created_at?: string
           email?: string

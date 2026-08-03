@@ -2103,3 +2103,10 @@ A workspace-wide copilot: a persistent bubble/panel, live screen context, voice 
 
 **Next work unit**  
 See `NEXT_TASK.md`.
+
+## 2026-08-03 — Copilot Operator Mode (agency_admin)
+
+- Work unit: upgrade the agency_admin copilot into a typed AI system operator.
+- Main changes: new `copilot_operator_actions` queue and `copilot_audit_log` tables; `archived_at` on clients/projects/suppliers; new `supabase/functions/_shared/operator.ts` catalog of 33 typed admin actions with entity resolution, risk classification, dependency-aware delete/archive safety and business-rule checks; agency-wide snapshot in `copilot/context.ts`; operator prompt, queue endpoints (`operator_queue|confirm|cancel|retry`) and deferred multi-step plan resolution in `copilot/index.ts`; Operator Mode badge, risk cards and action queue in `CopilotDock.tsx`.
+- Tests: `pnpm run build` passed; live edge-function tests as agency_admin — cross-project question, client creation + confirmation, Hebrew two-step plan (create project + requested date) executed in order, delete-with-history refusal, `paid_ready_to_start` blocked without approved scope/payment, audit + activity rows verified in the database.
+- Known limitations: scope publication, estimate publishing/fixed price and change-request pricing still run through the existing project-chat proposal pipeline; supplier payments and printable flow-diagram export are not operator actions yet.

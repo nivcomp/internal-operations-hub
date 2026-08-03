@@ -1,5 +1,7 @@
 # Next Task
 
+> Latest completed unit: Copilot Operator Mode for agency_admin (see WORK_LOG.md, 2026-08-03). Next suggested unit: extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing, reusing the existing confirmation pipeline.
+
 ## Last Completed
 
 A persistent, context-aware, voice-enabled copilot across the whole workspace: floating bubble and panel, per-entity threads, server-side role-filtered context, spoken input and answers, form pre-fill suggestions, navigation chips, and data changes that are only ever proposals confirmed by a human.

@@ -1,9 +1,136 @@
 import { useEffect, useRef, useState } from "react";
 import { useCopilot } from "../../context/CopilotContext";
-import type { CopilotChip } from "../../services/copilotApi";
+import type { CopilotChip, CopilotOperatorAction } from "../../services/copilotApi";
 
 function isHebrew(text: string) {
   return /[\u0590-\u05FF]/.test(text);
+}
+
+const OPEN_STATUSES = ["proposed", "awaiting_confirmation", "failed"];
+
+/** One queued operator action: what it does, to what, and what changes. */
+function OperatorCard({
+  action, busy, onConfirm, onCancel, onRetry,
+}: {
+  action: CopilotOperatorAction;
+  busy: boolean;
+  onConfirm: (ids: string[]) => void;
+  onCancel: (ids: string[]) => void;
+  onRetry: (ids: string[]) => void;
+}) {
+  const open = OPEN_STATUSES.includes(action.status);
+  const detailed = action.risk_level === "high";
+  return (
+    <div className={`copilot-op copilot-op-${action.risk_level} is-${action.status}`}>
+      <header>
+        <strong>{action.action_label}</strong>
+        <span className={`copilot-op-risk risk-${action.risk_level}`}>{action.risk_level} risk</span>
+      </header>
+      {action.target_label ? <p className="copilot-op-target">Target: {action.target_label}</p> : null}
+
+      {(action.preview?.fields ?? []).length ? (
+        <ul className="copilot-op-fields">
+          {action.preview!.fields!.map((field, index) => (
+            <li key={index}>
+              <span>{field.label}</span>
+              <span>
+                {field.current !== undefined ? <em>{field.current} → </em> : null}
+                {field.proposed ?? "—"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {detailed && action.preview?.impact?.length ? (
+        <ul className="copilot-op-impact">
+          {action.preview.impact.map((line, index) => <li key={index}>{line}</li>)}
+        </ul>
+      ) : null}
+      {detailed && action.preview?.related?.length ? (
+        <p className="copilot-op-related">Related records: {action.preview.related.join(", ")}</p>
+      ) : null}
+
+      {action.status === "completed" ? (
+        <p className="copilot-op-done">Done — {action.result?.summary ?? "completed"}</p>
+      ) : null}
+      {action.status === "cancelled" ? <p className="copilot-hint">Cancelled.</p> : null}
+      {action.failure_reason ? <p className="copilot-error">{action.failure_reason}</p> : null}
+
+      {open ? (
+        <div className="copilot-action-buttons">
+          <button type="button" disabled={busy} onClick={() => (action.status === "failed" ? onRetry([action.id]) : onConfirm([action.id]))}>
+            {action.status === "failed" ? "Retry" : "Confirm"}
+          </button>
+          <button type="button" className="ghost" disabled={busy} onClick={() => onCancel([action.id])}>Cancel</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Groups queued actions into multi-step plans and single actions. */
+function OperatorQueue() {
+  const copilot = useCopilot();
+  const [showAll, setShowAll] = useState(false);
+  if (!copilot.operatorMode) return null;
+
+  const open = copilot.operatorActions.filter((action) => OPEN_STATUSES.includes(action.status));
+  const history = copilot.operatorActions.filter((action) => !OPEN_STATUSES.includes(action.status));
+  const visible = showAll ? [...open, ...history] : open;
+  if (!visible.length) return null;
+
+  const plans = new Map<string, CopilotOperatorAction[]>();
+  const singles: CopilotOperatorAction[] = [];
+  for (const action of visible) {
+    if (action.plan_id) plans.set(action.plan_id, [...(plans.get(action.plan_id) ?? []), action]);
+    else singles.push(action);
+  }
+
+  return (
+    <div className="copilot-op-queue">
+      <div className="copilot-op-queue-head">
+        <strong>Action queue</strong>
+        <button type="button" className="copilot-icon" onClick={() => setShowAll(!showAll)}>
+          {showAll ? "Open only" : `History (${history.length})`}
+        </button>
+      </div>
+
+      {[...plans.entries()].map(([planId, steps]) => {
+        const ordered = [...steps].sort((a, b) => a.plan_step - b.plan_step);
+        const openIds = ordered.filter((s) => OPEN_STATUSES.includes(s.status)).map((s) => s.id);
+        return (
+          <div key={planId} className="copilot-op-plan">
+            <p className="copilot-op-plan-title">{ordered[0].plan_title || "Multi-step plan"} — {ordered.length} steps</p>
+            {ordered.map((step) => (
+              <OperatorCard
+                key={step.id} action={step} busy={copilot.operatorBusy}
+                onConfirm={copilot.confirmOperator} onCancel={copilot.cancelOperator} onRetry={copilot.retryOperator}
+              />
+            ))}
+            {openIds.length > 1 ? (
+              <div className="copilot-action-buttons">
+                <button type="button" disabled={copilot.operatorBusy} onClick={() => void copilot.confirmOperator(openIds)}>
+                  Confirm all {openIds.length}
+                </button>
+                <button type="button" className="ghost" disabled={copilot.operatorBusy} onClick={() => void copilot.cancelOperator(openIds)}>
+                  Cancel plan
+                </button>
+              </div>
+            ) : null}
+            <p className="copilot-hint">Steps run in order and stop if one fails.</p>
+          </div>
+        );
+      })}
+
+      {singles.map((action) => (
+        <OperatorCard
+          key={action.id} action={action} busy={copilot.operatorBusy}
+          onConfirm={copilot.confirmOperator} onCancel={copilot.cancelOperator} onRetry={copilot.retryOperator}
+        />
+      ))}
+    </div>
+  );
 }
 
 function ChipRow({ chips, onRun }: { chips: CopilotChip[]; onRun: (chip: CopilotChip) => void }) {
@@ -66,6 +193,7 @@ export function CopilotDock() {
       <header className="copilot-head">
         <div>
           <strong>Copilot</strong>
+          {copilot.operatorMode ? <span className="copilot-operator-badge">Operator Mode</span> : null}
           <p className="copilot-context">{copilot.label}</p>
         </div>
         <div className="copilot-head-actions">
@@ -132,6 +260,8 @@ export function CopilotDock() {
             </div>
           </div>
         ))}
+
+        <OperatorQueue />
       </div>
 
       <ChipRow chips={copilot.chips} onRun={copilot.runChip} />
