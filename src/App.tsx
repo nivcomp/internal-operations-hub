@@ -317,7 +317,13 @@ function AppShell() {
 
 function OnboardingGate() {
   const { profile } = useAuth();
-  const { loading, needsOnboarding, refresh, markComplete } = useOnboarding();
+  const { loading, needsOnboarding, refresh } = useOnboarding();
+  const { reload } = useAppData();
+
+  async function finishOnboarding() {
+    await refresh();
+    reload();
+  }
 
   if (loading) {
     return (
@@ -328,13 +334,11 @@ function OnboardingGate() {
   }
 
   if (needsOnboarding && profile?.role === "client") {
-    return <ClientOnboardingWizard onDone={() => void refresh()} />;
+    return <ClientOnboardingWizard onDone={() => void finishOnboarding()} />;
   }
   if (needsOnboarding && profile?.role === "supplier") {
-    return <SupplierOnboardingWizard onDone={() => void refresh()} />;
+    return <SupplierOnboardingWizard onDone={() => void finishOnboarding()} />;
   }
-  // Agency admins are never blocked; make sure their state is marked as started.
-  void markComplete;
 
   return <AppShell />;
 }
