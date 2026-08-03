@@ -78,11 +78,7 @@ export function prepareRegistration(input: RegistrationIntake) {
   });
 }
 
-/**
- * Creates the real Auth account with the password the person chose. The
- * authenticated client is imported lazily so the public screen never depends on
- * it while rendering.
- */
+/** Creates the real Auth account with the password the person chose. */
 export async function createAccount(input: {
   email: string;
   password: string;
@@ -90,8 +86,7 @@ export async function createAccount(input: {
   language: "he" | "en";
   redirectTo: string;
 }): Promise<{ signedIn: boolean; needsVerification: boolean; error?: string }> {
-  const { supabase } = await import("../integrations/supabase/client");
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await getAuthClient().auth.signUp({
     email: input.email,
     password: input.password,
     options: {
@@ -99,15 +94,23 @@ export async function createAccount(input: {
       data: { full_name: input.fullName, preferred_language: input.language },
     },
   });
-  if (error) return { signedIn: false, needsVerification: false, error: error.message };
+  if (error) {
+    const he = input.language === "he";
+    const raw = error.message || "";
+    const friendly = /already registered|already exists/i.test(raw)
+      ? (he ? "כתובת המייל הזו כבר רשומה. אפשר להתחבר עם הסיסמה הקיימת." : "This email is already registered — please sign in instead.")
+      : /password/i.test(raw)
+        ? (he ? "הסיסמה חלשה מדי. בחרו סיסמה באורך 8 תווים לפחות." : "That password is too weak — use at least 8 characters.")
+        : (he ? "לא הצלחנו ליצור את החשבון כרגע. נסו שוב בעוד רגע." : "We could not create the account right now. Please try again.");
+    return { signedIn: false, needsVerification: false, error: friendly };
+  }
   if (data.session) return { signedIn: true, needsVerification: false };
   return { signedIn: false, needsVerification: true };
 }
 
 /** Provisions the isolated profile + client/supplier record for the new session. */
 export async function claimAccount(role: RegistrationRole): Promise<boolean> {
-  const { supabase } = await import("../integrations/supabase/client");
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getAuthClient().auth.getSession();
   const token = data.session?.access_token;
   if (!token) return false;
   const response = await fetch(FUNCTIONS_URL, {
@@ -124,8 +127,7 @@ export async function claimAccount(role: RegistrationRole): Promise<boolean> {
 }
 
 export async function resendVerification(email: string, redirectTo: string): Promise<string | null> {
-  const { supabase } = await import("../integrations/supabase/client");
-  const { error } = await supabase.auth.resend({
+  const { error } = await getAuthClient().auth.resend({
     type: "signup",
     email,
     options: { emailRedirectTo: redirectTo },
