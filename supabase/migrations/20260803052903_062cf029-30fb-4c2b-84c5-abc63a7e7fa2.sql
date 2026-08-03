@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.guard_project_schedule_columns() FROM PUBLIC, anon, authenticated;
