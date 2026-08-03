@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
+import ProjectInsights from "../components/ProjectInsights";
 import { StatusBadge } from "../components/StatusBadge";
 import { SupplierEstimateReview } from "../components/estimation/SupplierEstimateReview";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
@@ -165,8 +166,10 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
               subtitle="Ask about your assigned work, acceptance criteria, blockers and time. Client price and margin are never part of this workspace."
               readOnly={isPreview}
               readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the supplier is disabled."
-              suggestions={["Explain the acceptance criteria", "Draft my progress report", "What is left to complete?"]}
+              suggestions={["Explain the acceptance criteria", "Draft my progress report", "Show me the project flow"]}
+              safetyNotice="This assistant only covers your assigned work on this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
             />
+            <ProjectInsights projectId={chatProject.id} role="supplier" supplierId={supplier.id} />
           </>
         );
       })()}

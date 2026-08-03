@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
+import ProjectInsights from "../components/ProjectInsights";
 import { StatusBadge } from "../components/StatusBadge";
 import { BudgetSimulator } from "../components/estimation/BudgetSimulator";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
@@ -151,8 +152,11 @@ export function ClientPortalPage({
         subtitle="Explain what you need in your own words. The guide asks one question at a time and builds a draft for the agency to review."
         readOnly={isPreview}
         readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the client is disabled."
-        suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Summarise what we agreed so far"]}
+        suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Show me the project flow", "Summarise what we agreed so far"]}
+        safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
       />
+
+      <ProjectInsights projectId={project.id} role="client" />
 
       <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
       <section className="card">

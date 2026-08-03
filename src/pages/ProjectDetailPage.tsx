@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
+import ProjectInsights from "../components/ProjectInsights";
 import { StatusBadge } from "../components/StatusBadge";
 import { EstimateControl } from "../components/estimation/EstimateControl";
 import {
@@ -163,8 +164,10 @@ export function ProjectDetailPage({
           "What information is still missing?",
           "Create a draft scope.",
           "Prepare a supplier briefing.",
+          "Show me the project flow.",
         ]}
       />
+      <ProjectInsights projectId={activeProject.id} role="agency_admin" allowModeSwitch />
       <section className="detail-grid">
         <article className="card">
           <h2>{activeProject.name}</h2>
