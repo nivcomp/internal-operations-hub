@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS clients_supplier_read ON public.clients;
