@@ -1001,6 +1001,39 @@ export type Database = {
           },
         ]
       }
+      copilot_entity_facts: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          facts: Json
+          id: string
+          label: string
+          refreshed_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          facts?: Json
+          id?: string
+          label?: string
+          refreshed_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          facts?: Json
+          id?: string
+          label?: string
+          refreshed_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       copilot_messages: {
         Row: {
           body: string
@@ -1134,6 +1167,84 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "copilot_operator_actions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_slot_memory: {
+        Row: {
+          action_type: string
+          confidence: number
+          confirmed_parameters: Json
+          created_at: string
+          expires_at: string
+          id: string
+          intent: string
+          last_correction: string
+          missing_parameters: Json
+          operator_action_id: string | null
+          profile_id: string
+          scope_key: string
+          source_language: string
+          status: string
+          target_id: string | null
+          target_label: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          confidence?: number
+          confirmed_parameters?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          intent: string
+          last_correction?: string
+          missing_parameters?: Json
+          operator_action_id?: string | null
+          profile_id: string
+          scope_key: string
+          source_language?: string
+          status?: string
+          target_id?: string | null
+          target_label?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          confidence?: number
+          confirmed_parameters?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          intent?: string
+          last_correction?: string
+          missing_parameters?: Json
+          operator_action_id?: string | null
+          profile_id?: string
+          scope_key?: string
+          source_language?: string
+          status?: string
+          target_id?: string | null
+          target_label?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_slot_memory_operator_action_id_fkey"
+            columns: ["operator_action_id"]
+            isOneToOne: false
+            referencedRelation: "copilot_operator_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copilot_slot_memory_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"

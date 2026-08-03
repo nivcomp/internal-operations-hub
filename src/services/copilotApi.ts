@@ -62,6 +62,24 @@ export type CopilotUsage = {
 
 export type OperatorRisk = "low" | "medium" | "high";
 
+/** Structured memory of the command currently being negotiated with the operator. */
+export type CopilotSlotMemory = {
+  id: string;
+  intent: string;
+  action_type: string;
+  target_type: string;
+  target_id: string | null;
+  target_label: string;
+  confirmed_parameters: Record<string, unknown>;
+  missing_parameters: string[];
+  source_language: string;
+  confidence: number;
+  status: string;
+  last_correction: string;
+  operator_action_id: string | null;
+  expires_at: string;
+};
+
 export type CopilotOperatorAction = {
   id: string;
   plan_id: string | null;
@@ -121,6 +139,7 @@ export function loadCopilotHistory(screen: CopilotScreenHint) {
     usage: CopilotUsage;
     operatorMode?: boolean;
     operatorActions?: CopilotOperatorAction[];
+    slotMemory?: CopilotSlotMemory | null;
   }>("copilot", { action: "history", screen });
 }
 
@@ -136,6 +155,7 @@ export function sendCopilotMessage(screen: CopilotScreenHint, text: string, viaV
     usage: CopilotUsage;
     operatorMode?: boolean;
     operatorActions?: CopilotOperatorAction[];
+    slotMemory?: CopilotSlotMemory | null;
   }>("copilot", { action: "send", screen, text, viaVoice });
 }
 
@@ -149,6 +169,7 @@ export function confirmOperatorActions(screen: CopilotScreenHint, ids: string[])
     status: "completed" | "partially_completed" | "failed";
     results: { id: string; ok: boolean; summary?: string; error?: string; skipped?: boolean }[];
     actions: CopilotOperatorAction[];
+    slotMemory?: CopilotSlotMemory | null;
   }>("copilot", { action: "operator_confirm", screen, ids });
 }
 
@@ -158,11 +179,16 @@ export function retryOperatorActions(screen: CopilotScreenHint, ids: string[]) {
     status: "completed" | "partially_completed" | "failed";
     results: { id: string; ok: boolean; summary?: string; error?: string }[];
     actions: CopilotOperatorAction[];
+    slotMemory?: CopilotSlotMemory | null;
   }>("copilot", { action: "operator_retry", screen, ids });
 }
 
 export function cancelOperatorActions(screen: CopilotScreenHint, ids: string[]) {
   return call<{ ok: true }>("copilot", { action: "operator_cancel", screen, ids });
+}
+
+export function clearCopilotSlotMemory(screen: CopilotScreenHint) {
+  return call<{ ok: true }>("copilot", { action: "clear_slot", screen });
 }
 
 export function confirmCopilotAction(screen: CopilotScreenHint, draftId: string) {

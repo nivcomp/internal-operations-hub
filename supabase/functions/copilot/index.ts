@@ -14,8 +14,14 @@ import { buildOperatorSnapshot } from "./context.ts";
 import {
   buildOperatorAction, catalogForPrompt, OPERATOR_ACTIONS, runOperatorAction, type OperatorCtx,
 } from "../_shared/operator.ts";
+import {
+  extractIntent, isComplexCommand, LIGHT_MODEL, mergeSlots, normalizeCommand, slotsToActionInput,
+  STRONG_MODEL, type SlotMemory,
+} from "../_shared/intent.ts";
+import { ADMIN_QUERY_NAMES, runAdminQuery } from "../_shared/adminQueries.ts";
+import { refreshProjectFacts } from "../_shared/facts.ts";
 
-const MODEL = "openai/gpt-5.6-sol";
+const MODEL = STRONG_MODEL;
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/responses";
 
 const json = (body: unknown, status = 200) =>
@@ -129,7 +135,7 @@ async function resolveActor(authHeader: string | null) {
   return { profile } as const;
 }
 
-async function callModel(system: string, context: string, history: any[], userText: string) {
+async function callModel(system: string, context: string, history: any[], userText: string, model = MODEL) {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) throw new Error("AI is not configured (missing LOVABLE_API_KEY).");
   const input = [
@@ -144,7 +150,7 @@ async function callModel(system: string, context: string, history: any[], userTe
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({
-      model: MODEL, input, stream: true, store: false,
+      model, input, stream: true, store: false,
       max_output_tokens: 4000,
       reasoning: { effort: "low", summary: "auto" },
     }),
@@ -227,6 +233,65 @@ function operatorCtx(profile: any, authHeader: string, source: string, command: 
   };
 }
 
+// ------------------------------------------------------------- slot memory
+
+const SLOT_TTL_MS = 2 * 60 * 60 * 1000;
+
+async function loadSlot(profileId: string, scopeKey: string): Promise<SlotMemory | null> {
+  const { data } = await admin.from("copilot_slot_memory")
+    .select("*").eq("profile_id", profileId).eq("scope_key", scopeKey).maybeSingle();
+  if (!data) return null;
+  if (new Date(data.expires_at).getTime() < Date.now()) {
+    await admin.from("copilot_slot_memory").delete().eq("id", data.id);
+    return null;
+  }
+  return data as SlotMemory;
+}
+
+async function saveSlot(profileId: string, scopeKey: string, slot: SlotMemory) {
+  const { data } = await admin.from("copilot_slot_memory").upsert({
+    profile_id: profileId,
+    scope_key: scopeKey,
+    intent: slot.intent || slot.action_type || "unknown",
+    action_type: slot.action_type || "",
+    target_type: slot.target_type || "none",
+    target_id: slot.target_id,
+    target_label: slot.target_label ?? "",
+    confirmed_parameters: slot.confirmed_parameters ?? {},
+    missing_parameters: slot.missing_parameters ?? [],
+    source_language: slot.source_language ?? "en",
+    confidence: slot.confidence ?? 0,
+    status: slot.status ?? "collecting",
+    last_correction: slot.last_correction ?? "",
+    operator_action_id: slot.operator_action_id,
+    expires_at: new Date(Date.now() + SLOT_TTL_MS).toISOString(),
+  }, { onConflict: "profile_id,scope_key" }).select("*").maybeSingle();
+  return (data ?? slot) as SlotMemory;
+}
+
+async function clearSlot(profileId: string, scopeKey: string) {
+  await admin.from("copilot_slot_memory").delete().eq("profile_id", profileId).eq("scope_key", scopeKey);
+}
+
+/** Queues one fully-resolved catalog action for confirmation. */
+async function queueOperatorAction(
+  profileId: string, actionType: string, validated: any, command: string, source: string,
+) {
+  const spec = OPERATOR_ACTIONS[actionType];
+  const { data } = await admin.from("copilot_operator_actions").insert({
+    profile_id: profileId,
+    plan_id: null, plan_title: null, plan_step: 1,
+    action_type: actionType, action_label: validated.summary,
+    target_type: spec.targetType, target_id: validated.targetId, target_label: validated.targetLabel,
+    source_command: command, source,
+    risk_level: validated.risk,
+    requires_confirmation: validated.risk !== "low",
+    status: validated.risk === "low" ? "proposed" : "awaiting_confirmation",
+    payload: validated.payload, preview: validated.preview,
+  }).select("*").single();
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -269,6 +334,8 @@ Deno.serve(async (req) => {
         await admin.from("copilot_operator_actions")
           .update({ status: "cancelled" }).in("id", queued.map((r: any) => r.id))
           .in("status", ["proposed", "awaiting_confirmation", "failed"]);
+        await admin.from("copilot_slot_memory").delete()
+          .eq("profile_id", profile.id).in("operator_action_id", queued.map((r: any) => r.id));
         return json({ ok: true });
       }
 
@@ -291,15 +358,45 @@ Deno.serve(async (req) => {
             .update({ status: "executing", confirmed_at: new Date().toISOString(), failure_reason: null })
             .eq("id", row.id);
           const ctx = operatorCtx(profile, authHeader, row.source, row.source_command);
-          const result = await runOperatorAction(ctx, { ...row, confirmed_at: new Date().toISOString() });
+          let toRun = { ...row, confirmed_at: new Date().toISOString() };
+          // A retry re-reads the live record first, so the preview reflects the
+          // current database state — while keeping every value already supplied.
+          if (action === "operator_retry") {
+            const { data: mem } = await admin.from("copilot_slot_memory").select("*")
+              .eq("profile_id", profile.id).eq("operator_action_id", row.id).maybeSingle();
+            if (mem) {
+              const rebuilt = await buildOperatorAction(ctx, row.action_type, slotsToActionInput(mem as any));
+              if (!("error" in rebuilt)) {
+                await admin.from("copilot_operator_actions").update({
+                  target_id: rebuilt.targetId, target_label: rebuilt.targetLabel,
+                  payload: rebuilt.payload, preview: rebuilt.preview, action_label: rebuilt.summary,
+                }).eq("id", row.id);
+                toRun = { ...toRun, payload: rebuilt.payload, preview: rebuilt.preview, target_id: rebuilt.targetId, action_label: rebuilt.summary };
+              }
+            }
+          }
+          const result = await runOperatorAction(ctx, toRun);
           results.push({ id: row.id, ...result });
           if (!result.ok) stopped = true;
         }
         const completed = results.filter((r) => r.ok).length;
         const status = completed === 0 ? "failed" : completed === results.length ? "completed" : "partially_completed";
+        // Memory is only released once the work actually landed; a failure keeps
+        // every supplied value so a retry never re-asks for them.
+        const succeeded = results.filter((r) => r.ok).map((r) => r.id);
+        if (succeeded.length) {
+          await admin.from("copilot_slot_memory").delete()
+            .eq("profile_id", profile.id).in("operator_action_id", succeeded);
+          for (const row of queued) {
+            if (succeeded.includes(row.id) && row.target_type === "project" && row.target_id) {
+              await refreshProjectFacts(admin, row.target_id);
+            }
+          }
+        }
         const { data: fresh } = await admin.from("copilot_operator_actions")
           .select("*").eq("profile_id", profile.id).order("created_at", { ascending: false }).limit(60);
-        return json({ ok: status !== "failed", status, results, actions: fresh ?? [] });
+        const slotMemory = await loadSlot(profile.id, access.scopeKey);
+        return json({ ok: status !== "failed", status, results, actions: fresh ?? [], slotMemory });
       }
 
       return json({ error: "Unknown operator action" }, 400);
@@ -317,6 +414,8 @@ Deno.serve(async (req) => {
         ? await admin.from("copilot_operator_actions").select("*")
             .eq("profile_id", profile.id).order("created_at", { ascending: false }).limit(60)
         : { data: [] };
+      // A pending confirmation survives a browser refresh.
+      const slotMemory = operatorMode ? await loadSlot(profile.id, access.scopeKey) : null;
       return json({
         scopeKey: access.scopeKey,
         label,
@@ -324,6 +423,7 @@ Deno.serve(async (req) => {
         preferences: state?.preferences ?? {},
         operatorMode,
         operatorActions: operatorActions ?? [],
+        slotMemory,
         usage: {
           percentUsed: usagePercent(usage, limits),
           messagesToday: usage.dayMessages,
@@ -345,6 +445,12 @@ Deno.serve(async (req) => {
     if (action === "clear") {
       await admin.from("copilot_messages").delete()
         .eq("profile_id", profile.id).eq("scope_key", access.scopeKey);
+      await clearSlot(profile.id, access.scopeKey);
+      return json({ ok: true });
+    }
+
+    if (action === "clear_slot") {
+      await clearSlot(profile.id, access.scopeKey);
       return json({ ok: true });
     }
 
@@ -417,24 +523,173 @@ Deno.serve(async (req) => {
     });
 
     const started = Date.now();
+    const signals = normalizeCommand(text);
+    let slot = operatorMode ? await loadSlot(profile.id, access.scopeKey) : null;
+    const complex = operatorMode && isComplexCommand(signals.normalized, Boolean(slot));
+    const source = body.viaVoice === true ? "voice" : "text";
+
     let context = await buildCopilotContext(admin, profile, access, hint);
     if (operatorMode) context += `\n${await buildOperatorSnapshot(admin)}`;
+    if (operatorMode && access.projectId) {
+      const factBlock = await refreshProjectFacts(admin, access.projectId);
+      if (factBlock) context += `\n${factBlock}`;
+    }
     context = context.slice(0, Math.max(limits.maximum_context_size, operatorMode ? 60000 : 0));
-    let parsed: any;
+
+    // ---- Structured command extraction + slot memory (Operator Mode only) ----
+    const operatorActions: any[] = [];
+    const rejectedActions: { kind: string; reason: string }[] = [];
+    let deterministicReply = "";
+    let intentBlock = "";
+    let handledByIntent = false;
+    let intent: Awaited<ReturnType<typeof extractIntent>> = null;
+
+    if (operatorMode && complex) {
+      try {
+        intent = await extractIntent({
+          command: text, signals, catalog: catalogForPrompt(),
+          queries: ADMIN_QUERY_NAMES, memory: slot, contextDigest: context,
+        });
+      } catch (_err) {
+        intent = null;
+      }
+    }
+
+    if (operatorMode && intent?.admin_query) {
+      const result = await runAdminQuery(admin, intent.admin_query);
+      if (result) context += `\n--- QUERY RESULT (${intent.admin_query}) ---\n${result}`;
+    }
+
+    if (operatorMode && intent) {
+      const he2 = intent.source_language === "he" || he;
+      const octx = operatorCtx(profile, req.headers.get("Authorization")!, source, text);
+
+      if (intent.conversation_op === "cancel" && slot) {
+        if (slot.operator_action_id) {
+          await admin.from("copilot_operator_actions").update({ status: "cancelled" })
+            .eq("id", slot.operator_action_id)
+            .in("status", ["proposed", "awaiting_confirmation", "failed"]);
+        }
+        await clearSlot(profile.id, access.scopeKey);
+        slot = null;
+        handledByIntent = true;
+        deterministicReply = he2 ? "ביטלתי. שום דבר לא נשמר." : "Cancelled — nothing was saved.";
+      } else if (intent.conversation_op === "confirm" && slot && slot.action_type) {
+        // The owner confirmed in words: execute the remembered action with the
+        // values already supplied. Nothing is asked again.
+        const merged = mergeSlots(slot, intent, signals);
+        let row: any = null;
+        if (merged.operator_action_id) {
+          const { data } = await admin.from("copilot_operator_actions").select("*")
+            .eq("id", merged.operator_action_id).eq("profile_id", profile.id).maybeSingle();
+          if (data && ["proposed", "awaiting_confirmation", "failed"].includes(data.status)) row = data;
+        }
+        if (!row) {
+          const rebuilt = await buildOperatorAction(octx, merged.action_type, slotsToActionInput(merged));
+          if ("error" in rebuilt) {
+            slot = await saveSlot(profile.id, access.scopeKey, { ...merged, status: "needs_input" });
+            handledByIntent = true;
+            deterministicReply = rebuilt.error;
+          } else {
+            row = await queueOperatorAction(profile.id, merged.action_type, rebuilt, text, source);
+          }
+        }
+        if (row) {
+          await admin.from("copilot_operator_actions")
+            .update({ status: "executing", confirmed_at: new Date().toISOString(), failure_reason: null })
+            .eq("id", row.id);
+          const result = await runOperatorAction(octx, { ...row, confirmed_at: new Date().toISOString() });
+          const { data: fresh } = await admin.from("copilot_operator_actions").select("*").eq("id", row.id).maybeSingle();
+          if (fresh) operatorActions.push(fresh);
+          handledByIntent = true;
+          if (result.ok) {
+            if (access.projectId) await refreshProjectFacts(admin, access.projectId);
+            await clearSlot(profile.id, access.scopeKey);
+            slot = null;
+            deterministicReply = he2 ? `בוצע. ${result.summary}` : `Done. ${result.summary}`;
+          } else {
+            slot = await saveSlot(profile.id, access.scopeKey, {
+              ...merged, status: "failed", operator_action_id: row.id,
+            });
+            deterministicReply = he2
+              ? `הביצוע נכשל: ${result.error} כל הערכים נשמרו — אפשר לנסות שוב.`
+              : `Execution failed: ${result.error} All the values you gave are kept — you can retry.`;
+          }
+        }
+      } else if (intent.action_type && OPERATOR_ACTIONS[intent.action_type]) {
+        const merged = mergeSlots(slot, intent, signals);
+        const validated = await buildOperatorAction(octx, merged.action_type, slotsToActionInput(merged));
+        if ("error" in validated) {
+          slot = await saveSlot(profile.id, access.scopeKey, {
+            ...merged,
+            status: "needs_input",
+            missing_parameters: merged.missing_parameters.length ? merged.missing_parameters : ["target"],
+          });
+          intentBlock = `--- RESOLVED INTENT (incomplete) ---
+Action: ${merged.action_type}
+Values already supplied (NEVER ask for these again): ${JSON.stringify(merged.confirmed_parameters)}
+Target so far: ${merged.target_label || "unknown"}
+Blocking problem: ${validated.error}
+Ask ONLY for what is missing, in one short sentence, and repeat back what you already have.`;
+        } else {
+          // Replace any earlier open proposal for the same remembered intent.
+          if (slot?.operator_action_id) {
+            await admin.from("copilot_operator_actions").update({ status: "cancelled" })
+              .eq("id", slot.operator_action_id).in("status", ["proposed", "awaiting_confirmation"]);
+          }
+          const row = await queueOperatorAction(profile.id, merged.action_type, validated, text, source);
+          if (row) operatorActions.push(row);
+          slot = await saveSlot(profile.id, access.scopeKey, {
+            ...merged,
+            target_id: validated.targetId,
+            target_label: validated.targetLabel,
+            confirmed_parameters: { ...merged.confirmed_parameters, ...validated.payload },
+            missing_parameters: [],
+            status: "awaiting_confirmation",
+            operator_action_id: row?.id ?? null,
+          });
+          intentBlock = `--- RESOLVED ACTION (already queued for confirmation) ---
+${validated.summary} on ${validated.targetLabel}
+Preview: ${JSON.stringify(validated.preview)}
+State it back in one sentence with the exact values and say it is waiting for the owner's confirmation.
+Do NOT ask for any of these values again and do NOT add "operator_actions" to your JSON.`;
+        }
+      }
+    }
+
+    if (operatorMode && slot && !intentBlock) {
+      intentBlock = `--- PENDING ACTION MEMORY ---
+${JSON.stringify({
+        action: slot.action_type, target: slot.target_label,
+        confirmed: slot.confirmed_parameters, missing: slot.missing_parameters, status: slot.status,
+      })}
+These values were already supplied. Never ask for them again.`;
+    }
+
+    const replyModel = complex ? STRONG_MODEL : LIGHT_MODEL;
+    let parsed: any = deterministicReply
+      ? { reply: deterministicReply, language: he ? "he" : "en", observation: "", chips: [], proposed_actions: [] }
+      : null;
+    if (!parsed) {
     try {
       const prompt = systemPrompt(role, agent, label) + (operatorMode ? operatorPrompt() : "");
-      const raw = await callModel(prompt, context, history, text);
+      const raw = await callModel(
+        prompt,
+        intentBlock ? `${context}\n\n${intentBlock}` : context,
+        history, text, replyModel,
+      );
       if (!raw) throw new Error("The AI returned an empty response.");
       parsed = parseOutput(raw);
     } catch (err) {
       await recordEvent(admin, {
         profile_id: profile.id, project_id: access.projectId, agent_type: `copilot_${agent}`,
         actor_role: role, classification: "project_relevant", outcome: "failed",
-        message_hash: messageHash, message_length: text.length, model: MODEL,
+        message_hash: messageHash, message_length: text.length, model: replyModel,
         rejection_reason: String((err as Error).message).slice(0, 300),
         duration_ms: Date.now() - started,
       });
       return json({ error: (err as Error).message }, 502);
+    }
     }
 
     const targets = await allowedTargets(admin, profile);
@@ -442,7 +697,6 @@ Deno.serve(async (req) => {
 
     // Real data changes go through the same validated, human-confirmed pipeline as project chat.
     const pendingActions: any[] = [];
-    const rejectedActions: { kind: string; reason: string }[] = [];
     const rawActions = Array.isArray(parsed.proposed_actions) ? parsed.proposed_actions.slice(0, 2) : [];
     if (rawActions.length && access.project) {
       const ctx: Ctx = {
@@ -482,9 +736,8 @@ Deno.serve(async (req) => {
     }
 
     // Operator Mode: typed, catalog-bound admin operations queued for confirmation.
-    const operatorActions: any[] = [];
-    if (operatorMode) {
-      const source = body.viaVoice === true ? "voice" : "text";
+    // Skipped when the structured-intent stage already resolved and queued the command.
+    if (operatorMode && !handledByIntent && !intentBlock.startsWith("--- RESOLVED ACTION")) {
       const ctx = operatorCtx(profile, req.headers.get("Authorization")!, source, text);
       const raw = Array.isArray(parsed.operator_actions) ? parsed.operator_actions.slice(0, 6) : [];
       const planTitle = String(raw[0]?.plan_title ?? "").slice(0, 120);
@@ -558,10 +811,10 @@ Deno.serve(async (req) => {
       profile_id: profile.id, project_id: access.projectId, client_id: access.clientId,
       supplier_id: access.supplierId, agent_type: `copilot_${agent}`, actor_role: role,
       classification: "project_relevant", outcome: "success",
-      message_hash: messageHash, message_length: text.length, model: MODEL,
+      message_hash: messageHash, message_length: text.length, model: replyModel,
       input_tokens: inputTokens, output_tokens: outputTokens,
       total_tokens: inputTokens + outputTokens,
-      estimated_cost: estimateCost(MODEL, inputTokens + outputTokens),
+      estimated_cost: estimateCost(replyModel, inputTokens + outputTokens),
       duration_ms: Date.now() - started,
     });
 
@@ -585,6 +838,8 @@ Deno.serve(async (req) => {
       operatorActions,
       operatorMode,
       rejectedActions,
+      slotMemory: slot ?? null,
+      intent: intent ? { intent: intent.intent, action_type: intent.action_type, conversation_op: intent.conversation_op, confidence: intent.confidence, missing: intent.missing_parameters } : null,
       usage: {
         percentUsed: freshPercent,
         messagesToday: freshUsage.dayMessages,

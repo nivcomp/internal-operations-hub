@@ -151,6 +151,13 @@ export function CopilotDock() {
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
+  // A voice transcript lands in the composer so it can be corrected before sending.
+  useEffect(() => {
+    if (!copilot.transcript) return;
+    setDraft(copilot.transcript);
+    copilot.clearTranscript();
+  }, [copilot]);
+
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [copilot.messages, copilot.pendingActions]);
@@ -215,6 +222,26 @@ export function CopilotDock() {
       </header>
 
       {copilot.observation ? <p className="copilot-observation">{copilot.observation}</p> : null}
+
+      {copilot.slotMemory && copilot.slotMemory.status !== "completed" ? (
+        <div className="copilot-slot">
+          <div>
+            <strong>{copilot.slotMemory.target_label || "Pending command"}</strong>
+            <p>
+              {Object.entries(copilot.slotMemory.confirmed_parameters ?? {})
+                .filter(([key]) => !key.startsWith("__"))
+                .map(([key, value]) => `${key.replace(/_/g, " ")}: ${String(value)}`)
+                .join(" · ") || "No values captured yet"}
+            </p>
+            {copilot.slotMemory.missing_parameters?.length ? (
+              <p className="copilot-hint">Still needed: {copilot.slotMemory.missing_parameters.join(", ")}</p>
+            ) : null}
+          </div>
+          <button type="button" className="copilot-icon" onClick={() => void copilot.clearSlotMemory()}>
+            Forget
+          </button>
+        </div>
+      ) : null}
 
       <div className="copilot-messages" ref={listRef}>
         {copilot.loading ? <p className="copilot-hint">Loading…</p> : null}
