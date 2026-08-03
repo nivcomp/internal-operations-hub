@@ -12,6 +12,7 @@ import {
   updateEstimate, updateEstimateItem, updateSupplierReview,
 } from "../../services/estimationApi";
 import {
+import { onEstimationChanged } from "../../lib/estimationEvents";
   complexityLevels, complexityMultipliers, estimateStatusLabels, responsibleRoles, roleLabels,
   type EstimateBundle, type EstimateItem, type ProjectEstimate,
 } from "../../types/estimation";
@@ -49,6 +50,7 @@ export function EstimateControl({ projectId }: { projectId: string }) {
   }
 
   useEffect(() => { void reload(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [projectId]);
+  useEffect(() => onEstimationChanged(projectId, () => { void reload(); }), [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const estimate: ProjectEstimate | undefined = bundle.estimates.find((e) => e.id === activeId);
   const items = useMemo(

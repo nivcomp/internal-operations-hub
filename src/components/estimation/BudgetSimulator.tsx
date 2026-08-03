@@ -7,6 +7,7 @@ import {
 } from "../../lib/estimation";
 import { deleteScenario, fetchProjectEstimation, saveScenario } from "../../services/estimationApi";
 import type { EstimateBundle, EstimateScenario, ProjectEstimate } from "../../types/estimation";
+import { onEstimationChanged } from "../../lib/estimationEvents";
 
 type Props = {
   projectId: string;
@@ -55,6 +56,7 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
   }
 
   useEffect(() => { void reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [projectId]);
+  useEffect(() => onEstimationChanged(projectId, () => { void reload(); }), [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setSelection(selectionFromItems(items)); }, [items]);
 
   if (loading) return <section className="card"><h2>Budget simulator</h2><p className="muted-text">Loading your estimate…</p></section>;
