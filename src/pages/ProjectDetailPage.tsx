@@ -441,6 +441,7 @@ export function ProjectDetailPage({
           </table>
         ) : <p>No change requests for this project.</p>}
       </section>
+      <EstimateControl projectId={project.id} />
       <section className="detail-grid">
         <article className="card">
           <h2>Files and links</h2>
