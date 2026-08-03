@@ -942,23 +942,23 @@ th {
 /* -------- Warning + draft -------- */
 
 .warning-card {
-  border-color: hsl(var(--warning) / 0.4);
+  border-color: var(--warning-line);
+  background: linear-gradient(180deg, #fff8e0 0%, #fff2cf 100%);
 }
 
 .card.subtle {
-  background: hsl(var(--muted) / 0.35);
+  background: var(--surface-alt);
   box-shadow: none;
 }
 
 .stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 650;
   margin: 0.25rem 0;
 }
 
-.legacy-warning-card {
-  border-color: var(--warning-line);
-  background: linear-gradient(180deg, #fff8e0 0%, #fff2cf 100%);
+.warning-card h3 {
+  color: #6b4400;
 }
 
 .warning-card h2 {
