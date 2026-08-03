@@ -425,6 +425,25 @@ function parseModelOutput(raw: string) {
   return { reply: raw, language: "en", drafts: {}, questions: [], proposed_actions: [] };
 }
 
+/** The role that is actually acting right now (Yaniv in supplier mode acts as a supplier). */
+function effectiveRole(agent: AgentType, profile: any): "agency_admin" | "client" | "supplier" {
+  if (agent === "work_assistant") return "supplier";
+  return profile.role;
+}
+
+function canConfirm(draft: any, agent: AgentType, profile: any) {
+  const acting = effectiveRole(agent, profile);
+  if (draft.confirm_role === acting) return true;
+  // Yaniv may also confirm client-side proposals from his own workspace, but never as a supplier.
+  return profile.role === "agency_admin" && agent !== "work_assistant" && draft.confirm_role !== "supplier";
+}
+
+function draftVisibleTo(draft: any, profile: any) {
+  if (profile.role === "agency_admin") return true;
+  if (profile.role === "client") return draft.visibility === "client_agency";
+  return draft.visibility === "supplier_agency";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -443,12 +462,80 @@ Deno.serve(async (req) => {
     if ("error" in access) return json({ error: access.error }, access.status);
 
     const conversation = await ensureConversation(agent, projectId, access.supplierId, profile.id);
+    const ctx: Ctx = {
+      admin, projectId, project: access.project, profile, supplierId: access.supplierId, agent,
+    };
 
     if (action === "history") {
       const messages = await loadMessages(agent, conversation.id, profile.role);
       const { data: drafts } = await admin.from("ai_generated_drafts")
         .select("*").eq("conversation_id", conversation.id).order("created_at", { ascending: false }).limit(5);
-      return json({ conversation, messages, drafts: drafts ?? [] });
+      const { data: pending } = await admin.from("ai_generated_drafts")
+        .select("*").eq("project_id", projectId).neq("action_kind", "")
+        .eq("status", "awaiting_agency_review").order("created_at", { ascending: false }).limit(20);
+      return json({
+        conversation,
+        messages,
+        drafts: (drafts ?? []).filter((d: any) => !d.action_kind && draftVisibleTo(d, profile)),
+        pendingActions: (pending ?? []).filter((d: any) => draftVisibleTo(d, profile) && canConfirm(d, agent, profile)),
+      });
+    }
+
+    if (action === "confirm_action" || action === "cancel_action") {
+      const draftId = String(body.draftId ?? "");
+      const { data: draft } = await admin.from("ai_generated_drafts").select("*").eq("id", draftId).maybeSingle();
+      if (!draft || draft.project_id !== projectId || !draft.action_kind) return json({ error: "Proposal not found" }, 404);
+      if (draft.status !== "awaiting_agency_review") return json({ error: "This proposal was already handled." }, 409);
+      if (!draftVisibleTo(draft, profile) || !canConfirm(draft, agent, profile)) return json({ error: "Forbidden" }, 403);
+
+      if (action === "cancel_action") {
+        await admin.from("ai_generated_drafts").update({ status: "cancelled", applied_by_profile_id: profile.id, applied_at: new Date().toISOString() }).eq("id", draft.id);
+        return json({ ok: true, status: "cancelled" });
+      }
+
+      // Optional edits made by the confirming human before applying.
+      let working = draft;
+      if (body.payload && typeof body.payload === "object") {
+        const bundle = await loadBundle(admin, projectId);
+        const revalidated = await validateAction(ctx, bundle, { kind: draft.action_kind, title: draft.payload?.title, summary: draft.payload?.summary, payload: body.payload });
+        if ("error" in revalidated) return json({ error: revalidated.error }, 400);
+        working = { ...draft, payload: revalidated.payload, preview: revalidated.preview };
+      }
+
+      try {
+        const summary = await applyAction(ctx, working);
+        await admin.from("ai_generated_drafts").update({
+          status: "applied",
+          payload: working.payload,
+          preview: working.preview,
+          applied_by_profile_id: profile.id,
+          applied_at: new Date().toISOString(),
+        }).eq("id", draft.id);
+        await admin.from("activity_logs").insert({
+          label: `${ACTION_SPECS[draft.action_kind as ActionKind].label} confirmed`,
+          detail: `${access.project.name}: ${summary} (proposed by AI ${draft.agent_type}, confirmed by ${profile.full_name || profile.role})`,
+        });
+        await admin.from("decision_logs").insert({
+          project_id: projectId,
+          decision: summary,
+          made_by_role: effectiveRole(agent, profile),
+          impact: JSON.stringify(working.preview ?? {}).slice(0, 4000),
+        });
+        await admin.from("chat_messages").insert({
+          conversation_id: draft.conversation_id ?? conversation.id,
+          project_id: projectId,
+          sender_type: "system",
+          body: `✅ Confirmed by ${profile.full_name || profile.role}: ${summary}`,
+          visibility: draft.visibility,
+          status: "sent",
+          structured_payload: { confirmed_action: draft.action_kind, draft_id: draft.id },
+        });
+        return json({ ok: true, status: "applied", summary });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("apply action failed:", message);
+        return json({ error: message }, 400);
+      }
     }
 
     if (action !== "send") return json({ error: "Unknown action" }, 400);
