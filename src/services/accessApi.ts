@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../integrations/supabase/client";
 import type { UserRole } from "../types/domain";
+import { publicUrl } from "../config/publicUrl";
 
 export type InvitationStatus = "pending" | "active" | "disabled";
 
