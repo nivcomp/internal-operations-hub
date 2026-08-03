@@ -256,6 +256,8 @@ Deno.serve(async (req) => {
     });
     const userId = createdUser?.user?.id ?? null;
 
+    if (createUserError) console.error("[public-registration] createUser failed", createUserError.message);
+
     if (!createUserError && userId) {
       let clientId: string | null = null;
       let supplierId: string | null = null;
@@ -289,16 +291,18 @@ Deno.serve(async (req) => {
         supplier_id: supplierId,
         is_active: true,
       });
+      if (profileError) console.error("[public-registration] profile upsert failed", profileError.message);
 
       // A one-time token the browser exchanges for its own session. It is bound to
       // the address we just created, so no existing account can be reached with it.
       let tokenHash: string | null = null;
       if (!profileError) {
-        const { data: linkData } = await admin.auth.admin.generateLink({
+        const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
           type: "magiclink",
           email,
           options: { redirectTo },
         });
+        if (linkError) console.error("[public-registration] generateLink failed", linkError.message);
         tokenHash = (linkData?.properties?.hashed_token as string | undefined) ?? null;
       }
 
