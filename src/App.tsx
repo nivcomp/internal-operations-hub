@@ -374,8 +374,8 @@ function OnboardingGate() {
   const { profile } = useAuth();
   const { loading, needsOnboarding, refresh } = useOnboarding();
   const { reload } = useAppData();
-  // Suppliers complete a professional profile; clients start in the AI conversation.
-  const [useClassicForm, setUseClassicForm] = useState(profile?.role === "supplier");
+  // Both roles start in the AI onboarding workspace; the classic form stays as a fallback.
+  const [useClassicForm, setUseClassicForm] = useState(false);
 
   async function finishOnboarding() {
     await refresh();
