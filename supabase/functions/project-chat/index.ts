@@ -926,6 +926,28 @@ Deno.serve(async (req) => {
         status: "succeeded", latency_ms: Date.now() - started,
       }).eq("id", run?.id);
 
+      const inputTokens = estimateTokens(context) + estimateTokens(text)
+        + recent.reduce((sum: number, m: any) => sum + estimateTokens(String(m.body ?? "")), 0);
+      const outputTokens = estimateTokens(raw);
+      await recordEvent(admin, {
+        ...baseEvent,
+        classification: "project_relevant",
+        outcome: "success",
+        model: MODEL,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        total_tokens: inputTokens + outputTokens + verdict.tokens,
+        estimated_cost: estimateCost(MODEL, inputTokens + outputTokens) + estimateCost(verdict.model, verdict.tokens),
+        duration_ms: Date.now() - started,
+      });
+      // Cache only plain informational answers, never proposals or drafts.
+      if (validated.length === 0 && !draftRow) {
+        await putCachedResponse(admin, {
+          cache_key: cacheKey, project_id: projectId, agent_type: agent,
+          audience_role: effectiveRole(agent, profile), response_body: parsed.reply,
+        });
+      }
+
       return json({ conversation, userMessage, aiMessage, draft: draftRow, pendingActions, rejectedActions: rejected });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -933,6 +955,15 @@ Deno.serve(async (req) => {
       await admin.from("ai_runs").update({
         status: "failed", error: message.slice(0, 800), latency_ms: Date.now() - started,
       }).eq("id", run?.id);
+      await recordEvent(admin, {
+        ...baseEvent, classification: "project_relevant", outcome: "failed",
+        rejection_reason: message.slice(0, 300), model: MODEL,
+        duration_ms: Date.now() - started,
+      });
+      await raiseAlert(admin, {
+        alert_type: "ai_failure", severity: "warning", profile_id: profile.id, project_id: projectId,
+        title: "AI request failed", detail: message.slice(0, 300), metadata: {},
+      });
       return json({ error: message, userMessage }, 502);
     }
   } catch (err) {
