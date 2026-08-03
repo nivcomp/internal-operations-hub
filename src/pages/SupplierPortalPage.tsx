@@ -20,7 +20,7 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, isPreview }: SupplierPortalPageProps) {
   const {
-    fileLinks, projectMessages, scopeItems, scopes, supplierProfiles, suppliers,
+    fileLinks, projectMessages, scopeItems, scopes, supplierProfiles, suppliers, projectSchedules,
     createTimeEntry, updateTimeEntry, createProjectMessage, isPending, getError,
   } = useAppData();
 
