@@ -477,6 +477,9 @@ export function ProjectDetailPage({
           {getSuccess(timeKey) && !getError(timeKey) ? <p className="form-success">{getSuccess(timeKey)}</p> : null}
         </form>
       </section>
+        </>
+      ) : null}
+      {tab === "changes" ? (
       <section className="card">
         <h2>Change requests</h2>
         {projectChanges.length ? (
@@ -503,7 +506,17 @@ export function ProjectDetailPage({
           </table>
         ) : <p>No change requests for this project.</p>}
       </section>
-      <EstimateControl projectId={project.id} />
+      ) : null}
+      {tab === "estimate" ? <EstimateControl projectId={project.id} /> : null}
+      {tab === "timeline" ? (
+        <ProjectTimeline
+          project={activeProject}
+          changeRequests={changeRequests}
+          clientPayments={clientPayments}
+          timeEntries={timeEntries}
+        />
+      ) : null}
+      {tab === "files" ? (
       <section className="detail-grid">
         <article className="card">
           <h2>Files and links</h2>
@@ -514,6 +527,7 @@ export function ProjectDetailPage({
           {projectDecisions.length ? projectDecisions.map((d) => <p key={d.id}>{d.decision} {d.impact}</p>) : <p>No decisions logged yet.</p>}
         </article>
       </section>
+      ) : null}
     </>
   );
 }
