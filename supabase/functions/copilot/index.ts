@@ -502,6 +502,23 @@ Deno.serve(async (req) => {
         // so only the first step is resolved now; the rest stay as a stated plan.
         const validated = await buildOperatorAction(ctx, actionType, candidate?.input ?? {});
         if ("error" in validated) {
+          // Inside a plan, a later step may depend on a record an earlier step
+          // creates, so it is queued and resolved just before it runs.
+          if (planId && step > 1) {
+            const { data: deferred } = await admin.from("copilot_operator_actions").insert({
+              profile_id: profile.id,
+              plan_id: planId, plan_title: planTitle || null, plan_step: step,
+              action_type: actionType, action_label: `${spec.label} (resolved when the earlier steps finish)`,
+              target_type: spec.targetType, target_label: String(candidate?.why ?? "").slice(0, 120),
+              source_command: text, source,
+              risk_level: spec.risk, requires_confirmation: spec.risk !== "low",
+              status: "awaiting_confirmation",
+              payload: { __deferred: true, input: candidate?.input ?? {} },
+              preview: { fields: [], impact: ["Checked against the live data just before this step runs."] },
+            }).select("*").single();
+            if (deferred) operatorActions.push(deferred);
+            continue;
+          }
           rejectedActions.push({ kind: spec.label, reason: validated.error });
           continue;
         }
