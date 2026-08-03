@@ -322,7 +322,7 @@ Deno.serve(async (req) => {
     } catch (err) {
       await recordEvent(admin, {
         profile_id: profile.id, project_id: access.projectId, agent_type: `copilot_${agent}`,
-        actor_role: role, classification: "project_relevant", outcome: "error",
+        actor_role: role, classification: "project_relevant", outcome: "failed",
         message_hash: messageHash, message_length: text.length, model: MODEL,
         rejection_reason: String((err as Error).message).slice(0, 300),
         duration_ms: Date.now() - started,
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
     await recordEvent(admin, {
       profile_id: profile.id, project_id: access.projectId, client_id: access.clientId,
       supplier_id: access.supplierId, agent_type: `copilot_${agent}`, actor_role: role,
-      classification: "project_relevant", outcome: "answered",
+      classification: "project_relevant", outcome: "success",
       message_hash: messageHash, message_length: text.length, model: MODEL,
       input_tokens: inputTokens, output_tokens: outputTokens,
       total_tokens: inputTokens + outputTokens,
