@@ -30,7 +30,8 @@ export function AgencyHomePage({ onNavigate, onProjectSelect }: Props) {
     { label: "Time entries waiting", count: waitingTime.length, view: "supplier-time" as ViewKey },
   ];
   const total = attention.reduce((sum, item) => sum + item.count, 0);
-  const firstProject = needsPricing[0]?.project ?? waitingApproval[0]?.project ?? projects[0];
+  const firstQueueItem = [...needsPricing, ...waitingApproval].find((item) => item.type === "project");
+  const firstProject = firstQueueItem && firstQueueItem.type === "project" ? firstQueueItem.project : projects[0];
 
   return (
     <div className="home-screen">
