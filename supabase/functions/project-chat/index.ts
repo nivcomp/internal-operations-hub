@@ -298,17 +298,19 @@ async function compressHistory(conversationId: string, projectId: string, audien
     .slice(-40)
     .join("\n")
     .slice(0, 6000);
-  await admin.from("ai_project_summaries").upsert(
-    {
-      project_id: projectId,
-      conversation_id: conversationId,
-      audience_role: audience,
-      summary,
-      covered_message_count: older.length,
-      last_message_at: older[older.length - 1]?.created_at ?? null,
-    },
-    { onConflict: "project_id,conversation_id,audience_role" },
-  );
+  const row = {
+    project_id: projectId,
+    conversation_id: conversationId,
+    audience_role: audience,
+    summary,
+    covered_message_count: older.length,
+    last_message_at: older[older.length - 1]?.created_at ?? null,
+  };
+  const { data: existing } = await admin.from("ai_project_summaries")
+    .select("id").eq("project_id", projectId).eq("conversation_id", conversationId)
+    .eq("audience_role", audience).maybeSingle();
+  if (existing) await admin.from("ai_project_summaries").update(row).eq("id", existing.id);
+  else await admin.from("ai_project_summaries").insert(row);
   return { recent, summary };
 }
 
