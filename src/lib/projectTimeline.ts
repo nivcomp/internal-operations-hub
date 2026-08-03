@@ -125,7 +125,7 @@ export function buildProjectTimeline({
   for (const decision of decisions.filter((item) => item.projectId === project.id)) {
     events.push({
       id: `decision-${decision.id}`,
-      date: "",
+      date: safeDate(decision.createdDate),
       title: `Decision: ${decision.decision}`,
       detail: decision.impact || "Recorded decision.",
       kind: "decision",
