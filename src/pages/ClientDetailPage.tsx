@@ -33,6 +33,7 @@ export function ClientDetailPage({
 }: ClientDetailPageProps) {
   const { scopes, isPending, getError, getSuccess } = useAppData();
   const [projectForm, setProjectForm] = useState<NewProjectInput>(initialProjectForm);
+  const [projectFormError, setProjectFormError] = useState<string | null>(null);
   const client = selectedClientId ? getClientById(selectedClientId, clients) : undefined;
 
   if (!client) {
@@ -50,7 +51,7 @@ export function ClientDetailPage({
   const activeClient = client;
   const key = MutationKeys.createProject(activeClient.id);
   const saving = isPending(key);
-  const error = getError(key);
+  const error = projectFormError ?? getError(key);
   const success = getSuccess(key);
   const clientProjects = getProjectsForClient(activeClient.id, projects);
   const clientProjectIds = clientProjects.map((project) => project.id);
@@ -62,7 +63,11 @@ export function ClientDetailPage({
   async function handleProjectSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
-    if (!projectForm.name.trim() || !projectForm.summary.trim()) return;
+    if (!projectForm.name.trim()) {
+      setProjectFormError("Project name is required.");
+      return;
+    }
+    setProjectFormError(null);
     try {
       await onProjectCreate(activeClient.id, {
         name: projectForm.name.trim(),
@@ -147,15 +152,22 @@ export function ClientDetailPage({
         <h2>Create project for this client</h2>
         <form className="form-grid" onSubmit={handleProjectSubmit}>
           <label>
-            Project name
-            <input value={projectForm.name} onChange={(event) => setProjectForm({ ...projectForm, name: event.target.value })} />
+            Project name *
+            <input
+              value={projectForm.name}
+              aria-invalid={projectFormError ? true : undefined}
+              onChange={(event) => {
+                setProjectFormError(null);
+                setProjectForm({ ...projectForm, name: event.target.value });
+              }}
+            />
           </label>
           <label>
             Budget signal
             <input value={projectForm.budgetSignal} onChange={(event) => setProjectForm({ ...projectForm, budgetSignal: event.target.value })} />
           </label>
           <label className="span-2">
-            Summary
+            Summary (optional)
             <textarea value={projectForm.summary} onChange={(event) => setProjectForm({ ...projectForm, summary: event.target.value })} />
           </label>
           <div className="form-actions">
