@@ -160,10 +160,42 @@ export function ProjectDetailPage({
     return isPending(MutationKeys.updateChangeRequestStatus(id));
   }
 
+  const pendingChanges = projectChanges.filter((request) => request.status !== "client_approved" && request.status !== "declined").length;
+  const pendingTime = projectTimeEntries.filter((entry) => entry.status === "submitted").length;
+  const tabs: TabDef<ProjectTab>[] = [
+    { key: "overview", label: "Overview" },
+    { key: "scope", label: "Scope", badge: items.length || undefined },
+    { key: "estimate", label: "Estimate" },
+    { key: "suppliers", label: "Suppliers", badge: activeProject.assignedSupplierIds.length || undefined, attention: pendingTime > 0 },
+    { key: "money", label: "Money", attention: Boolean(payment && payment.status !== "received") },
+    { key: "changes", label: "Changes", badge: projectChanges.length || undefined, attention: pendingChanges > 0 },
+    { key: "timeline", label: "Timeline" },
+    { key: "assistant", label: "Assistant" },
+    { key: "files", label: "Files & decisions", badge: projectFiles.length || undefined },
+  ];
+  const siblingIndex = projects.findIndex((item) => item.id === activeProject.id);
+  const previousProject = siblingIndex > 0 ? projects[siblingIndex - 1] : undefined;
+  const nextProject = siblingIndex >= 0 && siblingIndex < projects.length - 1 ? projects[siblingIndex + 1] : undefined;
+
   return (
     <>
-      <PageHeader title="Project Command Center" subtitle="A single project view for summary, client context, payment gate, scope, pricing, suppliers, changes, files, and decisions." />
-      <ProjectChat
+      <DetailNav
+        crumbs={[
+          { label: "Projects", view: "projects" },
+          ...(client ? [{ label: client.company, onClick: () => nav.openClient(client.id) }] : []),
+          { label: activeProject.name },
+        ]}
+        siblings={{
+          position: siblingIndex >= 0 ? `${siblingIndex + 1} of ${projects.length}` : undefined,
+          previous: previousProject ? { label: previousProject.name, onClick: () => nav.openProject(previousProject.id) } : undefined,
+          next: nextProject ? { label: nextProject.name, onClick: () => nav.openProject(nextProject.id) } : undefined,
+        }}
+      />
+      <PageHeader title={activeProject.name} subtitle={`${client?.company ?? "Unassigned client"} · ${statusLabels[activeProject.status]} · ${ready ? "Ready to start" : "Start blocked"}`} />
+      <Tabs tabs={tabs} active={tab} onChange={setTab} ariaLabel="Project workspace sections" />
+      {tab === "assistant" ? (
+        <>
+          <ProjectChat
         projectId={activeProject.id}
         projectName={activeProject.name}
         agent="agency_control"
@@ -178,7 +210,11 @@ export function ProjectDetailPage({
           "Show me the project flow.",
         ]}
       />
-      <ProjectInsights projectId={activeProject.id} role="agency_admin" allowModeSwitch />
+          <ProjectInsights projectId={activeProject.id} role="agency_admin" allowModeSwitch />
+        </>
+      ) : null}
+      {tab === "overview" ? (
+        <>
       <section className="detail-grid">
         <article className="card">
           <h2>{activeProject.name}</h2>
