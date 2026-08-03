@@ -65,6 +65,17 @@ export type ChatMessage = {
 
 export type ChatConversation = { id: string; project_id: string; kind: string; title: string };
 
+/** Server-reported AI usage for the signed-in user, shown as a soft indicator in the chat. */
+export type ChatUsage = {
+  percentUsed: number;
+  messagesToday: number;
+  dailyMessageLimit: number;
+  warningThreshold: number;
+  paused: boolean;
+  pausedReason: string;
+  maximumMessageLength: number;
+};
+
 export type ChatDraft = {
   id: string;
   draft_type: string;
@@ -100,6 +111,7 @@ export function loadChatHistory(agent: AgentType, projectId: string) {
     messages: ChatMessage[];
     drafts: ChatDraft[];
     pendingActions: PendingAction[];
+    usage?: ChatUsage;
   }>({
     action: "history",
     agent,
@@ -115,6 +127,7 @@ export function sendChatMessage(agent: AgentType, projectId: string, body: strin
     draft: ChatDraft | null;
     pendingActions: PendingAction[];
     rejectedActions: { kind: string; reason: string }[];
+    usage?: ChatUsage;
   }>({
     action: "send",
     agent,
