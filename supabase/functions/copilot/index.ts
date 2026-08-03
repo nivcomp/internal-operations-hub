@@ -2,11 +2,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import {
   ACTION_SPECS, applyAction, loadBundle, validateAction, type ActionKind, type Ctx,
-} from "../project-chat/actions.ts";
+} from "../_shared/actions.ts";
 import {
   detectSpam, estimateCost, estimateTokens, hashText, isHebrew, loadUsage,
   raiseAlert, recordEvent, resolveLimits, usagePercent,
-} from "../project-chat/guard.ts";
+} from "../_shared/guard.ts";
 import {
   allowedTargets, buildCopilotContext, contextLabel, resolveAccess, type ScreenHint,
 } from "./context.ts";
