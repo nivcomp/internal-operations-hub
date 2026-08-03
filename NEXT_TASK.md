@@ -1,6 +1,6 @@
 # Next Task
 
-> Latest completed unit: Copilot Operator Mode for agency_admin (see WORK_LOG.md, 2026-08-03). Next suggested unit: extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing, reusing the existing confirmation pipeline.
+> Latest completed unit: fixed the blank public registration routes by isolating their bundle from authenticated app startup (see WORK_LOG.md, 2026-08-03). Next suggested unit: extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing, reusing the existing confirmation pipeline.
 
 ## Last Completed
 
@@ -8,6 +8,7 @@ A persistent, context-aware, voice-enabled copilot across the whole workspace: f
 
 ## Remaining Limitations
 
+- The repaired public-route bundle has been verified locally and still requires publishing before the custom domain serves it.
 - Only the target-date form publishes rich form context; other forms expose screen context only.
 - Client and supplier copilot sessions and the voice round-trip were not exercised in an automated check.
 - Proactive observations appear only after the user sends a message; the copilot does not speak first.
