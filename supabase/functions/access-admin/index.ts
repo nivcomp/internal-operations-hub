@@ -7,7 +7,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 type Role = "agency_admin" | "client" | "supplier";
 
 type Body = {
-  action?: "list" | "invite" | "link" | "setActive";
+  action?: "list" | "invite" | "link" | "setActive" | "quickInviteClient" | "quickInviteSupplier" | "listInvitations";
   email?: string;
   fullName?: string;
   role?: Role;
@@ -16,6 +16,9 @@ type Body = {
   userId?: string;
   isActive?: boolean;
   redirectTo?: string;
+  company?: string;
+  contactName?: string;
+  phone?: string;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -121,6 +124,107 @@ Deno.serve(async (req) => {
   const action = body.action ?? "list";
 
   if (action === "list") return listAccounts();
+
+  if (action === "listInvitations") {
+    const { data, error } = await admin
+      .from("onboarding_invitations")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) return json({ error: error.message }, 400);
+    return json({ invitations: data ?? [] });
+  }
+
+  // ---- AI-first quick invitations ------------------------------------------
+  // Minimal input only: everything else is collected by the AI assistant during
+  // the invited person's onboarding conversation.
+  if (action === "quickInviteClient" || action === "quickInviteSupplier") {
+    const isClient = action === "quickInviteClient";
+    const email = (body.email ?? "").trim().toLowerCase();
+    const contactName = (body.contactName ?? "").trim();
+    const company = (body.company ?? "").trim();
+    const phone = (body.phone ?? "").trim();
+
+    if (!EMAIL_RE.test(email)) return json({ error: "A valid email is required." }, 400);
+    if (!contactName) return json({ error: "A contact name is required." }, 400);
+    if (isClient && !company) return json({ error: "A company or client name is required." }, 400);
+
+    let clientId: string | null = null;
+    let supplierId: string | null = null;
+
+    if (isClient) {
+      const { data: existing } = await admin
+        .from("clients").select("id").ilike("email", email).maybeSingle();
+      if (existing?.id) {
+        clientId = existing.id;
+        await admin.from("clients")
+          .update({ name: contactName, company, phone: phone || null }).eq("id", existing.id);
+      } else {
+        const { data: created, error } = await admin.from("clients").insert({
+          name: contactName, company, email, phone: phone || null,
+          notes: "Created from an AI-first invitation.", status: "prospect",
+        }).select("id").maybeSingle();
+        if (error || !created) return json({ error: error?.message ?? "Could not create the client." }, 400);
+        clientId = created.id;
+      }
+    } else {
+      const { data: existing } = await admin
+        .from("suppliers").select("id").ilike("email", email).maybeSingle();
+      if (existing?.id) {
+        supplierId = existing.id;
+        await admin.from("suppliers").update({ name: contactName, phone: phone || null }).eq("id", existing.id);
+      } else {
+        const { data: created, error } = await admin.from("suppliers").insert({
+          name: contactName, email, phone: phone || null, status: "invited",
+        }).select("id").maybeSingle();
+        if (error || !created) return json({ error: error?.message ?? "Could not create the supplier." }, 400);
+        supplierId = created.id;
+      }
+    }
+
+    // Reuse the existing, proven invitation security: a Supabase auth invite plus
+    // a signed single-use action link bound to this email address.
+    let userId: string | null = null;
+    const role: Role = isClient ? "client" : "supplier";
+    const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+      data: { role, full_name: contactName, client_id: clientId, supplier_id: supplierId },
+      redirectTo,
+    });
+    if (invited?.user) {
+      userId = invited.user.id;
+    } else {
+      const users = await authUsers();
+      for (const [id, u] of users) {
+        if (String((u as any).email ?? "").toLowerCase() === email) { userId = id; break; }
+      }
+      if (!userId) return json({ error: inviteError?.message ?? "Could not invite this contact." }, 400);
+    }
+    if (userId === callerId) {
+      return json({ error: "This is your own account. Use a different email address." }, 400);
+    }
+
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: userId, email, full_name: contactName, role,
+      client_id: clientId, supplier_id: supplierId, is_active: true,
+    });
+    if (profileError) return json({ error: profileError.message }, 400);
+
+    let link: string | null = null;
+    try { link = await actionLinkFor(email); } catch { link = null; }
+
+    const { data: invitation, error: invitationError } = await admin.from("onboarding_invitations").insert({
+      role, contact_name: contactName, company, email, phone,
+      client_id: clientId, supplier_id: supplierId, invited_profile_id: userId,
+      invite_link: link ?? "", emailed: Boolean(invited?.user), created_by: callerId,
+      status: "pending",
+    }).select("*").maybeSingle();
+    if (invitationError) return json({ error: invitationError.message }, 400);
+
+    return json({
+      ok: true, userId, clientId, supplierId, link,
+      emailed: Boolean(invited?.user), invitation,
+    });
+  }
 
   if (action === "invite") {
     const email = (body.email ?? "").trim().toLowerCase();
