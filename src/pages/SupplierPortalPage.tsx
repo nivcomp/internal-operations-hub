@@ -171,6 +171,7 @@ export function SupplierPortalPage({ selectedSupplierId, projects, timeEntries, 
         );
       })()}
 
+      <SupplierEstimateReview supplierId={supplier.id} readOnly={isPreview} />
       <section className="card">
         <h2>Delivery instructions</h2>
         {items.length === 0 ? (
