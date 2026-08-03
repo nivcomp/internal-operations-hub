@@ -314,6 +314,39 @@ async function compressHistory(conversationId: string, projectId: string, audien
 }
 
 /** Role-safe project context. Pricing separation is enforced here, server-side. */
+/**
+ * One shared schedule record feeds every assistant, so the client AI, the agency AI
+ * and the supplier AI can never quote different dates. No assistant may promise a date.
+ */
+async function scheduleContext(agent: AgentType, projectId: string): Promise<string[]> {
+  const { data: s } = await admin.from("project_schedule").select("*").eq("project_id", projectId).maybeSingle();
+  if (!s) {
+    return [
+      "No completion date has been requested for this project yet.",
+      "You may ask for a requested completion date, but you must never promise or confirm a delivery date. Only the agency approves a delivery date.",
+    ];
+  }
+  const lines = [
+    `Client requested completion date: ${s.requested_completion_date ?? "none"} (priority ${s.date_priority}${s.date_reason ? `, reason: ${s.date_reason}` : ""}).`,
+    `Partial delivery acceptable: ${s.partial_delivery_ok ? "yes" : "no"}${s.phase_one_date ? `, first phase needed by ${s.phase_one_date}` : ""}.`,
+    `Target date status: ${s.target_date_status}${s.status_reason ? ` — ${s.status_reason}` : ""}.`,
+    `Agency recommended delivery range: ${s.recommended_delivery_start ?? "not calculated"} to ${s.recommended_delivery_end ?? "not calculated"}.`,
+    `Approved delivery date (the only commitment): ${s.approved_delivery_date ?? "none approved"}.`,
+  ];
+  if (agent === "agency_control") {
+    lines.push(`Planning inputs: earliest start ${s.earliest_start_date ?? "not set"}, weekly capacity override ${s.weekly_capacity_hours}, client-response delay ${s.client_response_delay_days} days, external approval delay ${s.external_approval_delay_days} days, supplier availability confirmed: ${s.supplier_availability_confirmed}, scope changed after date approval: ${s.scope_changed_after_date_approval}.`);
+    if (s.delivery_notes) lines.push(`Delivery notes: ${s.delivery_notes}`);
+  }
+  if (agent === "work_assistant") {
+    lines.push("Discuss availability and realistic durations only. Never state or negotiate a delivery date with the client; the agency owns the commitment.");
+  }
+  if (agent === "project_guide") {
+    lines.push("A requested date is a request, not a commitment. Explain that dates are reviewed against scope, supplier availability, dependencies and testing. Never promise a date that is not the approved delivery date.");
+  }
+  lines.push("Effort hours and calendar duration are different things: never convert hours directly into a delivery date.");
+  return lines;
+}
+
 async function buildContext(agent: AgentType, project: any, supplierId: string | null, bundle: Bundle) {
   const lines: string[] = [
     `Project: ${project.name}`,
