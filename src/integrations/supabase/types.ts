@@ -2189,6 +2189,86 @@ export type Database = {
           },
         ]
       }
+      project_schedule: {
+        Row: {
+          approved_delivery_date: string | null
+          client_response_delay_days: number
+          created_at: string
+          date_priority: string
+          date_reason: string
+          delivery_notes: string
+          earliest_start_date: string | null
+          external_approval_delay_days: number
+          id: string
+          partial_delivery_ok: boolean
+          phase_one_date: string | null
+          project_id: string
+          recommended_delivery_end: string | null
+          recommended_delivery_start: string | null
+          requested_completion_date: string | null
+          scope_changed_after_date_approval: boolean
+          status_reason: string
+          supplier_availability_confirmed: boolean
+          target_date_status: string
+          updated_at: string
+          weekly_capacity_hours: number
+        }
+        Insert: {
+          approved_delivery_date?: string | null
+          client_response_delay_days?: number
+          created_at?: string
+          date_priority?: string
+          date_reason?: string
+          delivery_notes?: string
+          earliest_start_date?: string | null
+          external_approval_delay_days?: number
+          id?: string
+          partial_delivery_ok?: boolean
+          phase_one_date?: string | null
+          project_id: string
+          recommended_delivery_end?: string | null
+          recommended_delivery_start?: string | null
+          requested_completion_date?: string | null
+          scope_changed_after_date_approval?: boolean
+          status_reason?: string
+          supplier_availability_confirmed?: boolean
+          target_date_status?: string
+          updated_at?: string
+          weekly_capacity_hours?: number
+        }
+        Update: {
+          approved_delivery_date?: string | null
+          client_response_delay_days?: number
+          created_at?: string
+          date_priority?: string
+          date_reason?: string
+          delivery_notes?: string
+          earliest_start_date?: string | null
+          external_approval_delay_days?: number
+          id?: string
+          partial_delivery_ok?: boolean
+          phase_one_date?: string | null
+          project_id?: string
+          recommended_delivery_end?: string | null
+          recommended_delivery_start?: string | null
+          requested_completion_date?: string | null
+          scope_changed_after_date_approval?: boolean
+          status_reason?: string
+          supplier_availability_confirmed?: boolean
+          target_date_status?: string
+          updated_at?: string
+          weekly_capacity_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_schedule_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_supplier_assignments: {
         Row: {
           created_at: string

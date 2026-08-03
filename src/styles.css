@@ -1869,3 +1869,40 @@ kbd {
 .align-end { text-align: right; }
 .table-pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; margin-top: 0.75rem; }
 .search-field input { width: 100%; }
+
+/* ---- Project control summary & commercial settings ------------------------ */
+.control-summary {
+  display: grid;
+  gap: 0.9rem;
+}
+.control-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.control-summary-head h2 { margin: 0; }
+.control-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem 1.4rem;
+}
+.control-summary-grid > div {
+  display: grid;
+  gap: 0.2rem;
+}
+.control-summary-grid span {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+.control-summary-grid strong {
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+.form-grid label.span-2 { grid-column: span 2; }
+@media (max-width: 640px) {
+  .form-grid label.span-2 { grid-column: span 1; }
+}
