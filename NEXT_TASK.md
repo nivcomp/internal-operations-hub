@@ -2,15 +2,21 @@
 
 ## Last Completed
 
-Guided onboarding: a resumable client project wizard, a supplier profile wizard, a non-blocking setup assistant for Yaniv, and one simple home screen per role backed by a new `onboarding_state` record.
+A persistent, context-aware, voice-enabled copilot across the whole workspace: floating bubble and panel, per-entity threads, server-side role-filtered context, spoken input and answers, form pre-fill suggestions, navigation chips, and data changes that are only ever proposals confirmed by a human.
+
+## Remaining Limitations
+
+- Only the target-date form publishes rich form context; other forms expose screen context only.
+- Client and supplier copilot sessions and the voice round-trip were not exercised in an automated check.
+- Proactive observations appear only after the user sends a message; the copilot does not speak first.
 
 ## Recommended Next Work Unit
 
-Extend the personal assistant so it can perform assisted data entry from the home screens (create client, set calculation rate, assign supplier) using the existing confirmation-card action pipeline.
+Give the copilot proactive, silent screen observations: when a screen opens, show one short risk or next-step note in the bubble without the user asking, using a cached server call that respects the existing AI usage limits.
 
 ## Acceptance Criteria
 
-- The assistant is reachable from every role home screen with the current page and record as context.
-- Every write goes through the existing pending-action confirmation card; the AI never commits pricing, scope or dates on its own.
-- Client and supplier assistants keep their existing data isolation.
+- Opening a project, client or supplier screen produces at most one observation, cached per entity and reused for a sensible period.
+- Observations never contain data the role may not see, and never claim an action was taken.
+- The observation is dismissible and never blocks the screen.
 - `pnpm run build` passes.
