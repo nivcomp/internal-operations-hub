@@ -16,7 +16,7 @@ type LayoutProps = {
 type NavGroup = { label: string; keys: ViewKey[] };
 
 const navGroups: NavGroup[] = [
-  { label: "Overview", keys: ["dashboard", "action-queue"] },
+  { label: "Overview", keys: ["home", "dashboard", "action-queue"] },
   { label: "Clients", keys: ["clients", "client-detail", "client-portal"] },
   { label: "Projects", keys: ["projects", "project-detail", "change-requests"] },
   { label: "Suppliers", keys: ["suppliers", "supplier-detail", "supplier-time", "supplier-portal"] },

@@ -1,4 +1,5 @@
 export const views = [
+  { key: "home", label: "Home" },
   { key: "dashboard", label: "Dashboard" },
   { key: "action-queue", label: "Action Queue" },
   { key: "clients", label: "Clients" },

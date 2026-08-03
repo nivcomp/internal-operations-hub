@@ -1455,6 +1455,53 @@ export type Database = {
           },
         ]
       }
+      onboarding_state: {
+        Row: {
+          answers: Json
+          completion_percentage: number
+          created_at: string
+          current_step: number
+          onboarding_completed_at: string | null
+          onboarding_started_at: string
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          skipped_steps: string[]
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          completion_percentage?: number
+          created_at?: string
+          current_step?: number
+          onboarding_completed_at?: string | null
+          onboarding_started_at?: string
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          skipped_steps?: string[]
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          completion_percentage?: number
+          created_at?: string
+          current_step?: number
+          onboarding_completed_at?: string | null
+          onboarding_started_at?: string
+          profile_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          skipped_steps?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_state_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paid_hours: {
         Row: {
           client_id: string
@@ -2683,7 +2730,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      submit_client_onboarding: { Args: { _answers: Json }; Returns: string }
+      submit_supplier_onboarding: { Args: { _answers: Json }; Returns: string }
     }
     Enums: {
       app_role: "agency_admin" | "client" | "supplier"
