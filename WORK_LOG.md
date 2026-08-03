@@ -2048,3 +2048,10 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
   A signed-in end-to-end AI round trip was NOT run in this environment (no preview session).
 - Next: agency confirmation cards that apply proposed actions as real mutations, plus pricing
   configuration, chat file attachments, Supplier Mode and the Role Test Lab.
+
+## 2026-08-03 — Project estimation & budget simulation
+
+- **Work unit:** Database-backed estimation model, client budget simulator, supplier estimate review, Yaniv estimate control.
+- **Main changes:** New tables `project_estimates`, `estimate_items`, `estimate_role_allocations`, `estimate_supplier_reviews`, `estimate_adjustments`, `estimate_scenarios`, `estimate_versions` with strict RLS. New `src/types/estimation.ts`, `src/lib/estimation.ts` (hours, buffers, internal cost, recommended fixed price, margin, warnings, calendar duration), `src/services/estimationApi.ts`, and three components mounted in Project Detail, Client Portal and Supplier Portal.
+- **Tests:** `pnpm run build` passed; Playwright run against the live preview created an estimate and a work item, confirmed hours/margin rendering and DB persistence (test row removed afterwards).
+- **Known gaps:** No AI-generated estimates (deliberately out of scope), no phase-level milestone pricing sync with `project_pricing`, adjustments are creatable via API but have no dedicated UI form yet.
