@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  loadChatHistory, sendChatMessage,
-  type AgentType, type ChatDraft, type ChatMessage,
+  cancelProposedAction, confirmProposedAction, loadChatHistory, sendChatMessage,
+  type ActionKind, type AgentType, type ChatDraft, type ChatMessage, type PendingAction,
 } from "../services/chatApi";
+import { notifyEstimationChanged } from "../lib/estimationEvents";
 
 type ProjectChatProps = {
   projectId: string;
@@ -16,6 +17,34 @@ type ProjectChatProps = {
   readOnly?: boolean;
   readOnlyReason?: string;
   suggestions?: string[];
+};
+
+const actionLabels: Record<ActionKind, string> = {
+  add_estimate_items: "Add work items to the estimate",
+  update_estimate_items: "Change estimate work items",
+  update_estimate_settings: "Change commercial settings",
+  assign_supplier: "Assign work to a supplier",
+  request_supplier_review: "Request a supplier review",
+  accept_supplier_review: "Use supplier-reviewed hours",
+  publish_client_estimate: "Publish the estimate to the client",
+  approve_fixed_price: "Approve a fixed price",
+  save_client_scenario: "Save this budget scenario",
+  supplier_review_response: "Send this review to the agency",
+  create_change_request: "Create a change request",
+};
+
+const confirmLabels: Record<ActionKind, string> = {
+  add_estimate_items: "Confirm and add",
+  update_estimate_items: "Confirm and update",
+  update_estimate_settings: "Confirm and update",
+  assign_supplier: "Confirm assignment",
+  request_supplier_review: "Confirm and request",
+  accept_supplier_review: "Confirm and apply",
+  publish_client_estimate: "Confirm and publish",
+  approve_fixed_price: "Approve fixed price",
+  save_client_scenario: "Save scenario",
+  supplier_review_response: "Send to agency",
+  create_change_request: "Create change request",
 };
 
 const senderLabels: Record<ChatMessage["sender_type"], string> = {
@@ -62,12 +91,78 @@ function DraftPanel({ draft }: { draft: ChatDraft }) {
   );
 }
 
+function ActionCard({
+  action, busy, error, onConfirm, onCancel,
+}: {
+  action: PendingAction;
+  busy: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const preview = action.preview ?? {};
+  const label = actionLabels[action.action_kind] ?? action.action_kind.replace(/_/g, " ");
+  const summary = String(action.payload?.summary ?? preview.requested ?? "");
+  const highRisk = action.action_kind === "approve_fixed_price" || action.action_kind === "publish_client_estimate";
+  return (
+    <div className={`action-card${highRisk ? " action-card-critical" : ""}`}>
+      <p className="chat-draft-flag">AI proposal — nothing has changed yet</p>
+      <h4>{label}</h4>
+      {summary && <p className="action-card-summary" dir={isRtl(summary) ? "rtl" : "ltr"}>{summary}</p>}
+
+      {(preview.current?.length || preview.proposed?.length) && (
+        <div className="action-card-compare">
+          <div>
+            <h5>Now</h5>
+            <ul>{(preview.current ?? []).map((row, i) => <li key={i}><span>{row.label}</span><strong>{row.value}</strong></li>)}</ul>
+          </div>
+          <div>
+            <h5>After confirming</h5>
+            <ul>{(preview.proposed ?? []).map((row, i) => <li key={i}><span>{row.label}</span><strong>{row.value}</strong></li>)}</ul>
+          </div>
+        </div>
+      )}
+
+      {(preview.records ?? []).length > 0 && (
+        <details className="action-card-records">
+          <summary>{(preview.records ?? []).length} record(s) affected</summary>
+          <ul>{(preview.records ?? []).map((r, i) => <li key={i}>{r}</li>)}</ul>
+        </details>
+      )}
+
+      <dl className="action-card-effects">
+        {preview.client_visibility_effect && (
+          <div><dt>Client visibility</dt><dd>{preview.client_visibility_effect}</dd></div>
+        )}
+        {preview.internal_cost_effect && (
+          <div><dt>Internal cost</dt><dd>{preview.internal_cost_effect}</dd></div>
+        )}
+        {preview.margin_effect && (
+          <div><dt>Margin</dt><dd>{preview.margin_effect}</dd></div>
+        )}
+      </dl>
+
+      {error && <p className="chat-error-inline">{error}</p>}
+      <div className="action-row">
+        <button type="button" disabled={busy} onClick={onConfirm}>
+          {busy ? "Applying…" : confirmLabels[action.action_kind] ?? "Confirm"}
+        </button>
+        <button type="button" className="ghost-button" disabled={busy} onClick={onCancel}>Cancel</button>
+      </div>
+      <p className="chat-hint">To change the details, ask the assistant to adjust the proposal, then confirm the new one.</p>
+    </div>
+  );
+}
+
 export function ProjectChat({
   projectId, projectName, agent, title, subtitle,
   showVisibility = false, readOnly = false, readOnlyReason, suggestions = [],
 }: ProjectChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [drafts, setDrafts] = useState<ChatDraft[]>([]);
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
   const [input, setInput] = useState("");
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [aiState, setAiState] = useState<"idle" | "thinking" | "failed">("idle");
@@ -83,6 +178,7 @@ export function ProjectChat({
       const data = await loadChatHistory(agent, projectId);
       setMessages(data.messages ?? []);
       setDrafts(data.drafts ?? []);
+      setPendingActions(data.pendingActions ?? []);
       setLoadState("ready");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -111,6 +207,9 @@ export function ProjectChat({
       const result = await sendChatMessage(agent, projectId, trimmed);
       setMessages((prev) => [...prev, result.userMessage, result.aiMessage]);
       if (result.draft) setDrafts((prev) => [result.draft as ChatDraft, ...prev].slice(0, 5));
+      if (result.pendingActions?.length) {
+        setPendingActions((prev) => [...result.pendingActions, ...prev]);
+      }
       setAiState("idle");
       inputRef.current?.focus();
     } catch (err) {
@@ -120,6 +219,33 @@ export function ProjectChat({
       void load();
     }
   }, [agent, projectId, aiState, readOnly, load]);
+
+  const confirmAction = useCallback(async (action: PendingAction) => {
+    setActionBusyId(action.id);
+    setActionErrors((prev) => ({ ...prev, [action.id]: "" }));
+    try {
+      await confirmProposedAction(agent, projectId, action.id);
+      setPendingActions((prev) => prev.filter((a) => a.id !== action.id));
+      notifyEstimationChanged(projectId);
+      await load();
+    } catch (err) {
+      setActionErrors((prev) => ({ ...prev, [action.id]: err instanceof Error ? err.message : String(err) }));
+    } finally {
+      setActionBusyId(null);
+    }
+  }, [agent, projectId, load]);
+
+  const dismissAction = useCallback(async (action: PendingAction) => {
+    setActionBusyId(action.id);
+    try {
+      await cancelProposedAction(agent, projectId, action.id);
+      setPendingActions((prev) => prev.filter((a) => a.id !== action.id));
+    } catch (err) {
+      setActionErrors((prev) => ({ ...prev, [action.id]: err instanceof Error ? err.message : String(err) }));
+    } finally {
+      setActionBusyId(null);
+    }
+  }, [agent, projectId]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -131,10 +257,10 @@ export function ProjectChat({
     .slice()
     .reverse()
     .find((m) => (m.structured_payload?.questions ?? []).length > 0)?.structured_payload.questions ?? [];
-  const proposedActions = messages
+  const rejectedActions = messages
     .slice()
     .reverse()
-    .find((m) => (m.structured_payload?.proposed_actions ?? []).length > 0)?.structured_payload.proposed_actions ?? [];
+    .find((m) => (m.structured_payload?.rejected_actions ?? []).length > 0)?.structured_payload.rejected_actions ?? [];
 
   return (
     <section className="card chat-panel">
@@ -197,6 +323,21 @@ export function ProjectChat({
         </div>
 
         <aside className="chat-side">
+          {pendingActions.length > 0 && (
+            <div className="chat-side-block">
+              <h3>Waiting for your confirmation</h3>
+              {pendingActions.map((action) => (
+                <ActionCard
+                  key={action.id}
+                  action={action}
+                  busy={actionBusyId === action.id}
+                  error={actionErrors[action.id] || null}
+                  onConfirm={() => void confirmAction(action)}
+                  onCancel={() => void dismissAction(action)}
+                />
+              ))}
+            </div>
+          )}
           {latestDraft && <DraftPanel draft={latestDraft} />}
           {openQuestions.length > 0 && (
             <div className="chat-side-block">
@@ -204,19 +345,17 @@ export function ProjectChat({
               <ul>{openQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul>
             </div>
           )}
-          {proposedActions.length > 0 && (
+          {rejectedActions.length > 0 && (
             <div className="chat-side-block">
-              <h3>Proposed actions</h3>
+              <h3>Not allowed</h3>
               <ul>
-                {proposedActions.map((action, i) => (
+                {rejectedActions.map((action, i) => (
                   <li key={i}>
-                    <strong>{action.title}</strong>
-                    <span>{action.detail}</span>
-                    {action.affects && <em>Affects: {action.affects}</em>}
+                    <strong>{actionLabels[action.kind as ActionKind] ?? action.kind}</strong>
+                    <span>{action.reason}</span>
                   </li>
                 ))}
               </ul>
-              <p className="chat-hint">Nothing is changed automatically. Apply confirmed actions from the project screens.</p>
             </div>
           )}
         </aside>
