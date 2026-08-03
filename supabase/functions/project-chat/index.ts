@@ -5,6 +5,12 @@ import {
   type ActionKind, type Bundle, type Ctx,
 } from "./actions.ts";
 import { calendarWeeks, perUnitHours, snapshot } from "./estimation.ts";
+import {
+  PROJECT_ONLY_MESSAGE, PROJECT_ONLY_MESSAGE_HE, UNCLEAR_MESSAGE, UNCLEAR_MESSAGE_HE,
+  classifyRequest, detectSpam, estimateCost, estimateTokens, getCachedResponse, hashText,
+  invalidateProjectCache, isHebrew, loadUsage, putCachedResponse, raiseAlert, recordClassification,
+  recordEvent, resolveLimits, usagePercent,
+} from "./guard.ts";
 
 type AgentType = "project_guide" | "agency_control" | "work_assistant";
 
@@ -352,15 +358,21 @@ async function buildContext(agent: AgentType, project: any, supplierId: string |
   return lines.join("\n");
 }
 
-async function callModel(system: string, context: string, history: any[], userText: string) {
+async function callModel(
+  system: string,
+  context: string,
+  history: any[],
+  userText: string,
+  maxOutputTokens: number,
+) {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) throw new Error("AI is not configured (missing LOVABLE_API_KEY).");
 
   const input = [
     { role: "system", content: `${system}\n\n--- PROJECT CONTEXT (role-filtered, authoritative) ---\n${context}` },
-    ...history.slice(-20).map((m: any) => ({
+    ...history.slice(-12).map((m: any) => ({
       role: m.sender_type === "ai_agent" ? "assistant" : "user",
-      content: m.body,
+      content: String(m.body ?? "").slice(0, 2000),
     })),
     { role: "user", content: userText },
   ];
@@ -377,6 +389,7 @@ async function callModel(system: string, context: string, history: any[], userTe
       input,
       stream: true,
       store: false,
+      max_output_tokens: Math.max(600, Math.min(maxOutputTokens, 8000)),
       reasoning: { effort: "low", summary: "auto" },
     }),
   });
