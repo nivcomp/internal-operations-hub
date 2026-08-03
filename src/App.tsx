@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
+import { AIUsagePage } from "./pages/AIUsagePage";
 import { AccessManagementPage } from "./pages/AccessManagementPage";
 import { ActionQueuePage } from "./pages/ActionQueuePage";
 import { ChangeRequestsPage } from "./pages/ChangeRequestsPage";
@@ -28,7 +29,7 @@ const roleViews: Record<UserRole, ViewKey[]> = {
     "dashboard", "action-queue", "clients", "client-detail", "client-portal",
     "projects", "project-detail", "change-requests",
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
-    "pricing-margin", "payments-hours", "ai-workbench", "access-management",
+    "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
   ],
   client: ["client-portal"],
   supplier: ["supplier-portal"],
@@ -185,6 +186,7 @@ function AppShell() {
       />
     ),
     "ai-workbench": <AIWorkbenchPage />,
+    "ai-usage": <AIUsagePage />,
     "access-management": (
       <AccessManagementPage onClientSelect={openClientDetail} onSupplierSelect={openSupplierDetail} />
     ),
