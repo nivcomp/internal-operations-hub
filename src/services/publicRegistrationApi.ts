@@ -33,7 +33,7 @@ export function checkPublicLink(role: RegistrationRole, code: string) {
   return callPublic<{ open: boolean; introText?: string }>({ action: "info", role, code });
 }
 
-export function submitPublicRegistration(input: {
+export type RegistrationIntake = {
   role: RegistrationRole;
   code: string;
   company: string;
@@ -42,28 +42,71 @@ export function submitPublicRegistration(input: {
   phone: string;
   message: string;
   website: string;
+  language: "he" | "en";
+  timezone: string;
+  consent: boolean;
   elapsedMs: number;
-}) {
-  return callPublic<{
-    submitted: boolean;
-    emailed?: boolean;
-    immediateAccess?: boolean;
-    tokenHash?: string | null;
-    notice: string;
-  }>({
-    action: "submit",
-    redirectTo: "https://project.stat.ninja/",
+};
+
+/** Records the intake row and reports whether the address can still register. */
+export function prepareRegistration(input: RegistrationIntake) {
+  return callPublic<{ status: "ready" | "email_exists"; registrationId?: string }>({
+    action: "register",
     ...input,
   });
 }
 
 /**
- * Exchanges the one-time token for a session and moves the person into their
- * own workspace. The authenticated client is imported lazily so the public
- * registration screen itself never depends on it while rendering.
+ * Creates the real Auth account with the password the person chose. The
+ * authenticated client is imported lazily so the public screen never depends on
+ * it while rendering.
  */
-export async function startSessionFromToken(tokenHash: string): Promise<boolean> {
+export async function createAccount(input: {
+  email: string;
+  password: string;
+  fullName: string;
+  language: "he" | "en";
+  redirectTo: string;
+}): Promise<{ signedIn: boolean; needsVerification: boolean; error?: string }> {
   const { supabase } = await import("../integrations/supabase/client");
-  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
-  return !error;
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email,
+    password: input.password,
+    options: {
+      emailRedirectTo: input.redirectTo,
+      data: { full_name: input.fullName, preferred_language: input.language },
+    },
+  });
+  if (error) return { signedIn: false, needsVerification: false, error: error.message };
+  if (data.session) return { signedIn: true, needsVerification: false };
+  return { signedIn: false, needsVerification: true };
+}
+
+/** Provisions the isolated profile + client/supplier record for the new session. */
+export async function claimAccount(role: RegistrationRole): Promise<boolean> {
+  const { supabase } = await import("../integrations/supabase/client");
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return false;
+  const response = await fetch(FUNCTIONS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: PUBLISHABLE_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: "claim", role }),
+  });
+  const body = await response.json().catch(() => ({}));
+  return Boolean(body?.claimed);
+}
+
+export async function resendVerification(email: string, redirectTo: string): Promise<string | null> {
+  const { supabase } = await import("../integrations/supabase/client");
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: redirectTo },
+  });
+  return error?.message ?? null;
 }

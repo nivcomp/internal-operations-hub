@@ -2851,6 +2851,7 @@ export type Database = {
           client_id: string | null
           company: string
           confirmed_at: string | null
+          consent_at: string | null
           contact_name: string
           converted_at: string | null
           created_at: string
@@ -2859,6 +2860,7 @@ export type Database = {
           ip_hash: string
           message: string
           phone: string
+          preferred_language: string
           profile_id: string | null
           review_notes: string
           reviewed_at: string | null
@@ -2868,6 +2870,7 @@ export type Database = {
           source: string
           status: string
           supplier_id: string | null
+          timezone: string
           updated_at: string
           user_agent: string
         }
@@ -2875,6 +2878,7 @@ export type Database = {
           client_id?: string | null
           company?: string
           confirmed_at?: string | null
+          consent_at?: string | null
           contact_name: string
           converted_at?: string | null
           created_at?: string
@@ -2883,6 +2887,7 @@ export type Database = {
           ip_hash?: string
           message?: string
           phone?: string
+          preferred_language?: string
           profile_id?: string | null
           review_notes?: string
           reviewed_at?: string | null
@@ -2892,6 +2897,7 @@ export type Database = {
           source?: string
           status?: string
           supplier_id?: string | null
+          timezone?: string
           updated_at?: string
           user_agent?: string
         }
@@ -2899,6 +2905,7 @@ export type Database = {
           client_id?: string | null
           company?: string
           confirmed_at?: string | null
+          consent_at?: string | null
           contact_name?: string
           converted_at?: string | null
           created_at?: string
@@ -2907,6 +2914,7 @@ export type Database = {
           ip_hash?: string
           message?: string
           phone?: string
+          preferred_language?: string
           profile_id?: string | null
           review_notes?: string
           reviewed_at?: string | null
@@ -2916,6 +2924,7 @@ export type Database = {
           source?: string
           status?: string
           supplier_id?: string | null
+          timezone?: string
           updated_at?: string
           user_agent?: string
         }

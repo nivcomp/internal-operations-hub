@@ -374,8 +374,8 @@ function OnboardingGate() {
   const { profile } = useAuth();
   const { loading, needsOnboarding, refresh } = useOnboarding();
   const { reload } = useAppData();
-  // Suppliers complete a professional profile; clients start in the AI conversation.
-  const [useClassicForm, setUseClassicForm] = useState(profile?.role === "supplier");
+  // Both roles start in the AI onboarding workspace; the classic form stays as a fallback.
+  const [useClassicForm, setUseClassicForm] = useState(false);
 
   async function finishOnboarding() {
     await refresh();
@@ -413,23 +413,47 @@ function AuthGate() {
   const [isResetRoute, setIsResetRoute] = useState(
     () => window.location.pathname === "/reset-password" || window.location.hash.includes("type=recovery"),
   );
-  const [claiming, setClaiming] = useState(false);
-  const [claimTried, setClaimTried] = useState(false);
+  const [claimState, setClaimState] = useState<"idle" | "working" | "failed">("idle");
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimAttempt, setClaimAttempt] = useState(0);
 
   // A person who registered through a public link arrives with a session but no
-  // profile. Provision their isolated account server-side, then continue.
+  // profile. Provision their isolated account server-side, then continue. The
+  // step is always bounded so nobody can be stranded on a loading screen.
   useEffect(() => {
-    if (status !== "no_profile" || claimTried) return;
-    setClaimTried(true);
-    setClaiming(true);
+    if (status !== "no_profile" || claimState !== "idle") return;
+    setClaimState("working");
+    setClaimError(null);
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setClaimError("Setting up your workspace took too long.");
+      setClaimState("failed");
+    }, 20000);
     void (async () => {
       try {
         const claimed = await claimPublicRegistration();
-        if (claimed) await refreshProfile?.();
-      } catch { /* falls through to the no-access screen */ }
-      finally { setClaiming(false); }
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        if (claimed) {
+          await refreshProfile?.();
+          setClaimState("idle");
+        } else {
+          setClaimError("We could not finish setting up your workspace.");
+          setClaimState("failed");
+        }
+      } catch (cause) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        setClaimError(cause instanceof Error ? cause.message : "Workspace setup failed.");
+        setClaimState("failed");
+      }
     })();
-  }, [status, claimTried, refreshProfile]);
+    return () => window.clearTimeout(timer);
+  }, [status, claimState, claimAttempt, refreshProfile]);
 
   function leaveResetRoute() {
     setIsResetRoute(false);
@@ -447,7 +471,7 @@ function AuthGate() {
   }
   if (status === "signed_out") return <LoginPage />;
   if (status === "no_profile") {
-    if (claiming) {
+    if (claimState === "working") {
       return (
         <div className="auth-screen">
           <div className="card auth-card"><p>Setting up your workspace…</p></div>
@@ -457,9 +481,19 @@ function AuthGate() {
     return (
       <div className="auth-screen">
         <div className="card auth-card">
-          <h1 style={{ fontSize: "1.15rem" }}>No access yet</h1>
-          <p className="form-error">{profileError ?? "This account has no profile."}</p>
-          <button type="button" onClick={() => void signOut()}>Sign out</button>
+          <h1 style={{ fontSize: "1.15rem" }}>We could not open your workspace</h1>
+          <p className="form-error">{claimError ?? profileError ?? "This account has no profile."}</p>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => { setClaimState("idle"); setClaimAttempt((value) => value + 1); }}
+            >
+              Retry
+            </button>
+            <button type="button" className="ghost-button" onClick={() => void signOut()}>Sign in again</button>
+            <a className="ghost-button" href="mailto:hello@stat.ninja">Contact agency</a>
+          </div>
         </div>
       </div>
     );
