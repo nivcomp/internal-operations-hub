@@ -1088,12 +1088,23 @@ export async function buildOperatorAction(ctx: OperatorCtx, actionType: string, 
 export async function runOperatorAction(ctx: OperatorCtx, row: any) {
   const spec = OPERATOR_ACTIONS[row.action_type];
   if (!spec) throw new Error("Unknown action.");
-  const b: Built = {
+  let b: Built = {
     targetId: row.target_id, targetLabel: row.target_label,
     payload: row.payload ?? {}, preview: row.preview ?? { fields: [] },
     summary: row.action_label, risk: row.risk_level,
   };
   try {
+    // Later plan steps often target a record an earlier step creates, so they are
+    // resolved and validated at execution time instead of when they were queued.
+    if ((row.payload as any)?.__deferred) {
+      const resolved = await buildOperatorAction(ctx, row.action_type, (row.payload as any).input ?? {});
+      if ("error" in resolved) throw new Error(resolved.error);
+      b = resolved as Built;
+      await ctx.admin.from("copilot_operator_actions").update({
+        target_id: b.targetId, target_label: b.targetLabel,
+        payload: b.payload, preview: b.preview, action_label: b.summary,
+      }).eq("id", row.id);
+    }
     const result = await spec.execute(ctx, b);
     await ctx.admin.from("copilot_operator_actions").update({
       status: "completed", executed_at: now(), result: { summary: result.summary, next: result.next ?? null }, failure_reason: null,
