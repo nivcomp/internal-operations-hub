@@ -947,7 +947,18 @@ Deno.serve(async (req) => {
         });
       }
 
-      return json({ conversation, userMessage, aiMessage, draft: draftRow, pendingActions, rejectedActions: rejected });
+      return json({
+        conversation, userMessage, aiMessage, draft: draftRow, pendingActions, rejectedActions: rejected,
+        usage: {
+          percentUsed: percent,
+          messagesToday: usage.dayMessages + 1,
+          dailyMessageLimit: limits.daily_message_limit,
+          warningThreshold: limits.warning_threshold_percent,
+          paused: limits.is_paused,
+          pausedReason: limits.paused_reason,
+          maximumMessageLength: limits.maximum_message_length,
+        },
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("project-chat AI failure:", message);
