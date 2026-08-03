@@ -271,6 +271,8 @@ export function ProjectDetailPage({
           </form>
         </section>
       ) : null}
+      {tab === "overview" ? (
+        <>
       <section className="detail-grid">
         <article className="card">
           <h2>Brief</h2>
@@ -292,6 +294,18 @@ export function ProjectDetailPage({
           </dl>
         </article>
       </section>
+      <section className="card">
+        <h2>Client details</h2>
+        <dl className="meta-list">
+          <div><dt>Company</dt><dd>{client?.company}</dd></div>
+          <div><dt>Contact</dt><dd>{client?.name}</dd></div>
+          <div><dt>Email</dt><dd>{client?.email}</dd></div>
+          <div><dt>Phone</dt><dd>{client?.phone ?? "Not set"}</dd></div>
+        </dl>
+      </section>
+        </>
+      ) : null}
+      {tab === "changes" ? (
       <section className="card form-panel">
         <h2>Add change request</h2>
         <form className="form-grid" onSubmit={handleChangeSubmit}>
@@ -309,15 +323,8 @@ export function ProjectDetailPage({
           {getSuccess(changeKey) && !getError(changeKey) ? <p className="form-success">{getSuccess(changeKey)}</p> : null}
         </form>
       </section>
-      <section className="card">
-        <h2>Client details</h2>
-        <dl className="meta-list">
-          <div><dt>Company</dt><dd>{client?.company}</dd></div>
-          <div><dt>Contact</dt><dd>{client?.name}</dd></div>
-          <div><dt>Email</dt><dd>{client?.email}</dd></div>
-          <div><dt>Phone</dt><dd>{client?.phone ?? "Not set"}</dd></div>
-        </dl>
-      </section>
+      ) : null}
+      {tab === "scope" ? (
       <section className="card">
         <h2>Scope and scope items</h2>
         {scope ? (
@@ -335,6 +342,9 @@ export function ProjectDetailPage({
           </>
         ) : <p>No scope has been created for this project yet.</p>}
       </section>
+      ) : null}
+      {tab === "suppliers" ? (
+        <>
       <section className="detail-grid">
         <article className="card">
           <h2>Assigned suppliers</h2>
