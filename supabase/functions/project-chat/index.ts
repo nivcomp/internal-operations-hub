@@ -517,11 +517,22 @@ Deno.serve(async (req) => {
       const { data: pending } = await admin.from("ai_generated_drafts")
         .select("*").eq("project_id", projectId).neq("action_kind", "")
         .eq("status", "awaiting_agency_review").order("created_at", { ascending: false }).limit(20);
+      const limits = await resolveLimits(admin, profile, projectId);
+      const usage = await loadUsage(admin, profile.id, projectId);
       return json({
         conversation,
         messages,
         drafts: (drafts ?? []).filter((d: any) => !d.action_kind && draftVisibleTo(d, profile)),
         pendingActions: (pending ?? []).filter((d: any) => draftVisibleTo(d, profile) && canConfirm(d, agent, profile)),
+        usage: {
+          percentUsed: usagePercent(usage, limits),
+          messagesToday: usage.dayMessages,
+          dailyMessageLimit: limits.daily_message_limit,
+          warningThreshold: limits.warning_threshold_percent,
+          paused: limits.is_paused,
+          pausedReason: limits.paused_reason,
+          maximumMessageLength: limits.maximum_message_length,
+        },
       });
     }
 
