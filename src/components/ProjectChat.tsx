@@ -323,7 +323,7 @@ export function ProjectChat({
         </div>
 
         <aside className="chat-side">
-          {pendingActions.length > 0 && (
+          {pendingActions.length > 0 && !readOnly && (
             <div className="chat-side-block">
               <h3>Waiting for your confirmation</h3>
               {pendingActions.map((action) => (
