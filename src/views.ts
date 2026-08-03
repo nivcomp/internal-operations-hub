@@ -14,6 +14,7 @@ export const views = [
   { key: "client-portal", label: "Client Portal" },
   { key: "supplier-portal", label: "Supplier Portal" },
   { key: "ai-workbench", label: "AI Workbench" },
+  { key: "ai-usage", label: "AI Usage & Alerts" },
   { key: "access-management", label: "Access Management" },
 ] as const;
 

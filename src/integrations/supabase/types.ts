@@ -147,6 +147,177 @@ export type Database = {
           },
         ]
       }
+      ai_project_summaries: {
+        Row: {
+          audience_role: string
+          conversation_id: string | null
+          covered_message_count: number
+          created_at: string
+          id: string
+          last_message_at: string | null
+          project_id: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          audience_role?: string
+          conversation_id?: string | null
+          covered_message_count?: number
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          project_id: string
+          summary?: string
+          updated_at?: string
+        }
+        Update: {
+          audience_role?: string
+          conversation_id?: string | null
+          covered_message_count?: number
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          project_id?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_project_summaries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_project_summaries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_request_classifications: {
+        Row: {
+          agent_type: string
+          classification: string
+          classifier_model: string
+          classifier_tokens: number
+          confidence: number
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_excerpt: string
+          message_hash: string
+          profile_id: string | null
+          project_id: string | null
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          agent_type?: string
+          classification: string
+          classifier_model?: string
+          classifier_tokens?: number
+          confidence?: number
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_excerpt?: string
+          message_hash?: string
+          profile_id?: string | null
+          project_id?: string | null
+          reason?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_type?: string
+          classification?: string
+          classifier_model?: string
+          classifier_tokens?: number
+          confidence?: number
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_excerpt?: string
+          message_hash?: string
+          profile_id?: string | null
+          project_id?: string | null
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_request_classifications_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_request_classifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_request_classifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_response_cache: {
+        Row: {
+          agent_type: string
+          audience_role: string
+          cache_key: string
+          created_at: string
+          expires_at: string
+          hit_count: number
+          id: string
+          project_id: string
+          response_body: string
+          updated_at: string
+        }
+        Insert: {
+          agent_type?: string
+          audience_role?: string
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          hit_count?: number
+          id?: string
+          project_id: string
+          response_body?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_type?: string
+          audience_role?: string
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          hit_count?: number
+          id?: string
+          project_id?: string
+          response_body?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_response_cache_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_runs: {
         Row: {
           agent_type: string
@@ -251,6 +422,250 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_usage_alerts: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          created_at: string
+          detail: string
+          id: string
+          metadata: Json
+          profile_id: string | null
+          project_id: string | null
+          severity: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          created_at?: string
+          detail?: string
+          id?: string
+          metadata?: Json
+          profile_id?: string | null
+          project_id?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          created_at?: string
+          detail?: string
+          id?: string
+          metadata?: Json
+          profile_id?: string | null
+          project_id?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_alerts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_alerts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage_events: {
+        Row: {
+          actor_role: string
+          agent_type: string
+          classification: string
+          client_id: string | null
+          conversation_id: string | null
+          created_at: string
+          duration_ms: number
+          estimated_cost: number
+          id: string
+          input_tokens: number
+          message_hash: string
+          message_length: number
+          model: string
+          outcome: string
+          output_tokens: number
+          profile_id: string | null
+          project_id: string | null
+          rejection_reason: string
+          supplier_id: string | null
+          total_tokens: number
+          updated_at: string
+        }
+        Insert: {
+          actor_role?: string
+          agent_type?: string
+          classification?: string
+          client_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number
+          estimated_cost?: number
+          id?: string
+          input_tokens?: number
+          message_hash?: string
+          message_length?: number
+          model?: string
+          outcome?: string
+          output_tokens?: number
+          profile_id?: string | null
+          project_id?: string | null
+          rejection_reason?: string
+          supplier_id?: string | null
+          total_tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          actor_role?: string
+          agent_type?: string
+          classification?: string
+          client_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number
+          estimated_cost?: number
+          id?: string
+          input_tokens?: number
+          message_hash?: string
+          message_length?: number
+          model?: string
+          outcome?: string
+          output_tokens?: number
+          profile_id?: string | null
+          project_id?: string | null
+          rejection_reason?: string
+          supplier_id?: string | null
+          total_tokens?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_events_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage_limits: {
+        Row: {
+          cooldown_seconds: number
+          created_at: string
+          daily_message_limit: number
+          daily_token_limit: number
+          hard_stop_threshold_percent: number
+          id: string
+          is_paused: boolean
+          maximum_context_size: number
+          maximum_message_length: number
+          maximum_output_tokens: number
+          monthly_message_limit: number
+          monthly_token_limit: number
+          note: string
+          paused_reason: string
+          paused_until: string | null
+          scope_id: string | null
+          scope_type: string
+          updated_at: string
+          warning_threshold_percent: number
+        }
+        Insert: {
+          cooldown_seconds?: number
+          created_at?: string
+          daily_message_limit?: number
+          daily_token_limit?: number
+          hard_stop_threshold_percent?: number
+          id?: string
+          is_paused?: boolean
+          maximum_context_size?: number
+          maximum_message_length?: number
+          maximum_output_tokens?: number
+          monthly_message_limit?: number
+          monthly_token_limit?: number
+          note?: string
+          paused_reason?: string
+          paused_until?: string | null
+          scope_id?: string | null
+          scope_type: string
+          updated_at?: string
+          warning_threshold_percent?: number
+        }
+        Update: {
+          cooldown_seconds?: number
+          created_at?: string
+          daily_message_limit?: number
+          daily_token_limit?: number
+          hard_stop_threshold_percent?: number
+          id?: string
+          is_paused?: boolean
+          maximum_context_size?: number
+          maximum_message_length?: number
+          maximum_output_tokens?: number
+          monthly_message_limit?: number
+          monthly_token_limit?: number
+          note?: string
+          paused_reason?: string
+          paused_until?: string | null
+          scope_id?: string | null
+          scope_type?: string
+          updated_at?: string
+          warning_threshold_percent?: number
+        }
+        Relationships: []
       }
       approvals: {
         Row: {

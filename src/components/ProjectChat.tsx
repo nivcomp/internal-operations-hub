@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   cancelProposedAction, confirmProposedAction, loadChatHistory, sendChatMessage,
-  type ActionKind, type AgentType, type ChatDraft, type ChatMessage, type PendingAction,
+  type ActionKind, type AgentType, type ChatDraft, type ChatMessage, type ChatUsage, type PendingAction,
 } from "../services/chatApi";
 import { notifyEstimationChanged } from "../lib/estimationEvents";
+import { detectProjectViewIntent, requestProjectView } from "../lib/projectViewEvents";
 
 type ProjectChatProps = {
   projectId: string;
@@ -17,6 +18,8 @@ type ProjectChatProps = {
   readOnly?: boolean;
   readOnlyReason?: string;
   suggestions?: string[];
+  /** Shown above the composer for client and supplier chats. */
+  safetyNotice?: string;
 };
 
 const actionLabels: Record<ActionKind, string> = {
@@ -156,7 +159,7 @@ function ActionCard({
 
 export function ProjectChat({
   projectId, projectName, agent, title, subtitle,
-  showVisibility = false, readOnly = false, readOnlyReason, suggestions = [],
+  showVisibility = false, readOnly = false, readOnlyReason, suggestions = [], safetyNotice,
 }: ProjectChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [drafts, setDrafts] = useState<ChatDraft[]>([]);
@@ -168,6 +171,7 @@ export function ProjectChat({
   const [aiState, setAiState] = useState<"idle" | "thinking" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
+  const [usage, setUsage] = useState<ChatUsage | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -179,6 +183,7 @@ export function ProjectChat({
       setMessages(data.messages ?? []);
       setDrafts(data.drafts ?? []);
       setPendingActions(data.pendingActions ?? []);
+      if (data.usage) setUsage(data.usage);
       setLoadState("ready");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -203,8 +208,13 @@ export function ProjectChat({
     setError(null);
     setLastFailedText(null);
     setAiState("thinking");
+    // "Show me the project flow" / "print the report" open the panels already on
+    // this screen. The message still goes to the AI so the answer stays in context.
+    const intent = detectProjectViewIntent(trimmed);
+    if (intent) requestProjectView(projectId, intent);
     try {
       const result = await sendChatMessage(agent, projectId, trimmed);
+      if (result.usage) setUsage(result.usage);
       setMessages((prev) => [...prev, result.userMessage, result.aiMessage]);
       if (result.draft) setDrafts((prev) => [result.draft as ChatDraft, ...prev].slice(0, 5));
       if (result.pendingActions?.length) {
@@ -362,6 +372,22 @@ export function ProjectChat({
       </div>
 
       <form className="chat-composer" onSubmit={handleSubmit}>
+        {safetyNotice && !readOnly ? <p className="chat-safety-notice">{safetyNotice}</p> : null}
+        {usage && !readOnly ? (
+          <div className="chat-usage-bar">
+            <span>
+              {usage.paused
+                ? "AI is paused for now"
+                : `${usage.messagesToday}/${usage.dailyMessageLimit} messages today`}
+            </span>
+            <span className="chat-usage-track">
+              <span
+                className={`chat-usage-fill${usage.percentUsed >= 90 ? " stop" : usage.percentUsed >= usage.warningThreshold ? " warn" : ""}`}
+                style={{ width: `${Math.min(100, Math.max(2, usage.percentUsed))}%` }}
+              />
+            </span>
+          </div>
+        ) : null}
         {suggestions.length > 0 && !readOnly && (
           <div className="chat-suggestions">
             {suggestions.map((s) => (
@@ -376,7 +402,7 @@ export function ProjectChat({
           value={input}
           dir={isRtl(input) ? "rtl" : "ltr"}
           rows={3}
-          maxLength={4000}
+          maxLength={usage?.maximumMessageLength ?? 4000}
           placeholder={readOnly ? "Sending is disabled in preview mode" : "Write your message… (Hebrew or English)"}
           disabled={readOnly || aiState === "thinking"}
           onChange={(event) => setInput(event.target.value)}
