@@ -585,6 +585,8 @@ Deno.serve(async (req) => {
           status: "sent",
           structured_payload: { confirmed_action: draft.action_kind, draft_id: draft.id },
         });
+        // Project data changed, so cached answers about it are no longer valid.
+        await invalidateProjectCache(admin, projectId);
         return json({ ok: true, status: "applied", summary });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -597,19 +599,222 @@ Deno.serve(async (req) => {
 
     const text = typeof body.body === "string" ? body.body.trim() : "";
     if (!text) return json({ error: "Message body is required" }, 400);
-    if (text.length > 4000) return json({ error: "Message is too long (max 4000 characters)" }, 400);
+    const cfg = AGENT_CONFIG[agent];
+    const he = isHebrew(text);
+    const messageHash = await hashText(`${agent}:${projectId}:${text}`);
+    const limits = await resolveLimits(admin, profile, projectId);
+    const usage = await loadUsage(admin, profile.id, projectId);
+    const percent = usagePercent(usage, limits);
 
-    // Basic abuse protection: cap AI runs per profile per minute.
-    const since = new Date(Date.now() - 60_000).toISOString();
-    const { count } = await admin.from("ai_runs")
-      .select("id", { count: "exact", head: true })
-      .eq("requested_by_profile_id", profile.id)
-      .gte("created_at", since);
-    if ((count ?? 0) >= RATE_LIMIT_PER_MINUTE) {
-      return json({ error: "Too many messages in a short time. Please wait a moment." }, 429);
+    const baseEvent = {
+      profile_id: profile.id,
+      project_id: projectId,
+      conversation_id: conversation.id,
+      client_id: profile.client_id,
+      supplier_id: access.supplierId,
+      actor_role: effectiveRole(agent, profile),
+      agent_type: agent,
+      model: "",
+      message_hash: messageHash,
+      message_length: text.length,
+    };
+
+    /** Denies the request, records it, and never reaches the expensive model. */
+    const deny = async (
+      opts: { outcome: "rejected" | "blocked"; classification: string; reason: string; message: string; status: number; tokens?: number },
+    ) => {
+      await recordEvent(admin, {
+        ...baseEvent,
+        classification: opts.classification,
+        outcome: opts.outcome,
+        rejection_reason: opts.reason,
+        input_tokens: 0,
+        output_tokens: 0,
+        total_tokens: opts.tokens ?? 0,
+        estimated_cost: 0,
+      });
+      return json({ error: opts.message, limited: true, classification: opts.classification }, opts.status);
+    };
+
+    if (text.length > limits.maximum_message_length) {
+      return await deny({
+        outcome: "rejected", classification: "unclear", reason: "Message exceeded the maximum length.",
+        message: `Message is too long (max ${limits.maximum_message_length} characters).`, status: 400,
+      });
     }
 
-    const cfg = AGENT_CONFIG[agent];
+    if (limits.is_paused) {
+      return await deny({
+        outcome: "blocked", classification: "repeated_spam", reason: `AI paused at ${limits.pausedScope} level.`,
+        message: he
+          ? "הגישה ל-AI מושהית זמנית עקב שימוש חריג. יניב עודכן."
+          : "AI access is temporarily paused because of unusual usage. Yaniv has been notified.",
+        status: 429,
+      });
+    }
+
+    // Cooldown between consecutive requests.
+    if (usage.lastActivityAt && limits.cooldown_seconds > 0) {
+      const gap = (Date.now() - new Date(usage.lastActivityAt).getTime()) / 1000;
+      if (gap < limits.cooldown_seconds) {
+        return await deny({
+          outcome: "rejected", classification: "repeated_spam", reason: "Cooldown between messages.",
+          message: he ? "רגע אחד לפני ההודעה הבאה." : "Please wait a moment before sending the next message.",
+          status: 429,
+        });
+      }
+    }
+
+    // Hard stop on usage limits.
+    if (percent >= limits.hard_stop_threshold_percent) {
+      await raiseAlert(admin, {
+        alert_type: "limit_reached", severity: "critical", profile_id: profile.id, project_id: projectId,
+        title: "AI usage limit reached",
+        detail: `${profile.full_name || profile.role} reached ${percent}% of the AI usage allowance.`,
+        metadata: { percent, usage, project: access.project.name },
+      });
+      return await deny({
+        outcome: "blocked", classification: "repeated_spam", reason: `Usage at ${percent}% of allowance.`,
+        message: he
+          ? "מכסת השימוש ב-AI לפרויקט הזה הסתיימה. אנא פנה ליניב כדי להמשיך."
+          : "The AI usage limit for this project has been reached. Please contact Yaniv to continue.",
+        status: 429,
+      });
+    }
+    if (percent >= 90) {
+      await raiseAlert(admin, {
+        alert_type: "limit_90", severity: "warning", profile_id: profile.id, project_id: projectId,
+        title: "AI usage at 90%", detail: `${profile.full_name || profile.role} is at ${percent}% of the allowance.`,
+        metadata: { percent },
+      });
+    } else if (percent >= limits.warning_threshold_percent) {
+      await raiseAlert(admin, {
+        alert_type: "limit_warning", severity: "info", profile_id: profile.id, project_id: projectId,
+        title: `AI usage at ${percent}%`, detail: `${profile.full_name || profile.role} passed the warning threshold.`,
+        metadata: { percent },
+      });
+    }
+
+    // Repeated / spam behaviour.
+    const spam = await detectSpam(admin, profile.id, messageHash);
+    if (spam.burst >= 10) {
+      await raiseAlert(admin, {
+        alert_type: "message_burst", severity: "warning", profile_id: profile.id, project_id: projectId,
+        title: "Rapid AI message burst", detail: `${spam.burst} AI messages in the last minute.`, metadata: spam,
+      });
+      return await deny({
+        outcome: "rejected", classification: "repeated_spam", reason: "Too many messages in a short time.",
+        message: he ? "יותר מדי הודעות בזמן קצר. נסה שוב בעוד רגע." : "Too many messages in a short time. Please wait a moment.",
+        status: 429,
+      });
+    }
+    if (spam.isSpam) {
+      await admin.from("ai_usage_limits").insert({
+        scope_type: "profile", scope_id: profile.id, is_paused: true,
+        paused_reason: "Automatic pause after repeated identical or unrelated prompts.",
+        paused_until: new Date(Date.now() + 60 * 60_000).toISOString(),
+        note: "Created automatically by the AI guard.",
+      }).select("id").maybeSingle().then(async ({ error }: any) => {
+        if (error) {
+          await admin.from("ai_usage_limits").update({
+            is_paused: true,
+            paused_reason: "Automatic pause after repeated identical or unrelated prompts.",
+            paused_until: new Date(Date.now() + 60 * 60_000).toISOString(),
+          }).eq("scope_type", "profile").eq("scope_id", profile.id);
+        }
+      });
+      await raiseAlert(admin, {
+        alert_type: "repeated_spam", severity: "critical", profile_id: profile.id, project_id: projectId,
+        title: "AI access paused automatically",
+        detail: `Repeated prompts detected (${spam.identical} identical, ${spam.rejected} unrelated). AI paused for one hour.`,
+        metadata: spam,
+      });
+      return await deny({
+        outcome: "blocked", classification: "repeated_spam", reason: "Repeated identical or unrelated prompts.",
+        message: he
+          ? "הגישה ל-AI מושהית זמנית עקב שימוש חריג. יניב עודכן."
+          : "AI access is temporarily paused because of unusual usage. Yaniv has been notified.",
+        status: 429,
+      });
+    }
+
+    // Project-scope relevance check on a low-cost model, before the main model.
+    const verdict = await classifyRequest(text, {
+      projectName: access.project.name,
+      projectSummary: access.project.summary ?? "",
+      agentType: agent,
+    });
+    await recordClassification(admin, {
+      profile_id: profile.id, project_id: projectId, conversation_id: conversation.id, agent_type: agent,
+      classification: verdict.classification, confidence: verdict.confidence, reason: verdict.reason,
+      message_excerpt: text.slice(0, 300), message_hash: messageHash,
+      classifier_model: verdict.model, classifier_tokens: verdict.tokens,
+    });
+
+    if (verdict.classification === "abusive") {
+      await raiseAlert(admin, {
+        alert_type: "abusive_prompt", severity: "critical", profile_id: profile.id, project_id: projectId,
+        title: "Abusive or injection prompt blocked", detail: verdict.reason,
+        metadata: { excerpt: text.slice(0, 300) },
+      });
+      return await deny({
+        outcome: "rejected", classification: "abusive", reason: verdict.reason,
+        message: he ? PROJECT_ONLY_MESSAGE_HE : PROJECT_ONLY_MESSAGE, status: 400, tokens: verdict.tokens,
+      });
+    }
+    if (verdict.classification === "unrelated" || verdict.classification === "unclear") {
+      const replyBody = verdict.classification === "unrelated"
+        ? (he ? PROJECT_ONLY_MESSAGE_HE : PROJECT_ONLY_MESSAGE)
+        : (he ? UNCLEAR_MESSAGE_HE : UNCLEAR_MESSAGE);
+      if (verdict.classification === "unrelated" && spam.rejected >= 2) {
+        await raiseAlert(admin, {
+          alert_type: "repeated_unrelated", severity: "warning", profile_id: profile.id, project_id: projectId,
+          title: "Repeated unrelated AI prompts",
+          detail: `${spam.rejected + 1} unrelated prompts in the last 30 minutes.`,
+          metadata: { excerpt: text.slice(0, 300) },
+        });
+      }
+      const { data: um } = await admin.from("chat_messages").insert({
+        conversation_id: conversation.id, project_id: projectId, sender_type: cfg.senderType,
+        sender_profile_id: profile.id, body: text, visibility: cfg.visibility, status: "sent",
+      }).select("*").single();
+      const { data: am } = await admin.from("chat_messages").insert({
+        conversation_id: conversation.id, project_id: projectId, sender_type: "ai_agent", agent_type: agent,
+        body: replyBody, visibility: cfg.visibility, status: "sent",
+        structured_payload: { language: he ? "he" : "en", questions: [], proposed_actions: [], rejected_actions: [], scope_limited: true },
+      }).select("*").single();
+      await recordEvent(admin, {
+        ...baseEvent, classification: verdict.classification, outcome: "rejected",
+        rejection_reason: verdict.reason, model: verdict.model,
+        input_tokens: verdict.tokens, output_tokens: 0, total_tokens: verdict.tokens,
+        estimated_cost: estimateCost(verdict.model, verdict.tokens),
+      });
+      return json({
+        conversation, userMessage: um, aiMessage: am, draft: null,
+        pendingActions: [], rejectedActions: [], scopeLimited: true,
+      });
+    }
+
+    // Cached answer for an identical, still-fresh project question.
+    const cacheKey = `${projectId}:${agent}:${effectiveRole(agent, profile)}:${messageHash}`;
+    const cached = await getCachedResponse(admin, cacheKey);
+    if (cached) {
+      const { data: um } = await admin.from("chat_messages").insert({
+        conversation_id: conversation.id, project_id: projectId, sender_type: cfg.senderType,
+        sender_profile_id: profile.id, body: text, visibility: cfg.visibility, status: "sent",
+      }).select("*").single();
+      const { data: am } = await admin.from("chat_messages").insert({
+        conversation_id: conversation.id, project_id: projectId, sender_type: "ai_agent", agent_type: agent,
+        body: cached, visibility: cfg.visibility, status: "sent",
+        structured_payload: { language: he ? "he" : "en", questions: [], proposed_actions: [], rejected_actions: [], cached: true },
+      }).select("*").single();
+      await recordEvent(admin, {
+        ...baseEvent, classification: "project_relevant", outcome: "cached",
+        model: MODEL, input_tokens: 0, output_tokens: 0, total_tokens: 0, estimated_cost: 0,
+      });
+      return json({ conversation, userMessage: um, aiMessage: am, draft: null, pendingActions: [], rejectedActions: [] });
+    }
+
     const { data: userMessage, error: userErr } = await admin.from("chat_messages").insert({
       conversation_id: conversation.id,
       project_id: projectId,
@@ -634,8 +839,13 @@ Deno.serve(async (req) => {
     try {
       const history = await loadMessages(agent, conversation.id, profile.role);
       const bundle = await loadBundle(admin, projectId);
-      const context = await buildContext(agent, access.project, access.supplierId, bundle);
-      const raw = await callModel(systemPrompt(agent), context, history.slice(0, -1), text);
+      const fullContext = await buildContext(agent, access.project, access.supplierId, bundle);
+      const { recent, summary } = await compressHistory(
+        conversation.id, projectId, effectiveRole(agent, profile), history.slice(0, -1),
+      );
+      const context = (summary ? `${fullContext}\n\n--- EARLIER CONVERSATION (compressed) ---\n${summary}` : fullContext)
+        .slice(0, limits.maximum_context_size);
+      const raw = await callModel(systemPrompt(agent), context, recent, text, limits.maximum_output_tokens);
       if (!raw) throw new Error("The AI returned an empty response.");
       const parsed = parseModelOutput(raw);
 
