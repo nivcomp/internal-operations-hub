@@ -284,6 +284,34 @@ function estimateContext(agent: AgentType, bundle: Bundle, supplierId: string | 
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
+/**
+ * Keeps only the recent turns and folds everything older into a stored, compressed
+ * summary, so the whole conversation is never resent to the model.
+ */
+async function compressHistory(conversationId: string, projectId: string, audience: string, history: any[]) {
+  const RECENT = 12;
+  if (history.length <= RECENT) return { recent: history, summary: "" };
+  const older = history.slice(0, history.length - RECENT);
+  const recent = history.slice(-RECENT);
+  const summary = older
+    .map((m: any) => `${m.sender_type}: ${String(m.body ?? "").replace(/\s+/g, " ").slice(0, 220)}`)
+    .slice(-40)
+    .join("\n")
+    .slice(0, 6000);
+  await admin.from("ai_project_summaries").upsert(
+    {
+      project_id: projectId,
+      conversation_id: conversationId,
+      audience_role: audience,
+      summary,
+      covered_message_count: older.length,
+      last_message_at: older[older.length - 1]?.created_at ?? null,
+    },
+    { onConflict: "project_id,conversation_id,audience_role" },
+  );
+  return { recent, summary };
+}
+
 /** Role-safe project context. Pricing separation is enforced here, server-side. */
 async function buildContext(agent: AgentType, project: any, supplierId: string | null, bundle: Bundle) {
   const lines: string[] = [
