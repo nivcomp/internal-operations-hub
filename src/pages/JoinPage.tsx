@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   checkPublicLink,
   submitPublicRegistration,
+  startSessionFromToken,
   type RegistrationRole,
 } from "../services/publicRegistrationApi";
 
@@ -26,6 +27,7 @@ export function JoinPage({ role }: { role: RegistrationRole }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [entering, setEntering] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,12 +54,31 @@ export function JoinPage({ role }: { role: RegistrationRole }) {
         role, code, company, contactName, email, phone, message, website,
         elapsedMs: Date.now() - openedAt.current,
       });
+
+      // Brand-new address: go straight into the workspace.
+      if (result.immediateAccess && result.tokenHash) {
+        setEntering(true);
+        if (await startSessionFromToken(result.tokenHash)) {
+          window.location.replace("/");
+          return;
+        }
+        setEntering(false);
+      }
+
       setDone(result.notice ?? "Thanks — check your inbox to confirm your email.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send your registration.");
     } finally {
       setBusy(false);
     }
+  }
+
+  if (entering) {
+    return (
+      <div className="auth-screen">
+        <div className="card auth-card"><p>Setting up your workspace…</p></div>
+      </div>
+    );
   }
 
   if (state === "checking") {

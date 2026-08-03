@@ -44,9 +44,26 @@ export function submitPublicRegistration(input: {
   website: string;
   elapsedMs: number;
 }) {
-  return callPublic<{ submitted: boolean; emailed: boolean; notice: string }>({
+  return callPublic<{
+    submitted: boolean;
+    emailed?: boolean;
+    immediateAccess?: boolean;
+    tokenHash?: string | null;
+    notice: string;
+  }>({
     action: "submit",
     redirectTo: "https://project.stat.ninja/",
     ...input,
   });
+}
+
+/**
+ * Exchanges the one-time token for a session and moves the person into their
+ * own workspace. The authenticated client is imported lazily so the public
+ * registration screen itself never depends on it while rendering.
+ */
+export async function startSessionFromToken(tokenHash: string): Promise<boolean> {
+  const { supabase } = await import("../integrations/supabase/client");
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
+  return !error;
 }
