@@ -249,22 +249,20 @@ Deno.serve(async (req) => {
   }
 
   if (!existingUserId) {
-    const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
+    // Creating the login and its one-time entry token in a single call. The
+    // password is random and never shared: the person enters through the token
+    // and can set their own password later from the account screen.
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "signup",
       email,
-      email_confirm: true,
-      user_metadata: { role, full_name: contactName },
+      password: crypto.randomUUID(),
+      options: { redirectTo },
     });
-    const userId = createdUser?.user?.id ?? null;
+    const userId = linkData?.user?.id ?? null;
+    const tokenHash = (linkData?.properties?.hashed_token as string | undefined) ?? null;
+    if (linkError) console.error("[public-registration] generateLink failed", linkError.message);
 
-    if (createUserError) {
-      const probeUsers = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
-      const probeLink = await admin.auth.admin.generateLink({
-        type: "signup", email, password: crypto.randomUUID(), options: { redirectTo },
-      });
-      return json({ error: `debug: create=${createUserError.name}/${createUserError.status} list=${probeUsers.error ? probeUsers.error.name + "/" + probeUsers.error.status : "ok:" + probeUsers.data.users.length} link=${probeLink.error ? probeLink.error.name + "/" + probeLink.error.status + "/" + probeLink.error.message : "ok"}` }, 400);
-    }
-
-    if (!createUserError && userId) {
+    if (!linkError && userId && tokenHash) {
       let clientId: string | null = null;
       let supplierId: string | null = null;
 
@@ -299,20 +297,7 @@ Deno.serve(async (req) => {
       });
       if (profileError) console.error("[public-registration] profile upsert failed", profileError.message);
 
-      // A one-time token the browser exchanges for its own session. It is bound to
-      // the address we just created, so no existing account can be reached with it.
-      let tokenHash: string | null = null;
       if (!profileError) {
-        const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-          type: "magiclink",
-          email,
-          options: { redirectTo },
-        });
-        if (linkError) console.error("[public-registration] generateLink failed", linkError.message);
-        tokenHash = (linkData?.properties?.hashed_token as string | undefined) ?? null;
-      }
-
-      if (!profileError && tokenHash) {
         const now = new Date().toISOString();
         await admin.from("public_registrations").update({
           status: "converted",
