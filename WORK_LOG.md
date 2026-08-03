@@ -2055,3 +2055,20 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 - **Main changes:** New tables `project_estimates`, `estimate_items`, `estimate_role_allocations`, `estimate_supplier_reviews`, `estimate_adjustments`, `estimate_scenarios`, `estimate_versions` with strict RLS. New `src/types/estimation.ts`, `src/lib/estimation.ts` (hours, buffers, internal cost, recommended fixed price, margin, warnings, calendar duration), `src/services/estimationApi.ts`, and three components mounted in Project Detail, Client Portal and Supplier Portal.
 - **Tests:** `pnpm run build` passed; Playwright run against the live preview created an estimate and a work item, confirmed hours/margin rendering and DB persistence (test row removed afterwards).
 - **Known gaps:** No AI-generated estimates (deliberately out of scope), no phase-level milestone pricing sync with `project_pricing`, adjustments are creatable via API but have no dedicated UI form yet.
+
+## 2026-08-03 — AI chat connected to the estimation system
+
+**Work unit:** Make the multi-party AI chat estimate-aware, with human-confirmed actions only.
+
+**Main changes**
+- Migration: `ai_generated_drafts` gained `estimate_id`, `estimate_version`, `agent_type`, `action_kind`, `confirm_role`, `preview`, `created_by_profile_id`, `applied_by_profile_id`, `applied_at`, plus `applied`/`cancelled` statuses. `estimate_items` gained `ai_generated` + `source_message_id`; `estimate_scenarios` and `estimate_supplier_reviews` gained `source_message_id`.
+- `supabase/functions/project-chat/estimation.ts`: server-side mirror of the estimation math, used for previews and validation.
+- `supabase/functions/project-chat/actions.ts`: 11 whitelisted action kinds, per-agent allow-lists, strict payload normalisation and clamping, before/after preview computation, and the apply layer.
+- `supabase/functions/project-chat/index.ts`: role-filtered estimate context per agent, estimation-aware system prompts, server-side validation of every proposed action, and `confirm_action` / `cancel_action` endpoints that log to `activity_logs` and `decision_logs` and post a system confirmation message.
+- Frontend: confirmation cards in `ProjectChat.tsx`, new chat API calls, `src/lib/estimationEvents.ts` refresh bus wired into the three estimation screens, and an "AI estimate" badge on AI-generated items.
+
+**Safety rules enforced server-side:** the AI can never write; suppliers never see client price or margin; clients never see supplier cost, internal cost or margin; estimate mutations are blocked once a fixed price is approved; fixed-price approval snapshots the version first.
+
+**Tests:** `pnpm run build` passes. Edge function boots and returns 401 without auth.
+
+**Limitations:** action payload editing before confirmation is supported by the API but not yet exposed as an inline form in the UI — the user asks the assistant to revise instead.
