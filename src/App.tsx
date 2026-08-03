@@ -315,6 +315,30 @@ function AppShell() {
   );
 }
 
+function OnboardingGate() {
+  const { profile } = useAuth();
+  const { loading, needsOnboarding, refresh, markComplete } = useOnboarding();
+
+  if (loading) {
+    return (
+      <div className="auth-screen">
+        <div className="card auth-card"><p>Preparing your workspace…</p></div>
+      </div>
+    );
+  }
+
+  if (needsOnboarding && profile?.role === "client") {
+    return <ClientOnboardingWizard onDone={() => void refresh()} />;
+  }
+  if (needsOnboarding && profile?.role === "supplier") {
+    return <SupplierOnboardingWizard onDone={() => void refresh()} />;
+  }
+  // Agency admins are never blocked; make sure their state is marked as started.
+  void markComplete;
+
+  return <AppShell />;
+}
+
 function AuthGate() {
   const { status, profileError, signOut } = useAuth();
   const [isResetRoute, setIsResetRoute] = useState(
@@ -351,7 +375,9 @@ function AuthGate() {
   return (
     <AppDataProvider>
       <ToastProvider>
-        <AppShell />
+        <OnboardingProvider>
+          <OnboardingGate />
+        </OnboardingProvider>
       </ToastProvider>
     </AppDataProvider>
   );
