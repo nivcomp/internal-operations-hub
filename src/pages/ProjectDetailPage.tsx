@@ -12,6 +12,7 @@ import { TargetDateForm } from "../components/project/TargetDateForm";
 import { buildProjectCommercials } from "../lib/projectCommercials";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Tabs, type TabDef } from "../components/ui/Tabs";
+import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
 import { useNav } from "../context/NavContext";
 import {
   MutationKeys,
@@ -45,7 +46,7 @@ const initialChangeForm: NewChangeRequestInput = { title: "", description: "", a
 const initialTimeForm: NewTimeEntryInput = { supplierId: "", date: new Date().toISOString().slice(0, 10), hours: 1, description: "" };
 const initialPaymentForm: NewClientPaymentInput = { amount: 0, dueDate: "", notes: "" };
 
-type ProjectTab = "overview" | "scope" | "estimate" | "commercial" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "files";
+type ProjectTab = "overview" | "scope" | "estimate" | "commercial" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "documents" | "files";
 
 export function ProjectDetailPage({
   selectedProjectId, clients, projects, changeRequests, timeEntries, clientPayments,
@@ -177,6 +178,7 @@ export function ProjectDetailPage({
     { key: "changes", label: "Changes", badge: projectChanges.length || undefined, attention: pendingChanges > 0 },
     { key: "timeline", label: "Timeline" },
     { key: "assistant", label: "Assistant" },
+    { key: "documents", label: "Documents" },
     { key: "files", label: "Files & decisions", badge: projectFiles.length || undefined },
   ];
   const siblingIndex = projects.findIndex((item) => item.id === activeProject.id);
@@ -532,6 +534,7 @@ export function ProjectDetailPage({
       </section>
       ) : null}
       {tab === "estimate" ? <EstimateControl projectId={project.id} /> : null}
+      {tab === "documents" ? <ProjectDocumentsPanel projectId={project.id} /> : null}
       {tab === "timeline" ? (
         <ProjectTimeline
           project={activeProject}

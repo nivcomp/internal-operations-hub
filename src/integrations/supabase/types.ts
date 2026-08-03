@@ -1535,6 +1535,95 @@ export type Database = {
           },
         ]
       }
+      onboarding_invitations: {
+        Row: {
+          accepted_at: string | null
+          client_id: string | null
+          company: string
+          contact_name: string
+          created_at: string
+          created_by: string | null
+          email: string
+          emailed: boolean
+          id: string
+          invite_link: string
+          invited_profile_id: string | null
+          phone: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          supplier_id: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          client_id?: string | null
+          company?: string
+          contact_name?: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          emailed?: boolean
+          id?: string
+          invite_link?: string
+          invited_profile_id?: string | null
+          phone?: string
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          supplier_id?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          client_id?: string | null
+          company?: string
+          contact_name?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          emailed?: boolean
+          id?: string
+          invite_link?: string
+          invited_profile_id?: string | null
+          phone?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          supplier_id?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_invitations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_invitations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_invitations_invited_profile_id_fkey"
+            columns: ["invited_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_invitations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_state: {
         Row: {
           answers: Json

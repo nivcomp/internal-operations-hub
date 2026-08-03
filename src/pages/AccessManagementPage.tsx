@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { QuickInvitePanel } from "../components/QuickInvitePanel";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAppData } from "../context/AppDataContext";
 import {
@@ -121,6 +122,8 @@ export function AccessManagementPage({ onClientSelect, onSupplierSelect }: Acces
         title="Access Management"
         subtitle="An overview of every account. Day-to-day invitations can also be sent straight from a client or supplier record."
       />
+
+      <QuickInvitePanel onInvited={() => void reload()} />
 
       <section className="card">
         <h2>Accounts</h2>
