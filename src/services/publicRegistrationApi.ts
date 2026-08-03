@@ -64,6 +64,6 @@ export function submitPublicRegistration(input: {
  */
 export async function startSessionFromToken(tokenHash: string): Promise<boolean> {
   const { supabase } = await import("../integrations/supabase/client");
-  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
   return !error;
 }
