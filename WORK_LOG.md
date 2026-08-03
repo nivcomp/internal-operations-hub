@@ -2072,3 +2072,10 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 **Tests:** `pnpm run build` passes. Edge function boots and returns 401 without auth.
 
 **Limitations:** action payload editing before confirmation is supported by the API but not yet exposed as an inline form in the UI — the user asks the assistant to revise instead.
+
+## 2026-08-03 — Guided onboarding and role home screens
+
+- Work unit: guided onboarding wizards (client, supplier), Yaniv setup assistant, and simple role-specific home screens.
+- Main changes: new `public.onboarding_state` table with own-row RLS plus agency-admin read; `submit_client_onboarding` / `submit_supplier_onboarding` security-definer RPCs that only touch the caller's own linked records; `src/services/onboardingApi.ts`; `src/context/OnboardingContext.tsx`; `WizardShell`, `ClientOnboardingWizard`, `SupplierOnboardingWizard`, `AgencySetupAssistant`; `AgencyHomePage`, `ClientHomePage`, `SupplierHomePage`; new `home` view wired as the first view for every role.
+- Tests: `pnpm run build` passes; headless browser check of the agency home screen (no console errors). Client and supplier wizards were not exercised end-to-end because no client/supplier session is available in this environment.
+- Next work unit: recorded in NEXT_TASK.md.
