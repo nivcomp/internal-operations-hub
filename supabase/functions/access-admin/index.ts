@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
       } else {
         const { data: created, error } = await admin.from("clients").insert({
           name: contactName, company, email, phone: phone || null,
-          notes: "Created from an AI-first invitation.", status: "prospect",
+          notes: "Created from an AI-first invitation.", status: "lead",
         }).select("id").maybeSingle();
         if (error || !created) return json({ error: error?.message ?? "Could not create the client." }, 400);
         clientId = created.id;
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
         await admin.from("suppliers").update({ name: contactName, phone: phone || null }).eq("id", existing.id);
       } else {
         const { data: created, error } = await admin.from("suppliers").insert({
-          name: contactName, email, phone: phone || null, status: "invited",
+          name: contactName, email, phone: phone || null, status: "pending_review",
         }).select("id").maybeSingle();
         if (error || !created) return json({ error: error?.message ?? "Could not create the supplier." }, 400);
         supplierId = created.id;
