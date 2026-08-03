@@ -1,9 +1,14 @@
 import { type FormEvent, useState } from "react";
+import { DetailNav } from "../components/DetailNav";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
 import ProjectInsights from "../components/ProjectInsights";
+import { ProjectTimeline } from "../components/ProjectTimeline";
 import { StatusBadge } from "../components/StatusBadge";
 import { EstimateControl } from "../components/estimation/EstimateControl";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Tabs, type TabDef } from "../components/ui/Tabs";
+import { useNav } from "../context/NavContext";
 import {
   MutationKeys,
   useAppData,
@@ -36,6 +41,8 @@ const initialChangeForm: NewChangeRequestInput = { title: "", description: "", a
 const initialTimeForm: NewTimeEntryInput = { supplierId: "", date: new Date().toISOString().slice(0, 10), hours: 1, description: "" };
 const initialPaymentForm: NewClientPaymentInput = { amount: 0, dueDate: "", notes: "" };
 
+type ProjectTab = "overview" | "scope" | "estimate" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "files";
+
 export function ProjectDetailPage({
   selectedProjectId, clients, projects, changeRequests, timeEntries, clientPayments,
   onChangeRequestCreate, onChangeRequestStatusChange, onClientPaymentCreate, onPaymentReceived,
@@ -49,16 +56,20 @@ export function ProjectDetailPage({
   const [timeForm, setTimeForm] = useState<NewTimeEntryInput>(initialTimeForm);
   const [paymentForm, setPaymentForm] = useState<NewClientPaymentInput>(initialPaymentForm);
   const [supplierToAssign, setSupplierToAssign] = useState("");
+  const [tab, setTab] = useState<ProjectTab>("overview");
+  const nav = useNav();
   const project = selectedProjectId ? getProjectById(selectedProjectId, projects) : undefined;
 
   if (!project) {
     return (
       <>
         <PageHeader title="Project Detail" subtitle="Select a project from the Projects page or a Client Detail page to open its command center." />
-        <section className="empty-state">
-          <h2>No project selected</h2>
-          <p>Choose a project row to inspect summary, payment gate, scope, suppliers, changes, files, and decisions.</p>
-        </section>
+        <EmptyState
+          title="No project selected"
+          description="Open a project to inspect its summary, payment gate, scope, suppliers, changes, files and decisions."
+          action={{ label: "Browse projects", onClick: () => nav.navigate("projects") }}
+          secondaryAction={{ label: "Back to dashboard", onClick: () => nav.navigate("dashboard") }}
+        />
       </>
     );
   }
@@ -149,10 +160,42 @@ export function ProjectDetailPage({
     return isPending(MutationKeys.updateChangeRequestStatus(id));
   }
 
+  const pendingChanges = projectChanges.filter((request) => request.status !== "client_approved" && request.status !== "declined").length;
+  const pendingTime = projectTimeEntries.filter((entry) => entry.status === "submitted").length;
+  const tabs: TabDef<ProjectTab>[] = [
+    { key: "overview", label: "Overview" },
+    { key: "scope", label: "Scope", badge: items.length || undefined },
+    { key: "estimate", label: "Estimate" },
+    { key: "suppliers", label: "Suppliers", badge: activeProject.assignedSupplierIds.length || undefined, attention: pendingTime > 0 },
+    { key: "money", label: "Money", attention: Boolean(payment && payment.status !== "received") },
+    { key: "changes", label: "Changes", badge: projectChanges.length || undefined, attention: pendingChanges > 0 },
+    { key: "timeline", label: "Timeline" },
+    { key: "assistant", label: "Assistant" },
+    { key: "files", label: "Files & decisions", badge: projectFiles.length || undefined },
+  ];
+  const siblingIndex = projects.findIndex((item) => item.id === activeProject.id);
+  const previousProject = siblingIndex > 0 ? projects[siblingIndex - 1] : undefined;
+  const nextProject = siblingIndex >= 0 && siblingIndex < projects.length - 1 ? projects[siblingIndex + 1] : undefined;
+
   return (
     <>
-      <PageHeader title="Project Command Center" subtitle="A single project view for summary, client context, payment gate, scope, pricing, suppliers, changes, files, and decisions." />
-      <ProjectChat
+      <DetailNav
+        crumbs={[
+          { label: "Projects", view: "projects" },
+          ...(client ? [{ label: client.company, onClick: () => nav.openClient(client.id) }] : []),
+          { label: activeProject.name },
+        ]}
+        siblings={{
+          position: siblingIndex >= 0 ? `${siblingIndex + 1} of ${projects.length}` : undefined,
+          previous: previousProject ? { label: previousProject.name, onClick: () => nav.openProject(previousProject.id) } : undefined,
+          next: nextProject ? { label: nextProject.name, onClick: () => nav.openProject(nextProject.id) } : undefined,
+        }}
+      />
+      <PageHeader title={activeProject.name} subtitle={`${client?.company ?? "Unassigned client"} · ${statusLabels[activeProject.status]} · ${ready ? "Ready to start" : "Start blocked"}`} />
+      <Tabs tabs={tabs} active={tab} onChange={setTab} ariaLabel="Project workspace sections" />
+      {tab === "assistant" ? (
+        <>
+          <ProjectChat
         projectId={activeProject.id}
         projectName={activeProject.name}
         agent="agency_control"
@@ -167,7 +210,11 @@ export function ProjectDetailPage({
           "Show me the project flow.",
         ]}
       />
-      <ProjectInsights projectId={activeProject.id} role="agency_admin" allowModeSwitch />
+          <ProjectInsights projectId={activeProject.id} role="agency_admin" allowModeSwitch />
+        </>
+      ) : null}
+      {tab === "overview" || tab === "money" ? (
+        <>
       <section className="detail-grid">
         <article className="card">
           <h2>{activeProject.name}</h2>
@@ -204,7 +251,9 @@ export function ProjectDetailPage({
           ) : null}
         </article>
       </section>
-      {!payment ? (
+        </>
+      ) : null}
+      {tab === "money" && !payment ? (
         <section className="card form-panel">
           <h2>Create payment request</h2>
           <form className="form-grid" onSubmit={handlePaymentSubmit}>
@@ -222,6 +271,8 @@ export function ProjectDetailPage({
           </form>
         </section>
       ) : null}
+      {tab === "overview" ? (
+        <>
       <section className="detail-grid">
         <article className="card">
           <h2>Brief</h2>
@@ -243,6 +294,18 @@ export function ProjectDetailPage({
           </dl>
         </article>
       </section>
+      <section className="card">
+        <h2>Client details</h2>
+        <dl className="meta-list">
+          <div><dt>Company</dt><dd>{client?.company}</dd></div>
+          <div><dt>Contact</dt><dd>{client?.name}</dd></div>
+          <div><dt>Email</dt><dd>{client?.email}</dd></div>
+          <div><dt>Phone</dt><dd>{client?.phone ?? "Not set"}</dd></div>
+        </dl>
+      </section>
+        </>
+      ) : null}
+      {tab === "changes" ? (
       <section className="card form-panel">
         <h2>Add change request</h2>
         <form className="form-grid" onSubmit={handleChangeSubmit}>
@@ -260,15 +323,8 @@ export function ProjectDetailPage({
           {getSuccess(changeKey) && !getError(changeKey) ? <p className="form-success">{getSuccess(changeKey)}</p> : null}
         </form>
       </section>
-      <section className="card">
-        <h2>Client details</h2>
-        <dl className="meta-list">
-          <div><dt>Company</dt><dd>{client?.company}</dd></div>
-          <div><dt>Contact</dt><dd>{client?.name}</dd></div>
-          <div><dt>Email</dt><dd>{client?.email}</dd></div>
-          <div><dt>Phone</dt><dd>{client?.phone ?? "Not set"}</dd></div>
-        </dl>
-      </section>
+      ) : null}
+      {tab === "scope" ? (
       <section className="card">
         <h2>Scope and scope items</h2>
         {scope ? (
@@ -286,6 +342,9 @@ export function ProjectDetailPage({
           </>
         ) : <p>No scope has been created for this project yet.</p>}
       </section>
+      ) : null}
+      {tab === "suppliers" ? (
+        <>
       <section className="detail-grid">
         <article className="card">
           <h2>Assigned suppliers</h2>
@@ -418,6 +477,9 @@ export function ProjectDetailPage({
           {getSuccess(timeKey) && !getError(timeKey) ? <p className="form-success">{getSuccess(timeKey)}</p> : null}
         </form>
       </section>
+        </>
+      ) : null}
+      {tab === "changes" ? (
       <section className="card">
         <h2>Change requests</h2>
         {projectChanges.length ? (
@@ -444,7 +506,17 @@ export function ProjectDetailPage({
           </table>
         ) : <p>No change requests for this project.</p>}
       </section>
-      <EstimateControl projectId={project.id} />
+      ) : null}
+      {tab === "estimate" ? <EstimateControl projectId={project.id} /> : null}
+      {tab === "timeline" ? (
+        <ProjectTimeline
+          project={activeProject}
+          changeRequests={changeRequests}
+          clientPayments={clientPayments}
+          timeEntries={timeEntries}
+        />
+      ) : null}
+      {tab === "files" ? (
       <section className="detail-grid">
         <article className="card">
           <h2>Files and links</h2>
@@ -455,6 +527,7 @@ export function ProjectDetailPage({
           {projectDecisions.length ? projectDecisions.map((d) => <p key={d.id}>{d.decision} {d.impact}</p>) : <p>No decisions logged yet.</p>}
         </article>
       </section>
+      ) : null}
     </>
   );
 }

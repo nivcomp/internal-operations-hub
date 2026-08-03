@@ -9,6 +9,7 @@ type LayoutProps = {
   accountLabel: string;
   accountRole: string;
   onSignOut: () => void;
+  onSearchOpen: () => void;
   children: ReactNode;
 };
 
@@ -28,8 +29,9 @@ const labelFor = (key: ViewKey) =>
   views.find((v) => v.key === key)?.label ?? key;
 
 export function Layout({
-  activeView, onNavigate, allowedViews, accountLabel, accountRole, onSignOut, children,
+  activeView, onNavigate, allowedViews, accountLabel, accountRole, onSignOut, onSearchOpen, children,
 }: LayoutProps) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const groups = useMemo(
     () =>
       navGroups
@@ -53,9 +55,19 @@ export function Layout({
   const toggleGroup = (label: string) =>
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
 
+  useEffect(() => { setMobileNavOpen(false); }, [activeView]);
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <div className={`app-shell${mobileNavOpen ? " nav-open" : ""}`}>
+      <header className="mobile-bar no-print">
+        <button type="button" className="ghost-button" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen((v) => !v)}>
+          <span aria-hidden>☰</span> Menu
+        </button>
+        <strong>{labelFor(activeView)}</strong>
+        <button type="button" className="ghost-button" onClick={onSearchOpen} aria-label="Search">⌕</button>
+      </header>
+      {mobileNavOpen ? <div className="nav-scrim" role="presentation" onClick={() => setMobileNavOpen(false)} /> : null}
+      <aside className="sidebar no-print">
         <div className="brand">
           <div className="brand-mark">CS</div>
           <div>
@@ -63,6 +75,10 @@ export function Layout({
             <span>Internal OS for Yaniv</span>
           </div>
         </div>
+        <button type="button" className="sidebar-search" onClick={onSearchOpen}>
+          <span aria-hidden>⌕</span> Search…
+          <kbd>⌘K</kbd>
+        </button>
         <nav className="nav-groups" aria-label="Internal app navigation">
           {groups.map((group) => {
             const isOpen = openGroups[group.label] ?? false;

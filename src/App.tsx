@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CommandPalette } from "./components/CommandPalette";
 import { Layout } from "./components/Layout";
+import { ToastProvider } from "./components/ui/Toast";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { NavContext, type NavApi, type RecentItem } from "./context/NavContext";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
 import { AIUsagePage } from "./pages/AIUsagePage";
 import { AccessManagementPage } from "./pages/AccessManagementPage";
@@ -51,20 +54,87 @@ function AppShell() {
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(profile?.clientId);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | undefined>(profile?.supplierId);
+  const [history, setHistory] = useState<ViewKey[]>([]);
+  const [recents, setRecents] = useState<RecentItem[]>([]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     if (!allowedViews.includes(activeView)) setActiveView(allowedViews[0]);
   }, [allowedViews, activeView]);
 
-  function navigate(view: ViewKey) {
-    if (allowedViews.includes(view)) setActiveView(view);
-  }
+  const navigate = useCallback((view: ViewKey) => {
+    if (!allowedViews.includes(view)) return;
+    setActiveView((current) => {
+      if (current !== view) setHistory((prev) => [...prev, current].slice(-25));
+      return view;
+    });
+  }, [allowedViews]);
 
-  function openClientDetail(clientId: string) { setSelectedClientId(clientId); navigate("client-detail"); }
+  const goBack = useCallback(() => {
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const next = prev.slice(0, -1);
+      setActiveView(prev[prev.length - 1]);
+      return next;
+    });
+  }, []);
+
+  const rememberRecent = useCallback((item: RecentItem) => {
+    setRecents((prev) => [item, ...prev.filter((entry) => !(entry.id === item.id && entry.kind === item.kind))].slice(0, 6));
+  }, []);
+
+  function openClientDetail(clientId: string) {
+    setSelectedClientId(clientId);
+    const client = clients.find((item) => item.id === clientId);
+    rememberRecent({ id: clientId, kind: "client", label: client?.company ?? "Client", sublabel: client?.name });
+    navigate("client-detail");
+  }
   function openClientPortal(clientId: string) { setSelectedClientId(clientId); navigate("client-portal"); }
-  function openProjectDetail(projectId: string) { setSelectedProjectId(projectId); navigate("project-detail"); }
-  function openSupplierDetail(supplierId: string) { setSelectedSupplierId(supplierId); navigate("supplier-detail"); }
+  function openProjectDetail(projectId: string) {
+    setSelectedProjectId(projectId);
+    const project = projects.find((item) => item.id === projectId);
+    rememberRecent({ id: projectId, kind: "project", label: project?.name ?? "Project" });
+    navigate("project-detail");
+  }
+  function openSupplierDetail(supplierId: string) {
+    setSelectedSupplierId(supplierId);
+    rememberRecent({ id: supplierId, kind: "supplier", label: "Supplier" });
+    navigate("supplier-detail");
+  }
   function openSupplierPortal(supplierId: string) { setSelectedSupplierId(supplierId); navigate("supplier-portal"); }
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+      if (event.altKey && event.key === "ArrowLeft") {
+        event.preventDefault();
+        goBack();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [goBack]);
+
+  const navApi = useMemo<NavApi>(() => ({
+    activeView,
+    allowedViews,
+    navigate,
+    goBack,
+    canGoBack: history.length > 0,
+    openProject: openProjectDetail,
+    openClient: openClientDetail,
+    openSupplier: openSupplierDetail,
+    openClientPortal,
+    openSupplierPortal,
+    recents,
+    selectedProjectId,
+    selectedClientId,
+    selectedSupplierId,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [activeView, allowedViews, navigate, goBack, history.length, recents, selectedProjectId, selectedClientId, selectedSupplierId]);
 
   function reloadFromDatabase() {
     setSelectedClientId(profile?.clientId);
@@ -193,13 +263,15 @@ function AppShell() {
   } satisfies Record<ViewKey, JSX.Element>;
 
   return (
-    <Layout
+    <NavContext.Provider value={navApi}>
+      <Layout
       activeView={activeView}
       onNavigate={navigate}
       allowedViews={allowedViews}
       accountLabel={profile?.fullName ?? profile?.email ?? ""}
       accountRole={role}
       onSignOut={() => void signOut()}
+      onSearchOpen={() => setPaletteOpen(true)}
     >
       {status === "loading" ? (
         <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
@@ -214,7 +286,9 @@ function AppShell() {
       ) : (
         page[activeView]
       )}
-    </Layout>
+      </Layout>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+    </NavContext.Provider>
   );
 }
 
@@ -253,7 +327,9 @@ function AuthGate() {
 
   return (
     <AppDataProvider>
-      <AppShell />
+      <ToastProvider>
+        <AppShell />
+      </ToastProvider>
     </AppDataProvider>
   );
 }
