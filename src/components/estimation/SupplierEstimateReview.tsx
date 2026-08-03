@@ -3,6 +3,7 @@ import { StatusBadge } from "../StatusBadge";
 import { fetchSupplierEstimateWork, saveSupplierReview } from "../../services/estimationApi";
 import type { EstimateItem, EstimateSupplierReview } from "../../types/estimation";
 import { roleLabels } from "../../types/estimation";
+import { onAnyEstimationChanged } from "../../lib/estimationEvents";
 
 type Props = { supplierId: string; readOnly?: boolean };
 
@@ -47,6 +48,7 @@ export function SupplierEstimateReview({ supplierId, readOnly = false }: Props) 
   }
 
   useEffect(() => { void reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [supplierId]);
+  useEffect(() => onAnyEstimationChanged(() => { void reload(); }), [supplierId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openItem(item: EstimateItem) {
     const review = reviews.find((r) => r.item_id === item.id);

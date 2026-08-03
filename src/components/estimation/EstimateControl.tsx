@@ -15,6 +15,7 @@ import {
   complexityLevels, complexityMultipliers, estimateStatusLabels, responsibleRoles, roleLabels,
   type EstimateBundle, type EstimateItem, type ProjectEstimate,
 } from "../../types/estimation";
+import { onEstimationChanged } from "../../lib/estimationEvents";
 
 const emptyBundle: EstimateBundle = { estimates: [], items: [], allocations: [], reviews: [], adjustments: [], scenarios: [] };
 
@@ -49,6 +50,7 @@ export function EstimateControl({ projectId }: { projectId: string }) {
   }
 
   useEffect(() => { void reload(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [projectId]);
+  useEffect(() => onEstimationChanged(projectId, () => { void reload(); }), [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const estimate: ProjectEstimate | undefined = bundle.estimates.find((e) => e.id === activeId);
   const items = useMemo(
@@ -218,7 +220,11 @@ export function EstimateControl({ projectId }: { projectId: string }) {
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td><strong>{item.title}</strong><br /><span className="muted-text">{item.project_phase} · {item.complexity_level}</span></td>
+                <td>
+                  <strong>{item.title}</strong>
+                  {item.ai_generated && <span className="ai-item-flag">AI estimate</span>}
+                  <br /><span className="muted-text">{item.project_phase} · {item.complexity_level}</span>
+                </td>
                 <td>
                   <select value={item.responsible_role} disabled={busy}
                     onChange={(e) => void run(() => updateEstimateItem(item.id, { responsible_role: e.target.value }))}>

@@ -40,36 +40,63 @@ export type Database = {
       }
       ai_generated_drafts: {
         Row: {
+          action_kind: string
+          agent_type: string
+          applied_at: string | null
+          applied_by_profile_id: string | null
+          confirm_role: string
           conversation_id: string | null
           created_at: string
+          created_by_profile_id: string | null
           draft_type: string
+          estimate_id: string | null
+          estimate_version: number | null
           id: string
           message_id: string | null
           payload: Json
+          preview: Json
           project_id: string
           status: string
           updated_at: string
           visibility: string
         }
         Insert: {
+          action_kind?: string
+          agent_type?: string
+          applied_at?: string | null
+          applied_by_profile_id?: string | null
+          confirm_role?: string
           conversation_id?: string | null
           created_at?: string
+          created_by_profile_id?: string | null
           draft_type: string
+          estimate_id?: string | null
+          estimate_version?: number | null
           id?: string
           message_id?: string | null
           payload?: Json
+          preview?: Json
           project_id: string
           status?: string
           updated_at?: string
           visibility?: string
         }
         Update: {
+          action_kind?: string
+          agent_type?: string
+          applied_at?: string | null
+          applied_by_profile_id?: string | null
+          confirm_role?: string
           conversation_id?: string | null
           created_at?: string
+          created_by_profile_id?: string | null
           draft_type?: string
+          estimate_id?: string | null
+          estimate_version?: number | null
           id?: string
           message_id?: string | null
           payload?: Json
+          preview?: Json
           project_id?: string
           status?: string
           updated_at?: string
@@ -77,10 +104,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ai_generated_drafts_applied_by_profile_id_fkey"
+            columns: ["applied_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_generated_drafts_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generated_drafts_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generated_drafts_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
             referencedColumns: ["id"]
           },
           {
@@ -545,6 +593,7 @@ export type Database = {
       estimate_items: {
         Row: {
           acceptance_criteria: string
+          ai_generated: boolean
           base_hours: number
           client_optional: boolean
           client_visible: boolean
@@ -569,6 +618,7 @@ export type Database = {
           risk_notes: string
           selected_by_client: boolean
           sort_order: number
+          source_message_id: string | null
           supplier_id: string | null
           title: string
           uncertainty_multiplier: number
@@ -576,6 +626,7 @@ export type Database = {
         }
         Insert: {
           acceptance_criteria?: string
+          ai_generated?: boolean
           base_hours?: number
           client_optional?: boolean
           client_visible?: boolean
@@ -600,6 +651,7 @@ export type Database = {
           risk_notes?: string
           selected_by_client?: boolean
           sort_order?: number
+          source_message_id?: string | null
           supplier_id?: string | null
           title: string
           uncertainty_multiplier?: number
@@ -607,6 +659,7 @@ export type Database = {
         }
         Update: {
           acceptance_criteria?: string
+          ai_generated?: boolean
           base_hours?: number
           client_optional?: boolean
           client_visible?: boolean
@@ -631,6 +684,7 @@ export type Database = {
           risk_notes?: string
           selected_by_client?: boolean
           sort_order?: number
+          source_message_id?: string | null
           supplier_id?: string | null
           title?: string
           uncertainty_multiplier?: number
@@ -642,6 +696,13 @@ export type Database = {
             columns: ["estimate_id"]
             isOneToOne: false
             referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_items_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
           {
@@ -720,6 +781,7 @@ export type Database = {
         Row: {
           client_notes: string
           created_at: string
+          created_by_agent: string
           estimate_id: string
           estimated_budget_max: number
           estimated_budget_min: number
@@ -730,11 +792,13 @@ export type Database = {
           name: string
           project_id: string
           selections: Json
+          source_message_id: string | null
           updated_at: string
         }
         Insert: {
           client_notes?: string
           created_at?: string
+          created_by_agent?: string
           estimate_id: string
           estimated_budget_max?: number
           estimated_budget_min?: number
@@ -745,11 +809,13 @@ export type Database = {
           name: string
           project_id: string
           selections?: Json
+          source_message_id?: string | null
           updated_at?: string
         }
         Update: {
           client_notes?: string
           created_at?: string
+          created_by_agent?: string
           estimate_id?: string
           estimated_budget_max?: number
           estimated_budget_min?: number
@@ -760,6 +826,7 @@ export type Database = {
           name?: string
           project_id?: string
           selections?: Json
+          source_message_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -777,6 +844,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "estimate_scenarios_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
         ]
       }
       estimate_supplier_reviews: {
@@ -792,6 +866,7 @@ export type Database = {
           item_id: string
           missing_information: string
           proposed_duration_days: number | null
+          source_message_id: string | null
           status: string
           suggested_hours_max: number | null
           suggested_hours_min: number | null
@@ -812,6 +887,7 @@ export type Database = {
           item_id: string
           missing_information?: string
           proposed_duration_days?: number | null
+          source_message_id?: string | null
           status?: string
           suggested_hours_max?: number | null
           suggested_hours_min?: number | null
@@ -832,6 +908,7 @@ export type Database = {
           item_id?: string
           missing_information?: string
           proposed_duration_days?: number | null
+          source_message_id?: string | null
           status?: string
           suggested_hours_max?: number | null
           suggested_hours_min?: number | null
@@ -853,6 +930,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "estimate_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_supplier_reviews_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
           {
@@ -1332,6 +1416,7 @@ export type Database = {
           recommended_fixed_price: number
           risk_buffer_percent: number
           show_hourly_rate_to_client: boolean
+          source_conversation_id: string | null
           status: string
           target_margin_percent: number
           testing_buffer_percent: number
@@ -1370,6 +1455,7 @@ export type Database = {
           recommended_fixed_price?: number
           risk_buffer_percent?: number
           show_hourly_rate_to_client?: boolean
+          source_conversation_id?: string | null
           status?: string
           target_margin_percent?: number
           testing_buffer_percent?: number
@@ -1408,6 +1494,7 @@ export type Database = {
           recommended_fixed_price?: number
           risk_buffer_percent?: number
           show_hourly_rate_to_client?: boolean
+          source_conversation_id?: string | null
           status?: string
           target_margin_percent?: number
           testing_buffer_percent?: number
@@ -1422,6 +1509,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_estimates_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
             referencedColumns: ["id"]
           },
         ]

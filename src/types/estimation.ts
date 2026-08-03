@@ -131,6 +131,8 @@ export interface EstimateItem {
   risk_notes: string;
   acceptance_criteria: string;
   sort_order: number;
+  /** Created from an AI proposal that the agency confirmed. */
+  ai_generated?: boolean;
 }
 
 export interface EstimateRoleAllocation {
