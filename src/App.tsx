@@ -11,6 +11,10 @@ import { AgencyHomePage } from "./pages/home/AgencyHomePage";
 import { ClientHomePage } from "./pages/home/ClientHomePage";
 import { SupplierHomePage } from "./pages/home/SupplierHomePage";
 import { NavContext, type NavApi, type RecentItem } from "./context/NavContext";
+import { CopilotProvider, useCopilotScreen } from "./context/CopilotContext";
+import { CopilotDock } from "./components/copilot/CopilotDock";
+import { emitCopilotFormIntent } from "./lib/copilotForms";
+import type { CopilotChip } from "./services/copilotApi";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
 import { AIUsagePage } from "./pages/AIUsagePage";
 import { AccessManagementPage } from "./pages/AccessManagementPage";
@@ -43,6 +47,31 @@ const roleViews: Record<UserRole, ViewKey[]> = {
   client: ["home", "client-portal"],
   supplier: ["home", "supplier-portal"],
 };
+
+/** Tells the copilot which screen and record the user is looking at. */
+function CopilotScreenRegistrar({
+  view, projectId, clientId, supplierId, label,
+}: {
+  view: ViewKey;
+  projectId?: string;
+  clientId?: string;
+  supplierId?: string;
+  label: string;
+}) {
+  useCopilotScreen({
+    page: view,
+    label,
+    entityType: view.includes("project") ? "project"
+      : view.includes("client") ? "client"
+      : view.includes("supplier") ? "supplier"
+      : "none",
+    entityId: projectId ?? clientId ?? supplierId ?? null,
+    projectId: projectId ?? null,
+    clientId: clientId ?? null,
+    supplierId: supplierId ?? null,
+  });
+  return null;
+}
 
 function AppShell() {
   const { profile, signOut } = useAuth();
@@ -287,6 +316,27 @@ function AppShell() {
 
   return (
     <NavContext.Provider value={navApi}>
+      <CopilotProvider
+        onChip={(chip: CopilotChip) => {
+          if (chip.type === "navigate") navigate(chip.view as ViewKey);
+          else if (chip.type === "open_project") openProjectDetail(chip.id);
+          else if (chip.type === "open_client") openClientDetail(chip.id);
+          else if (chip.type === "open_supplier") openSupplierDetail(chip.id);
+          else if (chip.type === "back") goBack();
+          else if (chip.type === "focus_field") {
+            emitCopilotFormIntent({ kind: "focus", section: "*", field: chip.field });
+          } else if (chip.type === "suggest_value") {
+            emitCopilotFormIntent({ kind: "suggest", section: "*", field: chip.field, value: chip.value });
+          }
+        }}
+      >
+      <CopilotScreenRegistrar
+        view={activeView}
+        projectId={selectedProjectId}
+        clientId={selectedClientId}
+        supplierId={selectedSupplierId}
+        label={activeView}
+      />
       <Layout
       activeView={activeView}
       onNavigate={navigate}
@@ -311,6 +361,8 @@ function AppShell() {
       )}
       </Layout>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <CopilotDock />
+      </CopilotProvider>
     </NavContext.Provider>
   );
 }

@@ -3,14 +3,14 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import {
   ACTION_SPECS, applyAction, loadBundle, validateAction,
   type ActionKind, type Bundle, type Ctx,
-} from "./actions.ts";
-import { calendarWeeks, perUnitHours, snapshot } from "./estimation.ts";
+} from "../_shared/actions.ts";
+import { calendarWeeks, perUnitHours, snapshot } from "../_shared/estimation.ts";
 import {
   PROJECT_ONLY_MESSAGE, PROJECT_ONLY_MESSAGE_HE, UNCLEAR_MESSAGE, UNCLEAR_MESSAGE_HE,
   classifyRequest, detectSpam, estimateCost, estimateTokens, getCachedResponse, hashText,
   invalidateProjectCache, isHebrew, loadUsage, putCachedResponse, raiseAlert, recordClassification,
   recordEvent, resolveLimits, usagePercent,
-} from "./guard.ts";
+} from "../_shared/guard.ts";
 
 type AgentType = "project_guide" | "agency_control" | "work_assistant";
 

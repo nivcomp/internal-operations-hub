@@ -2079,3 +2079,27 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 - Main changes: new `public.onboarding_state` table with own-row RLS plus agency-admin read; `submit_client_onboarding` / `submit_supplier_onboarding` security-definer RPCs that only touch the caller's own linked records; `src/services/onboardingApi.ts`; `src/context/OnboardingContext.tsx`; `WizardShell`, `ClientOnboardingWizard`, `SupplierOnboardingWizard`, `AgencySetupAssistant`; `AgencyHomePage`, `ClientHomePage`, `SupplierHomePage`; new `home` view wired as the first view for every role.
 - Tests: `pnpm run build` passes; headless browser check of the agency home screen (no console errors). Client and supplier wizards were not exercised end-to-end because no client/supplier session is available in this environment.
 - Next work unit: recorded in NEXT_TASK.md.
+
+### 2026-08-03 — Persistent voice-enabled AI copilot
+
+**Work unit**  
+A workspace-wide copilot: a persistent bubble/panel, live screen context, voice conversation, form assistance, navigation shortcuts, and safe (confirmation-gated) actions.
+
+**Changes**  
+- New tables `copilot_messages` and `copilot_state` (per-profile RLS, threads keyed by the entity on screen).
+- New edge function `copilot`: re-reads and role-filters all context server-side, refuses to trust ids sent by the browser, reuses the existing usage guard and the validated `ai_generated_drafts` action pipeline. It can only propose changes; a human confirms.
+- New edge function `copilot-voice`: speech-to-text and text-to-speech via Lovable AI.
+- Shared server modules moved to `supabase/functions/_shared/` (`actions.ts`, `guard.ts`, `estimation.ts`) so both chat surfaces can import them.
+- Frontend: `CopilotProvider`/`useCopilotScreen`/`useCopilotForm`, `CopilotDock`, WAV recorder in `src/lib/voice.ts`, form bridge in `src/lib/copilotForms.ts`, copilot styles; wired into the app shell and the target-date form.
+- Chips (navigate / open record / focus or pre-fill a field) are validated server-side against what the role may reach; pre-filling never saves.
+
+**Tests**  
+- `pnpm run build` — passed.
+- Preview check as the agency admin: bubble opens, context header reads the current screen, the model returned a role-correct next step and a working navigation chip, no console errors.
+- Not covered: client and supplier copilot sessions, and the voice round-trip (no microphone in the check environment).
+
+**Main files changed**  
+`supabase/functions/copilot/*`, `supabase/functions/copilot-voice/index.ts`, `supabase/functions/_shared/*`, `src/context/CopilotContext.tsx`, `src/components/copilot/CopilotDock.tsx`, `src/services/copilotApi.ts`, `src/lib/voice.ts`, `src/lib/copilotForms.ts`, `src/App.tsx`, `src/styles.css`.
+
+**Next work unit**  
+See `NEXT_TASK.md`.
