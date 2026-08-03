@@ -220,7 +220,11 @@ export function EstimateControl({ projectId }: { projectId: string }) {
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td><strong>{item.title}</strong><br /><span className="muted-text">{item.project_phase} · {item.complexity_level}</span></td>
+                <td>
+                  <strong>{item.title}</strong>
+                  {item.ai_generated && <span className="ai-item-flag">AI estimate</span>}
+                  <br /><span className="muted-text">{item.project_phase} · {item.complexity_level}</span>
+                </td>
                 <td>
                   <select value={item.responsible_role} disabled={busy}
                     onChange={(e) => void run(() => updateEstimateItem(item.id, { responsible_role: e.target.value }))}>
