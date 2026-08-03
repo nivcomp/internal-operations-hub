@@ -170,8 +170,10 @@ export function AIUsagePage() {
       <PageHeader
         title="AI usage and alerts"
         subtitle="Cost, token consumption, abuse alerts and the limits that protect the account."
-        actions={<button type="button" className="ghost-button" onClick={() => void load()} disabled={loading}>Refresh</button>}
       />
+      <div className="form-actions">
+        <button type="button" className="ghost-button" onClick={() => void load()} disabled={loading}>Refresh</button>
+      </div>
 
       {error ? <div className="form-error">{error}</div> : null}
       {notice ? <div className="form-success">{notice}</div> : null}
@@ -197,7 +199,7 @@ export function AIUsagePage() {
               {openAlerts.map((alert) => (
                 <tr key={alert.id}>
                   <td><strong>{alert.title}</strong><div className="muted-text small">{alert.detail}</div></td>
-                  <td><StatusBadge status={alert.severity} tone={severityTone[alert.severity] ?? "info"} /></td>
+                  <td><StatusBadge label={alert.severity} tone={(severityTone[alert.severity] ?? "info") as any} /></td>
                   <td className="small">
                     {alert.profile_id ?? "—"}
                     {alert.project_id ? <div className="muted-text">{projects.find((p) => p.id === alert.project_id)?.name ?? ""}</div> : null}
@@ -268,7 +270,7 @@ export function AIUsagePage() {
               <header className="limit-head">
                 <div>
                   <strong>{scopeLabel(limit)}</strong>
-                  {limit.is_paused ? <StatusBadge status="paused" tone="danger" /> : null}
+                  {limit.is_paused ? <StatusBadge label="paused" tone="danger" /> : null}
                   {limit.paused_reason ? <div className="muted-text small">{limit.paused_reason}</div> : null}
                 </div>
                 <div className="flow-actions">
@@ -317,8 +319,8 @@ export function AIUsagePage() {
                   <td>{event.classification.replace(/_/g, " ")}</td>
                   <td>
                     {event.outcome === "success"
-                      ? <StatusBadge status="success" tone="success" />
-                      : <StatusBadge status={event.outcome.replace(/_/g, " ")} tone="warning" />}
+                      ? <StatusBadge label="success" tone="success" />
+                      : <StatusBadge label={event.outcome.replace(/_/g, " ")} tone="warning" />}
                     {event.rejection_reason ? <div className="muted-text small">{event.rejection_reason}</div> : null}
                   </td>
                   <td>{Number(event.total_tokens ?? 0).toLocaleString()}</td>
