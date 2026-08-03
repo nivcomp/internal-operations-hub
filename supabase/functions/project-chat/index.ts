@@ -578,10 +578,26 @@ Deno.serve(async (req) => {
     const started = Date.now();
     try {
       const history = await loadMessages(agent, conversation.id, profile.role);
-      const context = await buildContext(agent, access.project, access.supplierId);
+      const bundle = await loadBundle(admin, projectId);
+      const context = await buildContext(agent, access.project, access.supplierId, bundle);
       const raw = await callModel(systemPrompt(agent), context, history.slice(0, -1), text);
       if (!raw) throw new Error("The AI returned an empty response.");
       const parsed = parseModelOutput(raw);
+
+      // Validate every proposed action server-side before it is ever shown as confirmable.
+      const rawActions = Array.isArray(parsed.proposed_actions) ? parsed.proposed_actions.slice(0, 3) : [];
+      const validated: any[] = [];
+      const rejected: { kind: string; reason: string }[] = [];
+      for (const candidate of rawActions) {
+        const kind = String(candidate?.kind ?? "");
+        if (!ALLOWED_KINDS[agent].includes(kind as ActionKind)) {
+          rejected.push({ kind: kind || "(none)", reason: "This assistant is not allowed to propose that change." });
+          continue;
+        }
+        const result = await validateAction(ctx, bundle, candidate);
+        if ("error" in result) rejected.push({ kind, reason: result.error });
+        else validated.push(result);
+      }
 
       const { data: aiMessage, error: aiErr } = await admin.from("chat_messages").insert({
         conversation_id: conversation.id,
@@ -592,7 +608,8 @@ Deno.serve(async (req) => {
         structured_payload: {
           language: parsed.language ?? "en",
           questions: parsed.questions ?? [],
-          proposed_actions: parsed.proposed_actions ?? [],
+          proposed_actions: validated.map((v) => ({ kind: v.kind, title: v.title, summary: v.summary })),
+          rejected_actions: rejected,
           drafts: parsed.drafts ?? {},
           ai_draft: true,
         },
@@ -611,15 +628,39 @@ Deno.serve(async (req) => {
           payload: parsed.drafts,
           status: "awaiting_agency_review",
           visibility: agent === "project_guide" ? "client_agency" : cfg.visibility,
+          agent_type: agent,
+          created_by_profile_id: profile.id,
         }).select("*").single();
         draftRow = data;
+      }
+
+      const pendingActions: any[] = [];
+      for (const item of validated) {
+        const spec = ACTION_SPECS[item.kind as ActionKind];
+        const { data } = await admin.from("ai_generated_drafts").insert({
+          project_id: projectId,
+          conversation_id: conversation.id,
+          message_id: aiMessage.id,
+          draft_type: "proposed_action",
+          action_kind: item.kind,
+          confirm_role: spec.confirmRole,
+          agent_type: agent,
+          estimate_id: item.estimateId,
+          estimate_version: item.estimateVersion,
+          payload: { ...item.payload, title: item.title, summary: item.summary },
+          preview: item.preview,
+          status: "awaiting_agency_review",
+          visibility: spec.visibility,
+          created_by_profile_id: profile.id,
+        }).select("*").single();
+        if (data && draftVisibleTo(data, profile) && canConfirm(data, agent, profile)) pendingActions.push(data);
       }
 
       await admin.from("ai_runs").update({
         status: "succeeded", latency_ms: Date.now() - started,
       }).eq("id", run?.id);
 
-      return json({ conversation, userMessage, aiMessage, draft: draftRow });
+      return json({ conversation, userMessage, aiMessage, draft: draftRow, pendingActions, rejectedActions: rejected });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("project-chat AI failure:", message);
