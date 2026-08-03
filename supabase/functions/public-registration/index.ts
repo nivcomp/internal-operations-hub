@@ -229,10 +229,113 @@ Deno.serve(async (req) => {
 
   const redirectTo = safeRedirect(body.redirectTo, "/");
 
+  // ---- immediate access for a brand-new email address --------------------------
+  // A person who is not already known to the system is let straight in so they can
+  // start with the assistant. This never grants access to an existing account:
+  // if the address already has a login, we fall back to the emailed link below.
+  const anonForSignIn = createClient(SUPABASE_URL, ANON_KEY);
+  let existingUserId: string | null = null;
+  {
+    let page = 1;
+    while (page <= 10 && !existingUserId) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      if (error) break;
+      for (const user of data.users) {
+        if (String(user.email ?? "").toLowerCase() === email) { existingUserId = user.id; break; }
+      }
+      if (data.users.length < 200) break;
+      page += 1;
+    }
+  }
+
+  if (!existingUserId) {
+    const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { role, full_name: contactName },
+    });
+    const userId = createdUser?.user?.id ?? null;
+
+    if (!createUserError && userId) {
+      let clientId: string | null = null;
+      let supplierId: string | null = null;
+
+      if (role === "client") {
+        const { data: created } = await admin.from("clients").insert({
+          name: contactName,
+          company: company || contactName,
+          email,
+          phone: phone || null,
+          status: "lead",
+          notes: "Self-registered through the public client link.",
+        }).select("id").maybeSingle();
+        clientId = created?.id ?? null;
+      } else {
+        const { data: created } = await admin.from("suppliers").insert({
+          name: contactName,
+          email,
+          phone: phone || null,
+          status: "pending_review",
+        }).select("id").maybeSingle();
+        supplierId = created?.id ?? null;
+      }
+
+      const { error: profileError } = await admin.from("profiles").upsert({
+        id: userId,
+        email,
+        full_name: contactName,
+        role,
+        client_id: clientId,
+        supplier_id: supplierId,
+        is_active: true,
+      });
+
+      // A one-time token the browser exchanges for its own session. It is bound to
+      // the address we just created, so no existing account can be reached with it.
+      let tokenHash: string | null = null;
+      if (!profileError) {
+        const { data: linkData } = await admin.auth.admin.generateLink({
+          type: "magiclink",
+          email,
+          options: { redirectTo },
+        });
+        tokenHash = (linkData?.properties?.hashed_token as string | undefined) ?? null;
+      }
+
+      if (!profileError && tokenHash) {
+        const now = new Date().toISOString();
+        await admin.from("public_registrations").update({
+          status: "converted",
+          confirmed_at: now,
+          converted_at: now,
+          profile_id: userId,
+          client_id: clientId,
+          supplier_id: supplierId,
+          seen_by_admin: false,
+        }).eq("id", inserted.id);
+
+        await audit("registration_submitted", { immediateAccess: true }, {
+          email, registration_id: inserted.id,
+        });
+
+        return json({
+          ok: true,
+          submitted: true,
+          immediateAccess: true,
+          tokenHash,
+          notice: "You're in — let's get started.",
+        });
+      }
+
+      // Provisioning did not complete: remove the half-created login so the
+      // emailed-link path below stays the single way in.
+      await admin.auth.admin.deleteUser(userId);
+    }
+  }
+
   // Confirmation email: a magic link proves the address is real. No profile is
   // created here — provisioning happens in `claim`, after the link is clicked.
-  const anonClient = createClient(SUPABASE_URL, ANON_KEY);
-  const { error: otpError } = await anonClient.auth.signInWithOtp({
+  const { error: otpError } = await anonForSignIn.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
   });
