@@ -32,6 +32,8 @@ export default function ProjectInsights({ projectId, role, supplierId = null, al
   const [error, setError] = useState<string | null>(null);
   const [showDiagram, setShowDiagram] = useState(true);
   const [reportMode, setReportMode] = useState<ReportMode | null>(null);
+  const [reportView, setReportView] = useState<ProjectView | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
 
   const defaultMode: ReportMode = role === "agency_admin" ? "internal" : role === "client" ? "client" : "supplier";
 
@@ -58,7 +60,7 @@ export default function ProjectInsights({ projectId, role, supplierId = null, al
           setShowDiagram(true);
           setReportMode(null);
         } else {
-          setReportMode(defaultMode);
+          void openReport(defaultMode);
         }
       }),
     [projectId, defaultMode],
@@ -67,6 +69,30 @@ export default function ProjectInsights({ projectId, role, supplierId = null, al
   if (loading && !view) return <section className="card"><p className="muted-text">Loading the project view…</p></section>;
   if (error) return <section className="card"><p className="form-error">{error}</p></section>;
   if (!view || !graph) return null;
+
+  /**
+   * Agency users can preview the client and supplier versions. The preview is
+   * re-fetched through the same role filter the real reader would get, so what
+   * Yaniv sees is exactly what that role receives.
+   */
+  async function openReport(mode: ReportMode) {
+    setReportMode(mode);
+    if (mode === defaultMode) {
+      setReportView(view);
+      return;
+    }
+    setReportBusy(true);
+    try {
+      const targetRole: ViewRole = mode === "internal" ? "agency_admin" : mode;
+      const targetSupplier = mode === "supplier" ? (view?.suppliers[0]?.id ?? supplierId) : null;
+      setReportView(await fetchProjectView(projectId, targetRole, targetSupplier));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not build that report.");
+      setReportMode(null);
+    } finally {
+      setReportBusy(false);
+    }
+  }
 
   if (reportMode) {
     return (
@@ -78,18 +104,19 @@ export default function ProjectInsights({ projectId, role, supplierId = null, al
                 key={mode}
                 type="button"
                 className={mode === reportMode ? "primary-button" : "ghost-button"}
-                onClick={() => setReportMode(mode)}
+                onClick={() => void openReport(mode)}
+                disabled={reportBusy}
               >
                 {MODE_LABEL[mode]}
               </button>
             ))}
           </div>
         ) : null}
-        <ProjectReport
-          view={reportMode === view.role.replace("agency_admin", "internal") ? view : view}
-          mode={reportMode}
-          onClose={() => setReportMode(null)}
-        />
+        {reportBusy || !reportView ? (
+          <section className="card"><p className="muted-text">Building the report…</p></section>
+        ) : (
+          <ProjectReport view={reportView} mode={reportMode} onClose={() => { setReportMode(null); setReportView(null); }} />
+        )}
       </>
     );
   }
@@ -100,7 +127,7 @@ export default function ProjectInsights({ projectId, role, supplierId = null, al
         <button type="button" className="ghost-button" onClick={() => setShowDiagram((value) => !value)}>
           {showDiagram ? "Hide project flow" : "Show project flow"}
         </button>
-        <button type="button" className="ghost-button" onClick={() => setReportMode(defaultMode)}>
+        <button type="button" className="ghost-button" onClick={() => void openReport(defaultMode)}>
           Print / Export
         </button>
         <button type="button" className="ghost-button" onClick={() => void load()} disabled={loading}>
