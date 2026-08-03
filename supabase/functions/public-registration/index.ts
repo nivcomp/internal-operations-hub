@@ -257,6 +257,7 @@ Deno.serve(async (req) => {
     const userId = createdUser?.user?.id ?? null;
 
     if (createUserError) console.error("[public-registration] createUser failed", createUserError.message);
+    if (createUserError) return json({ error: `debug createUser: ${createUserError.message}` }, 400);
 
     if (!createUserError && userId) {
       let clientId: string | null = null;
