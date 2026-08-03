@@ -16,7 +16,6 @@ type AgentType = "project_guide" | "agency_control" | "work_assistant";
 
 const MODEL = "openai/gpt-5.6-sol";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/responses";
-const RATE_LIMIT_PER_MINUTE = 12;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
