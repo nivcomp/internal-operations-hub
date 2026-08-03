@@ -384,6 +384,9 @@ async function buildContext(agent: AgentType, project: any, supplierId: string |
   lines.push("--- ESTIMATE ---");
   lines.push(...estimateContext(agent, bundle, supplierId));
 
+  lines.push("--- DELIVERY DATES ---");
+  lines.push(...(await scheduleContext(agent, project.id)));
+
   return lines.join("\n");
 }
 
