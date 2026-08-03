@@ -45,7 +45,7 @@ async function callAccessAdmin<T>(payload: AccessPayload): Promise<T> {
   return data as T;
 }
 
-export const redirectUrl = () => `${window.location.origin}/reset-password`;
+export const redirectUrl = () => publicUrl("/reset-password");
 
 export async function listAccessAccounts(): Promise<AccessAccount[]> {
   const data = await callAccessAdmin<{ accounts: AccessAccount[] }>({ action: "list" });
