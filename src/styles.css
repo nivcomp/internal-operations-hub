@@ -1710,10 +1710,10 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
 /* Data table */
-.data-table-toolbar {
+.table-toolbar {
   display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 0.85rem;
 }
-.data-table-search { flex: 1 1 240px; min-width: 200px; }
+.search-field { flex: 1 1 240px; min-width: 200px; }
 .data-table-wrap { overflow-x: auto; }
 .data-table-wrap table { width: 100%; }
 .data-table-wrap thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
@@ -1724,7 +1724,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .data-table-wrap td.align-end, .data-table-wrap th.align-end { text-align: right; }
 .row-actions { opacity: 0; transition: opacity 120ms ease; display: flex; gap: 0.35rem; justify-content: flex-end; }
 tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
-.data-table-footer {
+.table-pager {
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
   margin-top: 0.75rem; font-size: 0.82rem; color: var(--ink-3);
 }
@@ -1854,6 +1854,18 @@ kbd {
   .form-grid { grid-template-columns: 1fr; }
   .form-grid .span-2 { grid-column: auto; }
   .palette-item { grid-template-columns: 1fr; gap: 0.15rem; }
-  .hide-on-mobile { display: none; }
+  .hide-mobile { display: none; }
   .row-actions { opacity: 1; }
 }
+
+.table-toolbar-spacer { flex: 1; }
+.table-count { font-size: 0.8rem; color: var(--ink-3); }
+.table-no-results { padding: 1.25rem 0; }
+.table-scroll { overflow-x: auto; }
+.smart-table { width: 100%; }
+.smart-table thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.th-sort { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+.sort-mark { color: var(--ink-muted); font-size: 0.7rem; }
+.align-end { text-align: right; }
+.table-pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; margin-top: 0.75rem; }
+.search-field input { width: 100%; }
