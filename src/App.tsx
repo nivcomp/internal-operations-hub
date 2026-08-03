@@ -4,6 +4,12 @@ import { Layout } from "./components/Layout";
 import { ToastProvider } from "./components/ui/Toast";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { OnboardingProvider, useOnboarding } from "./context/OnboardingContext";
+import { ClientOnboardingWizard } from "./components/onboarding/ClientOnboardingWizard";
+import { SupplierOnboardingWizard } from "./components/onboarding/SupplierOnboardingWizard";
+import { AgencyHomePage } from "./pages/home/AgencyHomePage";
+import { ClientHomePage } from "./pages/home/ClientHomePage";
+import { SupplierHomePage } from "./pages/home/SupplierHomePage";
 import { NavContext, type NavApi, type RecentItem } from "./context/NavContext";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
 import { AIUsagePage } from "./pages/AIUsagePage";
@@ -29,17 +35,18 @@ import type { ViewKey } from "./views";
 
 const roleViews: Record<UserRole, ViewKey[]> = {
   agency_admin: [
-    "dashboard", "action-queue", "clients", "client-detail", "client-portal",
+    "home", "dashboard", "action-queue", "clients", "client-detail", "client-portal",
     "projects", "project-detail", "change-requests",
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
     "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
   ],
-  client: ["client-portal"],
-  supplier: ["supplier-portal"],
+  client: ["home", "client-portal"],
+  supplier: ["home", "supplier-portal"],
 };
 
 function AppShell() {
   const { profile, signOut } = useAuth();
+  const { restart: restartOnboarding } = useOnboarding();
   const {
     status, error, reload,
     clients, projects, changeRequests, timeEntries, clientPayments, hourBanks, activityEntries,
@@ -155,6 +162,22 @@ function AppShell() {
   }
 
   const page = {
+    home:
+      role === "client" ? (
+        <ClientHomePage
+          clientId={profile?.clientId}
+          onNavigate={navigate}
+          onRestartWizard={() => void restartOnboarding()}
+        />
+      ) : role === "supplier" ? (
+        <SupplierHomePage
+          supplierId={profile?.supplierId}
+          onNavigate={navigate}
+          onRestartWizard={() => void restartOnboarding()}
+        />
+      ) : (
+        <AgencyHomePage onNavigate={navigate} onProjectSelect={openProjectDetail} />
+      ),
     dashboard: (
       <DashboardPage
         clients={clients}
