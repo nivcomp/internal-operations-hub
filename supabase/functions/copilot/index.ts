@@ -213,8 +213,8 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false }).limit(30);
       const { data: state } = await admin.from("copilot_state")
         .select("preferences").eq("profile_id", profile.id).maybeSingle();
-      const limits = await resolveLimits(admin, profile, access.projectId ?? undefined);
-      const usage = await loadUsage(admin, profile.id, access.projectId ?? undefined);
+      const limits = await resolveLimits(admin, profile, access.projectId ?? "");
+      const usage = await loadUsage(admin, profile.id, access.projectId ?? "");
       return json({
         scopeKey: access.scopeKey,
         label,
@@ -279,12 +279,12 @@ Deno.serve(async (req) => {
 
     if (action !== "send") return json({ error: "Unknown action" }, 400);
 
-    const limits = await resolveLimits(admin, profile, access.projectId ?? undefined);
+    const limits = await resolveLimits(admin, profile, access.projectId ?? "");
     const text = String(body.text ?? "").trim().slice(0, Math.max(200, limits.maximum_message_length));
     if (!text) return json({ error: "Empty message" }, 400);
     const he = isHebrew(text);
 
-    const usage = await loadUsage(admin, profile.id, access.projectId ?? undefined);
+    const usage = await loadUsage(admin, profile.id, access.projectId ?? "");
     const percent = usagePercent(usage, limits);
     if (limits.is_paused || percent >= limits.hard_stop_threshold_percent) {
       return json({
@@ -401,7 +401,7 @@ Deno.serve(async (req) => {
       duration_ms: Date.now() - started,
     });
 
-    const freshUsage = await loadUsage(admin, profile.id, access.projectId ?? undefined);
+    const freshUsage = await loadUsage(admin, profile.id, access.projectId ?? "");
     const freshPercent = usagePercent(freshUsage, limits);
     if (freshPercent >= 90) {
       await raiseAlert(admin, {
