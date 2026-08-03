@@ -1,6 +1,8 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { QuickInvitePanel } from "../components/QuickInvitePanel";
+import { PublicLinkSettings } from "../components/access/PublicLinkSettings";
+import { RegistrationsPanel } from "../components/access/RegistrationsPanel";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAppData } from "../context/AppDataContext";
 import {
@@ -124,6 +126,8 @@ export function AccessManagementPage({ onClientSelect, onSupplierSelect }: Acces
       />
 
       <QuickInvitePanel onInvited={() => void reload()} />
+      <RegistrationsPanel onReviewed={() => void reload()} />
+      <PublicLinkSettings />
 
       <section className="card">
         <h2>Accounts</h2>

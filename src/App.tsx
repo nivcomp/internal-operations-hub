@@ -31,6 +31,8 @@ import { PricingMarginPage } from "./pages/PricingMarginPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { JoinPage } from "./pages/JoinPage";
+import { claimPublicRegistration } from "./services/registrationApi";
 import { SupplierDetailPage } from "./pages/SupplierDetailPage";
 import { SupplierPortalPage } from "./pages/SupplierPortalPage";
 import { SupplierTimePage } from "./pages/SupplierTimePage";
@@ -406,10 +408,27 @@ function OnboardingGate() {
 }
 
 function AuthGate() {
-  const { status, profileError, signOut } = useAuth();
+  const { status, profileError, signOut, refreshProfile } = useAuth();
   const [isResetRoute, setIsResetRoute] = useState(
     () => window.location.pathname === "/reset-password" || window.location.hash.includes("type=recovery"),
   );
+  const [claiming, setClaiming] = useState(false);
+  const [claimTried, setClaimTried] = useState(false);
+
+  // A person who registered through a public link arrives with a session but no
+  // profile. Provision their isolated account server-side, then continue.
+  useEffect(() => {
+    if (status !== "no_profile" || claimTried) return;
+    setClaimTried(true);
+    setClaiming(true);
+    void (async () => {
+      try {
+        const claimed = await claimPublicRegistration();
+        if (claimed) await refreshProfile?.();
+      } catch { /* falls through to the no-access screen */ }
+      finally { setClaiming(false); }
+    })();
+  }, [status, claimTried, refreshProfile]);
 
   function leaveResetRoute() {
     setIsResetRoute(false);
@@ -427,6 +446,13 @@ function AuthGate() {
   }
   if (status === "signed_out") return <LoginPage />;
   if (status === "no_profile") {
+    if (claiming) {
+      return (
+        <div className="auth-screen">
+          <div className="card auth-card"><p>Setting up your workspace…</p></div>
+        </div>
+      );
+    }
     return (
       <div className="auth-screen">
         <div className="card auth-card">
@@ -450,6 +476,14 @@ function AuthGate() {
 }
 
 function App() {
+  const joinRole = (() => {
+    const path = window.location.pathname;
+    if (path === "/join/client") return "client" as const;
+    if (path === "/join/supplier") return "supplier" as const;
+    return null;
+  })();
+  if (joinRole) return <JoinPage role={joinRole} />;
+
   return (
     <AuthProvider>
       <AuthGate />

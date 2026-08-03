@@ -7,7 +7,11 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 type Role = "agency_admin" | "client" | "supplier";
 
 type Body = {
-  action?: "list" | "invite" | "link" | "setActive" | "quickInviteClient" | "quickInviteSupplier" | "listInvitations";
+  action?:
+    | "list" | "invite" | "link" | "setActive"
+    | "quickInviteClient" | "quickInviteSupplier" | "listInvitations"
+    | "registrationSettings" | "setRegistrationSettings"
+    | "listRegistrations" | "reviewRegistration" | "markRegistrationsSeen";
   email?: string;
   fullName?: string;
   role?: Role;
@@ -19,6 +23,13 @@ type Body = {
   company?: string;
   contactName?: string;
   phone?: string;
+  registrationId?: string;
+  decision?: "approve" | "reject" | "block";
+  notes?: string;
+  enabled?: boolean;
+  dailyLimit?: number;
+  introText?: string;
+  rotateCode?: boolean;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -133,6 +144,145 @@ Deno.serve(async (req) => {
       .limit(100);
     if (error) return json({ error: error.message }, 400);
     return json({ invitations: data ?? [] });
+  }
+
+  // ---- public self-registration administration -------------------------------
+  if (action === "registrationSettings") {
+    const { data, error } = await admin.from("registration_settings").select("*").order("role");
+    if (error) return json({ error: error.message }, 400);
+    return json({ settings: data ?? [] });
+  }
+
+  if (action === "setRegistrationSettings") {
+    const role = body.role;
+    if (role !== "client" && role !== "supplier") return json({ error: "Invalid link role." }, 400);
+    const patch: Record<string, unknown> = { updated_by: callerId };
+    if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
+    if (typeof body.dailyLimit === "number" && body.dailyLimit >= 1 && body.dailyLimit <= 500) {
+      patch.dailyLimit = undefined;
+      patch.daily_limit = Math.round(body.dailyLimit);
+    }
+    if (typeof body.introText === "string") patch.intro_text = body.introText.slice(0, 600);
+    if (body.rotateCode) {
+      patch.path_code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    }
+    delete patch.dailyLimit;
+    const { data, error } = await admin
+      .from("registration_settings").update(patch).eq("role", role).select("*").maybeSingle();
+    if (error) return json({ error: error.message }, 400);
+    await admin.from("registration_audit_log").insert({
+      event: body.rotateCode ? "link_rotated" : "settings_updated",
+      role, actor_profile_id: callerId, detail: patch as Record<string, unknown>,
+    });
+    return json({ ok: true, settings: data });
+  }
+
+  if (action === "listRegistrations") {
+    const { data, error } = await admin
+      .from("public_registrations").select("*").order("created_at", { ascending: false }).limit(100);
+    if (error) return json({ error: error.message }, 400);
+    return json({ registrations: data ?? [] });
+  }
+
+  if (action === "markRegistrationsSeen") {
+    const { error } = await admin
+      .from("public_registrations").update({ seen_by_admin: true }).eq("seen_by_admin", false);
+    if (error) return json({ error: error.message }, 400);
+    return json({ ok: true });
+  }
+
+  if (action === "reviewRegistration") {
+    const registrationId = body.registrationId;
+    const decision = body.decision;
+    if (!registrationId) return json({ error: "registrationId is required." }, 400);
+    if (!decision || !["approve", "reject", "block"].includes(decision)) {
+      return json({ error: "Invalid decision." }, 400);
+    }
+    const { data: registration } = await admin
+      .from("public_registrations").select("*").eq("id", registrationId).maybeSingle();
+    if (!registration) return json({ error: "Registration not found." }, 404);
+
+    const notes = (body.notes ?? "").slice(0, 1000);
+    const now = new Date().toISOString();
+
+    if (decision !== "approve") {
+      if (registration.profile_id) {
+        await admin.from("profiles").update({ is_active: false }).eq("id", registration.profile_id);
+      }
+      const { error } = await admin.from("public_registrations").update({
+        status: decision === "block" ? "blocked" : "rejected",
+        reviewed_at: now, reviewed_by: callerId, review_notes: notes, seen_by_admin: true,
+      }).eq("id", registrationId);
+      if (error) return json({ error: error.message }, 400);
+      await admin.from("registration_audit_log").insert({
+        event: decision === "block" ? "registration_blocked" : "registration_rejected",
+        role: registration.role, email: registration.email,
+        registration_id: registrationId, actor_profile_id: callerId,
+      });
+      return json({ ok: true });
+    }
+
+    // Approve: make sure the person has an active, correctly scoped account.
+    let clientId: string | null = registration.client_id;
+    let supplierId: string | null = registration.supplier_id;
+    const email = String(registration.email).toLowerCase();
+    const role: Role = registration.role === "supplier" ? "supplier" : "client";
+
+    if (role === "client" && !clientId) {
+      const { data: created } = await admin.from("clients").insert({
+        name: registration.contact_name,
+        company: registration.company || registration.contact_name,
+        email, phone: registration.phone || null, status: "lead",
+        notes: "Approved from a public registration.",
+      }).select("id").maybeSingle();
+      clientId = created?.id ?? null;
+    }
+    if (role === "supplier" && !supplierId) {
+      const { data: created } = await admin.from("suppliers").insert({
+        name: registration.contact_name, email,
+        phone: registration.phone || null, status: "pending_review",
+      }).select("id").maybeSingle();
+      supplierId = created?.id ?? null;
+    }
+
+    let userId: string | null = registration.profile_id;
+    if (!userId) {
+      const { data: invited } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { role, full_name: registration.contact_name, client_id: clientId, supplier_id: supplierId },
+        redirectTo,
+      });
+      if (invited?.user) userId = invited.user.id;
+      else {
+        const users = await authUsers();
+        for (const [id, u] of users) {
+          if (String((u as any).email ?? "").toLowerCase() === email) { userId = id; break; }
+        }
+      }
+    }
+    if (!userId) return json({ error: "Could not create an account for this registration." }, 400);
+    if (userId === callerId) return json({ error: "This is your own account." }, 400);
+
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: userId, email, full_name: registration.contact_name, role,
+      client_id: clientId, supplier_id: supplierId, is_active: true,
+    });
+    if (profileError) return json({ error: profileError.message }, 400);
+
+    let link: string | null = null;
+    try { link = await actionLinkFor(email); } catch { link = null; }
+
+    await admin.from("public_registrations").update({
+      status: "converted", reviewed_at: now, reviewed_by: callerId, review_notes: notes,
+      converted_at: registration.converted_at ?? now, seen_by_admin: true,
+      profile_id: userId, client_id: clientId, supplier_id: supplierId,
+    }).eq("id", registrationId);
+
+    await admin.from("registration_audit_log").insert({
+      event: "registration_approved", role, email,
+      registration_id: registrationId, actor_profile_id: callerId,
+    });
+
+    return json({ ok: true, link, clientId, supplierId, userId });
   }
 
   // ---- AI-first quick invitations ------------------------------------------

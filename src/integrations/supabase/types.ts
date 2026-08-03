@@ -2846,6 +2846,202 @@ export type Database = {
           },
         ]
       }
+      public_registrations: {
+        Row: {
+          client_id: string | null
+          company: string
+          confirmed_at: string | null
+          contact_name: string
+          converted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          ip_hash: string
+          message: string
+          phone: string
+          profile_id: string | null
+          review_notes: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role: string
+          seen_by_admin: boolean
+          source: string
+          status: string
+          supplier_id: string | null
+          updated_at: string
+          user_agent: string
+        }
+        Insert: {
+          client_id?: string | null
+          company?: string
+          confirmed_at?: string | null
+          contact_name: string
+          converted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          ip_hash?: string
+          message?: string
+          phone?: string
+          profile_id?: string | null
+          review_notes?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role: string
+          seen_by_admin?: boolean
+          source?: string
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          user_agent?: string
+        }
+        Update: {
+          client_id?: string | null
+          company?: string
+          confirmed_at?: string | null
+          contact_name?: string
+          converted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          ip_hash?: string
+          message?: string
+          phone?: string
+          profile_id?: string | null
+          review_notes?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          seen_by_admin?: boolean
+          source?: string
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          user_agent?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_registrations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_registrations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_registrations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_registrations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registration_audit_log: {
+        Row: {
+          actor_profile_id: string | null
+          created_at: string
+          detail: Json
+          email: string
+          event: string
+          id: string
+          ip_hash: string
+          registration_id: string | null
+          role: string | null
+        }
+        Insert: {
+          actor_profile_id?: string | null
+          created_at?: string
+          detail?: Json
+          email?: string
+          event: string
+          id?: string
+          ip_hash?: string
+          registration_id?: string | null
+          role?: string | null
+        }
+        Update: {
+          actor_profile_id?: string | null
+          created_at?: string
+          detail?: Json
+          email?: string
+          event?: string
+          id?: string
+          ip_hash?: string
+          registration_id?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_audit_log_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_audit_log_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "public_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registration_settings: {
+        Row: {
+          created_at: string
+          daily_limit: number
+          enabled: boolean
+          intro_text: string
+          path_code: string
+          role: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          daily_limit?: number
+          enabled?: boolean
+          intro_text?: string
+          path_code?: string
+          role: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          daily_limit?: number
+          enabled?: boolean
+          intro_text?: string
+          path_code?: string
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scope_items: {
         Row: {
           acceptance_notes: string
