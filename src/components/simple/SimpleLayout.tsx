@@ -3,6 +3,7 @@ import { useMode, type SimpleView } from "../../context/ModeContext";
 
 const navItems: { key: SimpleView; label: string }[] = [
   { key: "home", label: "בית" },
+  { key: "crm", label: "לידים" },
   { key: "clients", label: "לקוחות" },
   { key: "projects", label: "פרויקטים" },
   { key: "suppliers", label: "ספקים" },
