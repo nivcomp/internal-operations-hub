@@ -78,7 +78,14 @@ export function SimpleProjectCard({ project, onContinue }: { project: Project; o
         {projectSummaryHe({ project, client, changeRequests, payments: clientPayments, suppliers })}
       </p>
       <dl className="simple-facts">
-        <div><dt>אומדן</dt><dd>{estimate?.clientTotal ? currency.format(estimate.clientTotal) : project.budgetSignal || "—"}</dd></div>
+        <div>
+          <dt>אומדן</dt>
+          <dd>
+            {estimate?.estimatedBudgetMax
+              ? `${currency.format(estimate.estimatedBudgetMin)} – ${currency.format(estimate.estimatedBudgetMax)}`
+              : project.budgetSignal || "—"}
+          </dd>
+        </div>
         <div><dt>תאריך מבוקש</dt><dd>{schedule?.requestedCompletionDate ?? "—"}</dd></div>
         <div><dt>ספק</dt><dd>{assigned || "לא שויך"}</dd></div>
         <div><dt>חסם</dt><dd>{blocker ?? "אין"}</dd></div>
@@ -137,7 +144,6 @@ export function SimpleSupplierCard({ supplier, onContinue }: { supplier: Supplie
           שעות ושיוך
         </button>
       </div>
-      <span className="simple-note">עודכן {timeAgoHe(undefined)}</span>
     </article>
   );
 }
