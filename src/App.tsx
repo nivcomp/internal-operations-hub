@@ -434,9 +434,9 @@ function AppShell() {
       onSignOut={() => void signOut()}
       onSearchOpen={() => setPaletteOpen(true)}
     >
-      {role === "agency_admin" && cameFromSimple ? (
+      {role === "agency_admin" ? (
         <div className="advanced-banner" dir="rtl">
-          <span>אתה נמצא במערכת המלאה</span>
+          <span>{cameFromSimple ? "אתה נמצא במערכת המלאה" : "מערכת מלאה"}</span>
           <button type="button" onClick={() => backToSimple()}>חזרה למצב פשוט</button>
         </div>
       ) : null}
