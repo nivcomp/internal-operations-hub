@@ -151,7 +151,8 @@ export async function updateLead(id: string, patch: {
   if (patch.estimatedValue !== undefined) payload.estimated_value = patch.estimatedValue;
   if (patch.status !== undefined) payload.status = patch.status;
   if (!Object.keys(payload).length) return;
-  const { error } = await supabase.from("crm_leads").update(payload).eq("id", id);
+  const { error } = await supabase.from("crm_leads")
+    .update(payload as never).eq("id", id);
   if (error) fail("updateLead", error);
 }
 
