@@ -12,6 +12,14 @@ import { AgencyHomePage } from "./pages/home/AgencyHomePage";
 import { ClientHomePage } from "./pages/home/ClientHomePage";
 import { SupplierHomePage } from "./pages/home/SupplierHomePage";
 import { NavContext, type NavApi, type RecentItem } from "./context/NavContext";
+import {
+  ModeContext, MODE_STORAGE_KEY, type ModeApi, type SimpleView, type UiMode,
+} from "./context/ModeContext";
+import { SimpleLayout } from "./components/simple/SimpleLayout";
+import { SimpleHomePage } from "./pages/simple/SimpleHomePage";
+import { SimpleRecordsPage } from "./pages/simple/SimpleRecordsPage";
+import { SimpleTasksPage } from "./pages/simple/SimpleTasksPage";
+import { SimpleFinancePage } from "./pages/simple/SimpleFinancePage";
 import { CopilotProvider, useCopilotScreen } from "./context/CopilotContext";
 import { CopilotDock } from "./components/copilot/CopilotDock";
 import { emitCopilotFormIntent } from "./lib/copilotForms";
@@ -96,6 +104,12 @@ function AppShell() {
   const [history, setHistory] = useState<ViewKey[]>([]);
   const [recents, setRecents] = useState<RecentItem[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [mode, setModeState] = useState<UiMode>(() => {
+    const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
+    return stored === "advanced" ? "advanced" : "simple";
+  });
+  const [simpleView, setSimpleView] = useState<SimpleView>("home");
+  const [cameFromSimple, setCameFromSimple] = useState(false);
 
   useEffect(() => {
     if (!allowedViews.includes(activeView)) setActiveView(allowedViews[0]);
@@ -174,6 +188,35 @@ function AppShell() {
     selectedSupplierId,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [activeView, allowedViews, navigate, goBack, history.length, recents, selectedProjectId, selectedClientId, selectedSupplierId]);
+
+  const setMode = useCallback((next: UiMode) => {
+    setModeState(next);
+    window.localStorage.setItem(MODE_STORAGE_KEY, next);
+    if (next === "simple") setCameFromSimple(false);
+  }, []);
+
+  const openAdvanced = useCallback((view: ViewKey, context?: {
+    projectId?: string; clientId?: string; supplierId?: string;
+  }) => {
+    if (context?.projectId) setSelectedProjectId(context.projectId);
+    if (context?.clientId) setSelectedClientId(context.clientId);
+    if (context?.supplierId) setSelectedSupplierId(context.supplierId);
+    setCameFromSimple(true);
+    setModeState("advanced");
+    window.localStorage.setItem(MODE_STORAGE_KEY, "advanced");
+    navigate(view);
+  }, [navigate]);
+
+  const backToSimple = useCallback((view?: SimpleView) => {
+    if (view) setSimpleView(view);
+    setCameFromSimple(false);
+    setModeState("simple");
+    window.localStorage.setItem(MODE_STORAGE_KEY, "simple");
+  }, []);
+
+  const modeApi = useMemo<ModeApi>(() => ({
+    mode, setMode, simpleView, setSimpleView, openAdvanced, backToSimple, cameFromSimple,
+  }), [mode, setMode, simpleView, openAdvanced, backToSimple, cameFromSimple]);
 
   function reloadFromDatabase() {
     setSelectedClientId(profile?.clientId);
@@ -317,14 +360,38 @@ function AppShell() {
     ),
   } satisfies Record<ViewKey, JSX.Element>;
 
+  const simplePage: Record<SimpleView, JSX.Element> = {
+    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} />,
+    clients: <SimpleRecordsPage kind="clients" />,
+    projects: <SimpleRecordsPage kind="projects" />,
+    suppliers: <SimpleRecordsPage kind="suppliers" />,
+    tasks: <SimpleTasksPage />,
+    finance: <SimpleFinancePage />,
+  };
+
+  const simpleModeActive = role === "agency_admin" && mode === "simple";
+
   return (
     <NavContext.Provider value={navApi}>
+      <ModeContext.Provider value={modeApi}>
       <CopilotProvider
         onChip={(chip: CopilotChip) => {
-          if (chip.type === "navigate") navigate(chip.view as ViewKey);
-          else if (chip.type === "open_project") openProjectDetail(chip.id);
-          else if (chip.type === "open_client") openClientDetail(chip.id);
-          else if (chip.type === "open_supplier") openSupplierDetail(chip.id);
+          if (chip.type === "navigate") {
+            if (simpleModeActive) openAdvanced(chip.view as ViewKey);
+            else navigate(chip.view as ViewKey);
+          }
+          else if (chip.type === "open_project") {
+            if (simpleModeActive) openAdvanced("project-detail", { projectId: chip.id });
+            else openProjectDetail(chip.id);
+          }
+          else if (chip.type === "open_client") {
+            if (simpleModeActive) openAdvanced("client-detail", { clientId: chip.id });
+            else openClientDetail(chip.id);
+          }
+          else if (chip.type === "open_supplier") {
+            if (simpleModeActive) openAdvanced("supplier-detail", { supplierId: chip.id });
+            else openSupplierDetail(chip.id);
+          }
           else if (chip.type === "back") goBack();
           else if (chip.type === "focus_field") {
             emitCopilotFormIntent({ kind: "focus", section: "*", field: chip.field });
@@ -340,6 +407,24 @@ function AppShell() {
         supplierId={selectedSupplierId}
         label={activeView}
       />
+      {simpleModeActive ? (
+        <SimpleLayout
+          accountLabel={profile?.fullName ?? profile?.email ?? ""}
+          onSignOut={() => void signOut()}
+        >
+          {status === "loading" ? (
+            <div className="card" style={{ padding: "2rem", textAlign: "center" }}><p>טוען נתונים…</p></div>
+          ) : status === "error" ? (
+            <div className="card" style={{ padding: "2rem" }}>
+              <h2>לא הצלחנו לטעון את הנתונים</h2>
+              <p style={{ color: "var(--color-danger, #b91c1c)" }}>{error}</p>
+              <button type="button" onClick={reloadFromDatabase}>נסה שוב</button>
+            </div>
+          ) : (
+            simplePage[simpleView]
+          )}
+        </SimpleLayout>
+      ) : (
       <Layout
       activeView={activeView}
       onNavigate={navigate}
@@ -349,6 +434,12 @@ function AppShell() {
       onSignOut={() => void signOut()}
       onSearchOpen={() => setPaletteOpen(true)}
     >
+      {role === "agency_admin" && cameFromSimple ? (
+        <div className="advanced-banner" dir="rtl">
+          <span>אתה נמצא במערכת המלאה</span>
+          <button type="button" onClick={() => backToSimple()}>חזרה למצב פשוט</button>
+        </div>
+      ) : null}
       {status === "loading" ? (
         <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
           <p>Loading data from database…</p>
@@ -363,9 +454,11 @@ function AppShell() {
         page[activeView]
       )}
       </Layout>
+      )}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <CopilotDock />
       </CopilotProvider>
+      </ModeContext.Provider>
     </NavContext.Provider>
   );
 }
