@@ -2139,3 +2139,9 @@ Restore the public client/supplier registration routes on the custom domain.
 
 **Next**  
 - Extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing through the existing confirmation pipeline.
+
+## 2026-08-03 — Excel/CSV import + CRM pipeline
+- Work unit: Import system (xlsx/csv) and Hebrew CRM lead pipeline.
+- Main changes: crm_leads/contact_notes/past_projects/import_batches/import_rows/crm_ai_suggestions tables, private `crm-imports` bucket, `crm-import` and `crm-ai-map` edge functions, `ImportWizard`, `CrmWorkspace`, `PastProjectsPanel`, new `crm` view in both Simple and Advanced modes.
+- Tests: `pnpm run build` passed.
+- Notes: AI mapping and lead enrichment are suggestions only; nothing is written without explicit confirmation. Past projects are reference-only and excluded from pricing/margin.
