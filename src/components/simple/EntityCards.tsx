@@ -4,7 +4,7 @@ import { useCopilot } from "../../context/CopilotContext";
 import { currency, formatRate } from "../../lib/domainHelpers";
 import {
   clientStatusHe, clientSummaryHe, projectBlockerHe, projectNextActionHe, projectSummaryHe,
-  statusHe, supplierStatusHe, supplierSummaryHe, timeAgoHe,
+  statusHe, supplierStatusHe, supplierSummaryHe,
 } from "../../lib/simpleHebrew";
 import type { Client, Project, Supplier } from "../../types/domain";
 
