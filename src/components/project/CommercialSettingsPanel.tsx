@@ -113,6 +113,7 @@ export function CommercialSettingsPanel({ project }: { project: Project }) {
       estimatedBudgetMin: form.estimated_budget_min, estimatedBudgetMax: form.estimated_budget_max,
       finalFixedPrice: form.final_fixed_price ? Number(form.final_fixed_price) : null,
       targetMarginPercent: form.target_margin_percent,
+      internalCost: Number(estimate?.internal_cost ?? 0),
       clientVisible: estimate?.client_visible ?? false, approvedByYaniv: estimate?.approved_by_yaniv ?? false,
     },
   });

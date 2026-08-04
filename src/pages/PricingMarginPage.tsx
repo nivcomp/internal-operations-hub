@@ -4,8 +4,13 @@ import { agency } from "../config/app";
 import { useAppData } from "../context/AppDataContext";
 import { currency, getProjectName } from "../lib/domainHelpers";
 
+const money = (value: number, code: string) => new Intl.NumberFormat("he-IL", {
+  style: "currency", currency: code || "ILS", maximumFractionDigits: 0,
+}).format(value);
+
 export function PricingMarginPage() {
-  const { projects, projectPricing, phasePricing } = useAppData();
+  const { projects, projectPricing, phasePricing, estimateSummaries } = useAppData();
+  const legacyPricing = projectPricing.filter((row) => !estimateSummaries.some((estimate) => estimate.projectId === row.projectId));
   return (
     <>
       <PageHeader title="Pricing / Margin" subtitle="Yaniv sees client price, supplier cost, and margin together. Suppliers never see this page." />
@@ -21,20 +26,23 @@ export function PricingMarginPage() {
             </tr>
           </thead>
           <tbody>
-            {projectPricing.map((pricing) => (
-              <tr key={pricing.id}>
-                <td>{getProjectName(pricing.projectId, projects)}</td>
-                <td>{currency.format(pricing.clientPrice)}</td>
-                <td>{currency.format(pricing.supplierCostEstimate)}</td>
-                <td><StatusBadge label={`${pricing.actualMarginPercent}%`} tone={pricing.actualMarginPercent >= agency.marginTargetPercent ? "success" : "danger"} /></td>
-                <td>{pricing.pricingNotes}</td>
+            {estimateSummaries.map((estimate) => {
+              const clientPrice = estimate.finalFixedPrice ?? estimate.estimatedBudgetMax;
+              const margin = clientPrice > 0 ? Math.round(((clientPrice - estimate.internalCost) / clientPrice) * 100) : 0;
+              return <tr key={estimate.estimateId}>
+                <td>{getProjectName(estimate.projectId, projects)}</td>
+                <td>{money(clientPrice, estimate.currency)}{estimate.finalFixedPrice == null && estimate.estimatedBudgetMin !== estimate.estimatedBudgetMax ? ` (${money(estimate.estimatedBudgetMin, estimate.currency)}–${money(estimate.estimatedBudgetMax, estimate.currency)})` : ""}</td>
+                <td>{money(estimate.internalCost, estimate.currency)}</td>
+                <td><StatusBadge label={`${margin}%`} tone={margin >= agency.marginTargetPercent ? "success" : "danger"} /></td>
+                <td>{money(estimate.clientCalculationRate, estimate.currency)} / hour · estimate v{estimate.version}</td>
               </tr>
-            ))}
+            })}
+            {!estimateSummaries.length && <tr><td colSpan={5}>No project estimates yet.</td></tr>}
           </tbody>
         </table>
       </section>
-      <section className="card">
-        <h2>Phase pricing</h2>
+      {!!legacyPricing.length && <section className="card">
+        <h2>Legacy pricing (read-only)</h2>
         <table>
           <thead>
             <tr>
@@ -46,7 +54,8 @@ export function PricingMarginPage() {
           </thead>
           <tbody>
             {phasePricing.map((phase) => {
-              const pricing = projectPricing.find((item) => item.id === phase.pricingId);
+              const pricing = legacyPricing.find((item) => item.id === phase.pricingId);
+              if (!pricing) return null;
               return (
                 <tr key={phase.id}>
                   <td>{phase.phaseName}</td>
@@ -58,7 +67,7 @@ export function PricingMarginPage() {
             })}
           </tbody>
         </table>
-      </section>
+      </section>}
     </>
   );
 }

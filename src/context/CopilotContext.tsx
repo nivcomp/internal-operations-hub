@@ -10,6 +10,7 @@ import {
   type CopilotScreenHint, type CopilotSlotMemory, type CopilotUsage,
 } from "../services/copilotApi";
 import { playBase64Audio, startRecording, stopSpeech, type Recorder } from "../lib/voice";
+import { useAppData } from "./AppDataContext";
 
 export type CopilotFormHint = Pick<
   CopilotScreenHint, "formSection" | "fields" | "errors" | "missing" | "notes"
@@ -72,6 +73,7 @@ export function CopilotProvider({
   children: React.ReactNode;
   onChip: (chip: CopilotChip) => void;
 }) {
+  const { refreshCommercials } = useAppData();
   const [open, setOpen] = useState(false);
   const [screen, setScreen] = useState<CopilotScreenHint>({ page: "home", entityType: "none" });
   const [formHints, setFormHints] = useState<Record<string, CopilotFormHint>>({});
@@ -202,6 +204,7 @@ export function CopilotProvider({
       if (result.operatorActions?.length) {
         // Re-read the whole queue so superseded proposals cannot linger as open.
         void refreshQueueRef.current();
+        if (result.operatorActions.some((action) => action.status === "completed")) await refreshCommercials();
       }
       setUsage(result.usage);
       if (voiceReplies || viaVoice) void speak(result.assistantMessage.body);
@@ -211,7 +214,7 @@ export function CopilotProvider({
     } finally {
       setSending(false);
     }
-  }, [sending, speak, voiceReplies]);
+  }, [sending, speak, voiceReplies, refreshCommercials]);
 
   const startVoice = useCallback(async () => {
     if (recording) return;
@@ -257,10 +260,11 @@ export function CopilotProvider({
     try {
       await confirmCopilotAction(hintRef.current, draftId);
       setPendingActions((current) => current.filter((action) => action.id !== draftId));
+      await refreshCommercials();
     } catch (err) {
       setError((err as Error).message);
     }
-  }, []);
+  }, [refreshCommercials]);
 
   const dismiss = useCallback(async (draftId: string) => {
     try {
@@ -295,12 +299,13 @@ export function CopilotProvider({
       setSlotMemory(result.slotMemory ?? null);
       const failed = result.results.find((item) => !item.ok && !item.skipped);
       if (failed?.error) setError(failed.error);
+      if (result.results.some((item) => item.ok)) await refreshCommercials();
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setOperatorBusy(false);
     }
-  }, [operatorBusy]);
+  }, [operatorBusy, refreshCommercials]);
 
   const confirmOperator = useCallback((ids: string[]) => runOperator(ids, confirmOperatorActions), [runOperator]);
   const retryOperator = useCallback((ids: string[]) => runOperator(ids, retryOperatorActions), [runOperator]);

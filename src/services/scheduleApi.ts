@@ -108,6 +108,7 @@ export interface EstimateSummary {
   estimatedBudgetMax: number;
   finalFixedPrice: number | null;
   targetMarginPercent: number;
+  internalCost: number;
   clientVisible: boolean;
   approvedByYaniv: boolean;
 }
@@ -115,7 +116,7 @@ export interface EstimateSummary {
 export async function fetchEstimateSummaries(): Promise<EstimateSummary[]> {
   const { data, error } = await db
     .from("project_estimates")
-    .select("id,project_id,version,status,currency,client_calculation_rate,show_hourly_rate_to_client,minimum_billing_unit,estimated_hours_min,estimated_hours_max,estimated_budget_min,estimated_budget_max,final_fixed_price,target_margin_percent,client_visible,approved_by_yaniv")
+    .select("id,project_id,version,status,currency,client_calculation_rate,show_hourly_rate_to_client,minimum_billing_unit,estimated_hours_min,estimated_hours_max,estimated_budget_min,estimated_budget_max,internal_cost,final_fixed_price,target_margin_percent,client_visible,approved_by_yaniv")
     .order("version", { ascending: false });
   if (error) fail("Load estimate summaries", error);
   const seen = new Set<string>();
@@ -138,6 +139,7 @@ export async function fetchEstimateSummaries(): Promise<EstimateSummary[]> {
       estimatedBudgetMax: Number(row.estimated_budget_max ?? 0),
       finalFixedPrice: row.final_fixed_price == null ? null : Number(row.final_fixed_price),
       targetMarginPercent: Number(row.target_margin_percent ?? 0),
+      internalCost: Number(row.internal_cost ?? 0),
       clientVisible: !!row.client_visible,
       approvedByYaniv: !!row.approved_by_yaniv,
     });
