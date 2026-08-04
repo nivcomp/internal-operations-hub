@@ -20,9 +20,8 @@ export function SimpleTasksPage() {
     .map((item) => (item.type === "project" ? item.project : null))
     .filter(Boolean) as typeof projects;
   const changeRows = [...pricing, ...approval]
-    .filter((item) => item.type === "change")
-    .map((item) => (item.type === "change" ? item.request : null))
-    .filter(Boolean);
+    .map((item) => (item.type === "change_request" ? item.changeRequest : null))
+    .filter((request): request is NonNullable<typeof request> => request !== null);
 
   return (
     <div className="simple-page">
@@ -52,7 +51,7 @@ export function SimpleTasksPage() {
         <h2>בקשות שינוי</h2>
         {changeRows.length === 0 ? <p className="simple-note">אין בקשות שינוי פתוחות.</p> : (
           <div className="simple-list">
-            {changeRows.map((request) => request ? (
+            {changeRows.map((request) => (
               <button
                 key={request.id}
                 type="button"
@@ -64,7 +63,7 @@ export function SimpleTasksPage() {
                   {projects.find((project) => project.id === request.projectId)?.name ?? "—"}
                 </span>
               </button>
-            ) : null)}
+            ))}
           </div>
         )}
       </section>
@@ -83,7 +82,7 @@ export function SimpleTasksPage() {
                 <span className="simple-row-title">
                   {suppliers.find((supplier) => supplier.id === entry.supplierId)?.name ?? "ספק"}
                 </span>
-                <span className="simple-note">{entry.hours} שעות · {entry.workDate}</span>
+                <span className="simple-note">{entry.hours} שעות · {entry.date}</span>
               </button>
             ))}
           </div>
@@ -94,14 +93,14 @@ export function SimpleTasksPage() {
         <h2>תשלומים ממתינים</h2>
         {payment.length === 0 ? <p className="simple-note">אין תשלומים ממתינים.</p> : (
           <div className="simple-list">
-            {payment.map((item) => (
+            {payment.map((item, index) => (
               <button
-                key={item.project.id}
+                key={item.project?.id ?? `payment-${index}`}
                 type="button"
                 className="card simple-row"
-                onClick={() => openAdvanced("payments-hours", { projectId: item.project.id })}
+                onClick={() => openAdvanced("payments-hours", { projectId: item.project?.id })}
               >
-                <span className="simple-row-title">{item.project.name}</span>
+                <span className="simple-row-title">{item.project?.name ?? "תשלום"}</span>
                 <span className="simple-note">מחכה לתשלום</span>
               </button>
             ))}
