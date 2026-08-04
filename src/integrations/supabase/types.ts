@@ -884,6 +884,81 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_notes: {
+        Row: {
+          body: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          import_batch_id: string | null
+          lead_id: string | null
+          note_type: string
+          original_source: string | null
+          project_id: string | null
+        }
+        Insert: {
+          body: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          import_batch_id?: string | null
+          lead_id?: string | null
+          note_type?: string
+          original_source?: string | null
+          project_id?: string | null
+        }
+        Update: {
+          body?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          import_batch_id?: string | null
+          lead_id?: string | null
+          note_type?: string
+          original_source?: string | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notes_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -1273,6 +1348,163 @@ export type Database = {
             foreignKeyName: "copilot_state_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_ai_suggestions: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          lead_id: string | null
+          payload: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          lead_id?: string | null
+          payload?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          lead_id?: string | null
+          payload?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_ai_suggestions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_ai_suggestions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_leads: {
+        Row: {
+          archived_at: string | null
+          company: string
+          converted_at: string | null
+          converted_client_id: string | null
+          created_at: string
+          currency: string
+          email: string | null
+          email_normalized: string | null
+          estimated_value: number | null
+          extra: Json
+          id: string
+          import_batch_id: string | null
+          last_contact_at: string | null
+          name: string
+          next_follow_up_at: string | null
+          notes: string
+          owner_profile_id: string | null
+          phone: string | null
+          phone_normalized: string | null
+          service_interest: string | null
+          source: string | null
+          source_row_id: string | null
+          stage: string
+          status: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          company?: string
+          converted_at?: string | null
+          converted_client_id?: string | null
+          created_at?: string
+          currency?: string
+          email?: string | null
+          email_normalized?: string | null
+          estimated_value?: number | null
+          extra?: Json
+          id?: string
+          import_batch_id?: string | null
+          last_contact_at?: string | null
+          name?: string
+          next_follow_up_at?: string | null
+          notes?: string
+          owner_profile_id?: string | null
+          phone?: string | null
+          phone_normalized?: string | null
+          service_interest?: string | null
+          source?: string | null
+          source_row_id?: string | null
+          stage?: string
+          status?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          company?: string
+          converted_at?: string | null
+          converted_client_id?: string | null
+          created_at?: string
+          currency?: string
+          email?: string | null
+          email_normalized?: string | null
+          estimated_value?: number | null
+          extra?: Json
+          id?: string
+          import_batch_id?: string | null
+          last_contact_at?: string | null
+          name?: string
+          next_follow_up_at?: string | null
+          notes?: string
+          owner_profile_id?: string | null
+          phone?: string | null
+          phone_normalized?: string | null
+          service_interest?: string | null
+          source?: string | null
+          source_row_id?: string | null
+          stage?: string
+          status?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1897,6 +2129,121 @@ export type Database = {
           },
         ]
       }
+      import_batches: {
+        Row: {
+          created_at: string
+          failed_rows: number
+          file_name: string
+          file_type: string
+          id: string
+          imported_at: string
+          imported_by: string | null
+          mapping_json: Json
+          skipped_rows: number
+          status: string
+          storage_path: string | null
+          successful_rows: number
+          total_rows: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          failed_rows?: number
+          file_name: string
+          file_type: string
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          mapping_json?: Json
+          skipped_rows?: number
+          status?: string
+          storage_path?: string | null
+          successful_rows?: number
+          total_rows?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          failed_rows?: number
+          file_name?: string
+          file_type?: string
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          mapping_json?: Json
+          skipped_rows?: number
+          status?: string
+          storage_path?: string | null
+          successful_rows?: number
+          total_rows?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_rows: {
+        Row: {
+          batch_id: string
+          created_at: string
+          error: string | null
+          id: string
+          raw: Json
+          resolution: string
+          row_index: number
+          sheet_name: string
+          sheet_type: string
+          status: string
+          target_id: string | null
+          target_table: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          raw?: Json
+          resolution?: string
+          row_index: number
+          sheet_name?: string
+          sheet_type?: string
+          status?: string
+          target_id?: string | null
+          target_table?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          raw?: Json
+          resolution?: string
+          row_index?: number
+          sheet_name?: string
+          sheet_type?: string
+          status?: string
+          target_id?: string | null
+          target_table?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_invitations: {
         Row: {
           accepted_at: string | null
@@ -2080,6 +2427,91 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      past_projects: {
+        Row: {
+          archived_at: string | null
+          client_id: string | null
+          created_at: string
+          currency: string
+          description: string
+          end_date: string | null
+          id: string
+          import_batch_id: string | null
+          lead_id: string | null
+          notes: string
+          outcome: string
+          project_name: string
+          source_row_id: string | null
+          start_date: string | null
+          status: string
+          technologies: string[]
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          end_date?: string | null
+          id?: string
+          import_batch_id?: string | null
+          lead_id?: string | null
+          notes?: string
+          outcome?: string
+          project_name: string
+          source_row_id?: string | null
+          start_date?: string | null
+          status?: string
+          technologies?: string[]
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          end_date?: string | null
+          id?: string
+          import_batch_id?: string | null
+          lead_id?: string | null
+          notes?: string
+          outcome?: string
+          project_name?: string
+          source_row_id?: string | null
+          start_date?: string | null
+          status?: string
+          technologies?: string[]
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "past_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "past_projects_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "past_projects_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
             referencedColumns: ["id"]
           },
         ]
