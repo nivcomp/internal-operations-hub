@@ -2,6 +2,7 @@ export const views = [
   { key: "home", label: "Home" },
   { key: "dashboard", label: "Dashboard" },
   { key: "action-queue", label: "Action Queue" },
+  { key: "crm", label: "CRM Pipeline" },
   { key: "clients", label: "Clients" },
   { key: "client-detail", label: "Client Detail" },
   { key: "projects", label: "Projects" },

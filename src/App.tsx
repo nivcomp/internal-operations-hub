@@ -18,6 +18,7 @@ import {
 import { SimpleLayout } from "./components/simple/SimpleLayout";
 import { SimpleHomePage } from "./pages/simple/SimpleHomePage";
 import { SimpleRecordsPage } from "./pages/simple/SimpleRecordsPage";
+import { CrmWorkspace } from "./components/crm/CrmWorkspace";
 import { SimpleTasksPage } from "./pages/simple/SimpleTasksPage";
 import { SimpleFinancePage } from "./pages/simple/SimpleFinancePage";
 import { CopilotProvider, useCopilotScreen } from "./context/CopilotContext";
@@ -313,6 +314,7 @@ function AppShell() {
         onTimeEntryStatusChange={updateTimeEntryStatus}
       />
     ),
+    crm: <CrmWorkspace onClientSelect={openClientDetail} onCreateProject={openClientDetail} />,
     suppliers: <SuppliersPage onSupplierSelect={openSupplierDetail} />,
     "supplier-detail": (
       <SupplierDetailPage
@@ -362,6 +364,12 @@ function AppShell() {
 
   const simplePage: Record<SimpleView, JSX.Element> = {
     home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} />,
+    crm: (
+      <CrmWorkspace
+        onClientSelect={(clientId) => openAdvanced("client-detail", { clientId })}
+        onCreateProject={(clientId) => openAdvanced("client-detail", { clientId })}
+      />
+    ),
     clients: <SimpleRecordsPage kind="clients" />,
     projects: <SimpleRecordsPage kind="projects" />,
     suppliers: <SimpleRecordsPage kind="suppliers" />,

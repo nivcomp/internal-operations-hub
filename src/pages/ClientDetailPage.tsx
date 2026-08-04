@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { AccessPanel } from "../components/AccessPanel";
+import { PastProjectsPanel } from "../components/crm/PastProjectsPanel";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData, type NewProjectInput } from "../context/AppDataContext";
@@ -267,6 +268,7 @@ export function ClientDetailPage({
           <p>No open change requests for this client.</p>
         )}
       </section>
+      <PastProjectsPanel clientId={client.id} />
     </>
   );
 }
