@@ -2145,3 +2145,36 @@ Restore the public client/supplier registration routes on the custom domain.
 - Main changes: crm_leads/contact_notes/past_projects/import_batches/import_rows/crm_ai_suggestions tables, private `crm-imports` bucket, `crm-import` and `crm-ai-map` edge functions, `ImportWizard`, `CrmWorkspace`, `PastProjectsPanel`, new `crm` view in both Simple and Advanced modes.
 - Tests: `pnpm run build` passed.
 - Notes: AI mapping and lead enrichment are suggestions only; nothing is written without explicit confirmation. Past projects are reference-only and excluded from pricing/margin.
+
+## 2026-08-06 — Unified repository and memory synchronization
+
+**Work unit**
+Audit and synchronize the unified repository, application architecture and persistent project memory without developing the next Simple Mode meeting flow.
+
+**Changes**
+- Confirmed `simple` and `advanced` render from one `App.tsx` and share authentication, providers, services, records and one Supabase project.
+- Confirmed every workflow table is created once across migrations; no duplicate core table definition was found.
+- Corrected the canonical repository reference to `nivcomp/internal-operations-hub` and prohibited splitting modes across apps, repositories or databases.
+- Updated top-level memory to reflect durable Supabase persistence, RLS, AI, meetings, canonical estimates, proposals, signatures and execution packages.
+- Declared `project_estimates` the only canonical pricing source; legacy pricing tables remain historical read-only compatibility data.
+- Removed remaining legacy-pricing reads from the current Dashboard, Simple Finance and project-chat AI context.
+- Recorded the next work unit as the complete client/project/meeting start flow contained inside Simple Mode.
+
+**Tests**
+- `pnpm install --frozen-lockfile` passed.
+- `pnpm run build` passed, including TypeScript; the existing large-chunk warning remains.
+- `git diff --check` initially found documentation trailing spaces; corrected before final validation.
+- Migration table-definition audit found no duplicate `CREATE TABLE` definitions.
+- Edge Function syntax check and final validation are recorded in the completion report.
+- No automated test or lint script exists in `package.json`.
+
+**Files**
+- `AGENTS.md`, `README.md`, `ARCHITECTURE.md`, `MVP_SCOPE.md`, `DECISIONS.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+- `src/pages/DashboardPage.tsx`, `src/pages/simple/SimpleFinancePage.tsx`
+- `supabase/functions/project-chat/index.ts`
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and PR.
+
+**Next**
+- Build the complete existing/new client → existing/new project → meeting workspace flow inside Simple Mode without automatically navigating to Advanced Mode and without duplicating infrastructure.

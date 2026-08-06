@@ -364,10 +364,6 @@ async function buildContext(agent: AgentType, project: any, supplierId: string |
     lines.push(`Payment gate: ${project.payment_gate_status}`);
     for (const s of scopes ?? []) lines.push(`Scope v${s.version} (${s.status}): ${s.client_facing_summary}`);
     for (const i of items ?? []) if (i.client_visible) lines.push(`Scope item: ${i.title} — ${i.description}`);
-    const { data: pricing } = await admin.from("project_pricing").select("currency, client_price").eq("project_id", project.id);
-    for (const p of pricing ?? []) {
-      if (Number(p.client_price) > 0) lines.push(`Approved client price: ${p.currency} ${p.client_price}`);
-    }
     const { data: hours } = await admin.from("paid_hours").select("hours_remaining").eq("project_id", project.id);
     for (const h of hours ?? []) lines.push(`Paid hours remaining: ${h.hours_remaining}`);
     const { data: crs } = await admin.from("change_requests").select("title, status, agency_price").eq("project_id", project.id);
@@ -383,10 +379,6 @@ async function buildContext(agent: AgentType, project: any, supplierId: string |
       lines.push(`Scope v${s.version} internal notes: ${s.internal_delivery_notes}`);
     }
     for (const i of items ?? []) lines.push(`Scope item [${i.phase}] ${i.title} — ${i.description} (client:${i.client_visible}, supplier:${i.supplier_visible})`);
-    const { data: pricing } = await admin.from("project_pricing").select("*").eq("project_id", project.id);
-    for (const p of pricing ?? []) {
-      lines.push(`Pricing: client ${p.currency} ${p.client_price}, supplier cost ${p.supplier_cost_estimate}, target margin ${p.target_margin_percent}%, actual ${p.actual_margin_percent}%. Notes: ${p.pricing_notes}`);
-    }
     const { data: crs } = await admin.from("change_requests").select("*").eq("project_id", project.id);
     for (const c of crs ?? []) lines.push(`Change request: ${c.title} — ${c.status} (client price ${c.agency_price ?? "n/a"}, supplier cost ${c.supplier_cost ?? "n/a"})`);
     const { data: reqs } = await admin.from("project_requirements").select("title, detail, status").eq("project_id", project.id);

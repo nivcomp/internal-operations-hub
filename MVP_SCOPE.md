@@ -1,69 +1,44 @@
 # MVP Scope
 
-## MVP objective
+## Objective
 
-Help Yaniv manage client projects with less manual tracking, fewer unclear handoffs, and clear control over scope, pricing, approvals, payment, supplier work, and changes.
+Help Yaniv move agency work from lead and client discovery through a controlled project, estimate, proposal, approval, payment gate, supplier delivery and change control without parallel spreadsheets or duplicate systems.
 
-## Included in the MVP
+## Implemented foundation
 
-- Internal dashboard showing active work, blockers, approvals, payments, and next actions.
-- Client list and client detail.
-- Project list and project detail.
-- Supplier list and supplier detail.
-- Capture of client discovery notes and project briefs.
-- Scope creation, review status, and client approval status.
-- Separate client price, supplier cost, and expected margin.
-- Payment status and paid-hour bank tracking.
-- Supplier assignment planning from approved suppliers, while supplier work remains blocked until start conditions are satisfied.
-- Supplier work instructions and time entries.
-- Review of supplier time and amount owed.
-- Change request intake, pricing, approval, and status control.
-- Files, links, notes, and decisions attached to the correct project.
-- Client portal and supplier portal foundations sufficient for the internal workflow.
-- AI workbench placeholders and later AI-assisted drafts, summaries, and recommendations.
+- One React application with shared `simple` and `advanced` presentation modes.
+- Supabase-backed authentication, profiles, durable records, storage, RLS and role isolation.
+- Clients, CRM leads, projects, suppliers, invitations and role-specific home/portal screens.
+- Project conversations and server-side AI for client, agency and supplier roles.
+- Persistent Copilot with voice support, role-filtered context and typed confirmation-gated operator actions.
+- Client meetings, meeting sources and a Hebrew-first meeting workspace foundation.
+- Structured requirements, assumptions, questions and specification sections/versions.
+- Canonical project estimation with structured items, roles, buffers, internal cost, budget ranges, supplier reviews, scenarios and snapshots.
+- Proposal versions, immutable digital signatures, stored project documents, change requests and draft execution packages.
+- Scope approval, payments/paid hours, schedules, supplier assignment, start gates, time tracking and supplier payables.
+- Excel/CSV import and CRM enrichment suggestions.
 
-## MVP non-goals
+## Canonical pricing rule
 
-- Public SaaS onboarding.
-- Subscription billing.
-- Supplier marketplace or automated supplier discovery.
-- Fully autonomous AI project management.
-- Complex enterprise permissions.
-- Advanced analytics.
-- Deep accounting integration.
-- Native chat replacement.
-- Full digital document signing.
-- Native mobile applications.
-- Automatic client application generation.
+`project_estimates` is the only current pricing source of truth. Legacy `project_pricing` and `phase_pricing` are historical read-only compatibility data and must not drive current calculations, AI context, dashboards, proposals or new writes.
 
-## Current implementation status
+## Current limitations
 
-The repository currently contains a React and TypeScript internal application foundation using Vite. It includes static screens and local in-memory workflow state. Mock data and local state reset on page refresh. There is not yet a production database, real authentication, payment integration, or live AI API connection.
-
-## Definition of useful MVP
-
-Yaniv can quickly answer:
-
-- What projects are active?
-- What requires action now?
-- What is blocked and why?
-- What is waiting on the client?
-- Has the client approved the scope?
-- Has the client paid or purchased sufficient hours?
-- Who is assigned to the work?
-- What has the supplier completed?
-- How much is owed to each supplier?
-- What changes were requested?
-- Which requests need pricing or approval before work begins?
-
-## Scope-control rule
-
-Choose the simplest implementation that advances the internal workflow. Do not add a broad platform feature merely because it may be useful later.
+- The complete meeting journey is not yet contained inside Simple Mode. The current simple entry selects an existing project and opens the advanced project detail meeting tab.
+- Creating or choosing a client and project inside the compact meeting flow is not complete.
+- Live microphone transcription and automatic AI-to-specification section updates are partial.
+- Database migrations and Edge Functions require deployment verification in the connected Supabase environment.
+- No automated test or lint script is configured.
+- Payment-provider and accounting integrations are outside the current MVP.
 
 ## Work-start rule
 
-Supplier assignment does not by itself make a project ready to start. A project is ready only when the relevant scope is approved and the payment or paid-hours gate is open.
+Supplier assignment alone never unlocks delivery. Work starts only after the required scope/proposal approval and payment or paid-hours condition are satisfied. AI cannot approve these gates.
 
-## Existing detailed source
+## Non-goals
 
-The original MVP definition is also documented in `docs/internal-use-mvp.md`. This top-level file is the automation memory entry point and must remain aligned with it.
+- Splitting Simple and Advanced modes into separate products.
+- A second repository or database for the meeting flow.
+- Public multi-tenant SaaS complexity.
+- Autonomous AI commercial decisions.
+- A supplier marketplace or native mobile application.

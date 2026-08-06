@@ -1,25 +1,26 @@
 # Next Task
 
-> Latest completed unit: fixed the blank public registration routes by isolating their bundle from authenticated app startup (see WORK_LOG.md, 2026-08-03). Next suggested unit: extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing, reusing the existing confirmation pipeline.
+## Recommended next work unit
 
-## Last Completed
+Build the complete meeting-start flow inside `simple` mode, without automatically switching to `advanced`:
 
-A persistent, context-aware, voice-enabled copilot across the whole workspace: floating bubble and panel, per-entity threads, server-side role-filtered context, spoken input and answers, form pre-fill suggestions, navigation chips, and data changes that are only ever proposals confirmed by a human.
+Existing or new client → create or select client → create or select project → open the meeting workspace inside the small application while reusing the existing infrastructure.
 
-## Remaining Limitations
+## Constraints
 
-- The repaired public-route bundle has been verified locally and still requires publishing before the custom domain serves it.
-- Only the target-date form publishes rich form context; other forms expose screen context only.
-- Client and supplier copilot sessions and the voice round-trip were not exercised in an automated check.
-- Proactive observations appear only after the user sends a message; the copilot does not speak first.
+- Keep one React application, repository and Supabase project.
+- Reuse `clients`, `crm_leads`, `projects`, `client_meetings`, `meeting_sources`, project conversations, specification records and existing services.
+- Keep `project_estimates` as the only canonical pricing source.
+- Do not create a second chat, meeting, document, estimate or database system.
+- Preserve authentication, RLS, role visibility, client/supplier pricing privacy and start gates.
+- Do not navigate to `advanced` as a side effect of starting the meeting.
 
-## Recommended Next Work Unit
+## Acceptance criteria
 
-Give the copilot proactive, silent screen observations: when a screen opens, show one short risk or next-step note in the bubble without the user asking, using a cached server call that respects the existing AI usage limits.
-
-## Acceptance Criteria
-
-- Opening a project, client or supplier screen produces at most one observation, cached per entity and reused for a sensible period.
-- Observations never contain data the role may not see, and never claim an action was taken.
-- The observation is dismissible and never blocks the screen.
-- `pnpm run build` passes.
+- Simple Mode offers one clear meeting action.
+- The operator can choose an existing client or create a minimal new client without leaving Simple Mode.
+- The operator can choose an existing project or create a draft project for that client without leaving Simple Mode.
+- The meeting workspace renders inside Simple Mode and uses the same project and Supabase records as Advanced Mode.
+- Returning to either mode shows the same meeting, conversation, specification and estimate data.
+- No duplicate migrations, tables, services or records are introduced.
+- `pnpm install --frozen-lockfile`, `pnpm run build` and `git diff --check` pass.

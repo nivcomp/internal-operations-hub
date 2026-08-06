@@ -89,3 +89,31 @@ Only allowing assignment after all start gates are open, or treating assignment 
 
 **Consequences**  
 Ready-to-start views must use the shared start rule instead of checking only assignment or payment status.
+
+### 2026-08-06 — One repository, application and Supabase project
+
+**Decision**
+`nivcomp/internal-operations-hub` is the canonical repository. Simple and Advanced are presentation modes inside one React application and must share the same providers, services, records, Supabase project and deployment.
+
+**Reason**
+The implemented modes already render from one `App.tsx` and consume one authenticated data layer. Splitting them would create inconsistent records, permissions and commercial state.
+
+**Alternatives considered**
+Separate Simple/Advanced applications, repositories or databases.
+
+**Consequences**
+New workflows must be composed inside the existing app. No mode-specific duplicate clients, projects, meetings, chats, documents or persistence layers are allowed.
+
+### 2026-08-06 — Canonical estimate pricing
+
+**Decision**
+`project_estimates` and its related estimate tables are the only canonical source for current project pricing.
+
+**Reason**
+They contain structured items, calculation rate, hours, buffers, cost, budget, margin and fixed-price approval used by the current estimate, proposal and handoff workflows.
+
+**Alternatives considered**
+Continuing to calculate current commercial state from `project_pricing` and `phase_pricing`, or synchronizing two writable pricing models.
+
+**Consequences**
+Legacy pricing tables remain read-only historical compatibility only. New writes, dashboards, AI context, proposals and calculations must use `project_estimates`.

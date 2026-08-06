@@ -1,13 +1,17 @@
 import { useMemo } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import { useMode } from "../../context/ModeContext";
-import { currency, marginAmount } from "../../lib/domainHelpers";
+import { currency } from "../../lib/domainHelpers";
 
 export function SimpleFinancePage() {
-  const { projects, projectPricing, supplierPayments, clientPayments } = useAppData();
+  const { projects, estimateSummaries, supplierPayments, clientPayments } = useAppData();
   const { openAdvanced } = useMode();
 
-  const totals = useMemo(() => marginAmount(projectPricing), [projectPricing]);
+  const totals = useMemo(() => {
+    const revenue = estimateSummaries.reduce((sum, estimate) => sum + (estimate.finalFixedPrice ?? estimate.estimatedBudgetMax), 0);
+    const cost = estimateSummaries.reduce((sum, estimate) => sum + estimate.internalCost, 0);
+    return { revenue, cost, margin: revenue - cost };
+  }, [estimateSummaries]);
   const owed = supplierPayments.reduce((sum, payment) => sum + payment.amountOwed - payment.amountPaid, 0);
   const waiting = clientPayments.filter((payment) => payment.status !== "received");
 
