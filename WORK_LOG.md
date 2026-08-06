@@ -2178,3 +2178,35 @@ Audit and synchronize the unified repository, application architecture and persi
 
 **Next**
 - Build the complete existing/new client → existing/new project → meeting workspace flow inside Simple Mode without automatically navigating to Advanced Mode and without duplicating infrastructure.
+
+---
+
+### 2026-08-06 — Simple Mode live discovery meeting
+
+**Work unit**
+Build the complete client/project meeting-start flow and reusable live discovery room inside Simple Mode.
+
+**Changes**
+- Added a Hebrew existing/new client and existing/new project wizard using `AppDataProvider` mutations, including phone/email duplicate warnings.
+- Added a persistent Simple Mode meeting view that reuses `startMeeting` and safely resumes the selected project after refresh without creating records.
+- Expanded the shared meeting workspace with AI chat, editable voice transcription, multi-file upload and source history, protected live specification editing, canonical estimate pricing and a finish summary.
+- Kept Advanced Mode optional and unchanged as the detailed tooling surface.
+- Added no migration, table, bucket, Edge Function, pricing model or database.
+
+**Tests**
+- `pnpm run build` passed, including TypeScript; the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Frozen install and final build are recorded in the completion report.
+- No automated test script exists in `package.json`; signed-in microphone, storage and RLS paths require a deployed authenticated browser session for full end-to-end verification.
+
+**Files**
+- `src/App.tsx`, `src/context/ModeContext.tsx`, `src/pages/simple/SimpleHomePage.tsx`
+- `src/components/meeting/SimpleMeetingWizard.tsx`, `src/components/meeting/MeetingWorkspace.tsx`
+- `src/services/meetingWorkflowApi.ts`, `src/styles.css`
+- `DECISIONS.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Commit**
+- Created after this log entry; the final report records the SHA and PR.
+
+**Next**
+- Create automatic specification documents and an accessible document center from Simple Mode using existing document infrastructure.

@@ -2,25 +2,24 @@
 
 ## Recommended next work unit
 
-Build the complete meeting-start flow inside `simple` mode, without automatically switching to `advanced`:
+Create automatic specification documents and an accessible document center from Simple Mode.
 
-Existing or new client → create or select client → create or select project → open the meeting workspace inside the small application while reusing the existing infrastructure.
+Use the existing approved `specification_sections`, `specification_versions`, `project_documents`, proposal/signature infrastructure and current project records. Do not create another document, proposal or storage system.
 
 ## Constraints
 
 - Keep one React application, repository and Supabase project.
-- Reuse `clients`, `crm_leads`, `projects`, `client_meetings`, `meeting_sources`, project conversations, specification records and existing services.
+- Keep Simple and Advanced as two views over the same records.
+- Generate documents only from reviewed or explicitly approved source data.
 - Keep `project_estimates` as the only canonical pricing source.
-- Do not create a second chat, meeting, document, estimate or database system.
-- Preserve authentication, RLS, role visibility, client/supplier pricing privacy and start gates.
-- Do not navigate to `advanced` as a side effect of starting the meeting.
+- Preserve authentication, RLS and client/supplier visibility.
+- Do not publish, email, sign or create a commercial commitment without explicit agency approval.
 
 ## Acceptance criteria
 
-- Simple Mode offers one clear meeting action.
-- The operator can choose an existing client or create a minimal new client without leaving Simple Mode.
-- The operator can choose an existing project or create a draft project for that client without leaving Simple Mode.
-- The meeting workspace renders inside Simple Mode and uses the same project and Supabase records as Advanced Mode.
-- Returning to either mode shows the same meeting, conversation, specification and estimate data.
-- No duplicate migrations, tables, services or records are introduced.
-- `pnpm install --frozen-lockfile`, `pnpm run build` and `git diff --check` pass.
+- Simple Mode can open a project document center without switching modes.
+- The operator can generate a reviewed specification document from existing sections.
+- Generated documents are stored through the existing `project_documents` infrastructure.
+- Existing Advanced Mode document, proposal and signature workflows continue to use the same records.
+- No duplicate migrations, tables, services, buckets or records are introduced.
+- Frozen install, TypeScript/build and `git diff --check` pass.

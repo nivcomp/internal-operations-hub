@@ -19,6 +19,7 @@ Do not split the modes into different repositories, applications, deployments or
 - Persistence and authentication: Supabase Postgres, Auth, Storage and RLS.
 - Server operations and AI: Supabase Edge Functions. AI calls are server-side and use role-filtered context, typed actions and explicit human confirmation for business mutations.
 - State: `AppDataProvider` loads shared operational records from Supabase. Simple and advanced screens consume the same provider state; neither owns a parallel data model.
+- Simple meeting navigation remembers only the selected project id locally so a refresh can restore the view; durable meeting, source, specification, conversation and estimate state remains in Supabase, and `startMeeting` is idempotent for active meetings.
 - Public registration is bundled separately at startup to avoid authenticated-client boot failures, but writes to the same Supabase project.
 
 ## Canonical domain systems

@@ -2395,3 +2395,20 @@ kbd {
 .simple-meeting-actions select { width: 100%; }
 .simple-meeting-button { min-height: 3rem; font-size: 1.05rem; }
 @media (max-width: 700px) { .simple-meeting-card { grid-template-columns: 1fr; } }
+.meeting-wizard header div { display: grid; gap: .15rem; }
+.meeting-choice-list { display: grid; gap: .55rem; }
+.meeting-choice { display: grid; gap: .2rem; padding: 1rem; text-align: start; border: 1px solid var(--border, #e5e7eb); border-radius: .75rem; background: var(--surface, #fff); cursor: pointer; }
+.meeting-choice:hover { border-color: var(--color-accent, #0f766e); }
+.meeting-choice small, .meeting-choice span { color: var(--text-muted, #6b7280); }
+.meeting-new-project, .duplicate-warning { display: grid; gap: .75rem; padding: 1rem; border-radius: .75rem; background: var(--surface-muted, #f8fafc); }
+.duplicate-warning { border: 1px solid #f59e0b; }
+.recording-indicator { color: #b91c1c; animation: recording-pulse 1.2s infinite; }
+@keyframes recording-pulse { 50% { opacity: .45; } }
+.meeting-source-list { display: grid; gap: .5rem; margin-top: 1rem; }
+.meeting-source-list article { display: grid; gap: .1rem; padding: .7rem; border: 1px solid var(--border, #e5e7eb); border-radius: .6rem; overflow-wrap: anywhere; }
+.meeting-source-list span, .meeting-source-list small { color: var(--text-muted, #6b7280); font-size: .8rem; }
+.meeting-pricing-summary, .meeting-finish dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+.meeting-pricing-summary div, .meeting-finish dl div { padding: .65rem; border-radius: .55rem; background: var(--surface-muted, #f8fafc); }
+.meeting-pricing-summary dt, .meeting-finish dt { font-size: .75rem; color: var(--text-muted, #6b7280); }
+.meeting-pricing-summary dd, .meeting-finish dd { margin: .15rem 0 0; font-weight: 600; }
+.meeting-finish { direction: rtl; width: min(620px, calc(100% - 2rem)); }
