@@ -47,6 +47,7 @@ export function ImportWizard({ onClose, onImported }: { onClose: () => void; onI
   const [resolutions, setResolutions] = useState<Record<string, Record<string, RowResolution>>>({});
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<ImportRunResult | null>(null);
+  const [aiMappingFailed, setAiMappingFailed] = useState(false);
 
   const included = useMemo(() => sheets.filter((sheet) => sheet.include && sheet.rows.length > 0), [sheets]);
 
@@ -72,6 +73,7 @@ export function ImportWizard({ onClose, onImported }: { onClose: () => void; onI
     setError(null);
     try {
       const suggestions = await suggestMapping(included.length ? included : sheets);
+      setAiMappingFailed(false);
       setSheets((current) => current.map((sheet) => {
         const suggestion = suggestions.find((item) => item.sheetName === sheet.sheetName);
         if (!suggestion) return sheet;
@@ -93,7 +95,9 @@ export function ImportWizard({ onClose, onImported }: { onClose: () => void; onI
         };
       }));
     } catch (aiError) {
-      setError(`הצעת ה-AI נכשלה: ${(aiError as Error).message}`);
+      setAiMappingFailed(true);
+      setStep("mapping");
+      setError(`המיפוי האוטומטי אינו זמין כרגע. אפשר להמשיך במיפוי ידני או לנסות שוב. ${(aiError as Error).message}`);
     } finally {
       setBusy(null);
     }
@@ -243,6 +247,19 @@ export function ImportWizard({ onClose, onImported }: { onClose: () => void; onI
 
         {step === "mapping" ? (
           <div className="import-body">
+            {aiMappingFailed ? (
+              <div className="card" role="status">
+                <p>המיפוי האוטומטי אינו זמין כרגע. אפשר להמשיך במיפוי ידני או לנסות שוב.</p>
+                <div className="form-actions">
+                  <button type="button" className="ghost-button" disabled={!!busy} onClick={() => void applyAiSuggestions()}>
+                    נסה מיפוי אוטומטי שוב
+                  </button>
+                  <button type="button" className="primary-button" onClick={() => { setAiMappingFailed(false); setError(null); }}>
+                    המשך במיפוי ידני
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {included.map((sheet) => (
               <article key={sheet.sheetName} className="card import-sheet">
                 <header><strong>{sheet.sheetName}</strong><span className="simple-note">{SHEET_TYPE_LABELS[sheet.sheetType]}</span></header>

@@ -2,3 +2,9 @@ project_id = "jvluliwmugamojdqstha"
 
 [functions.process-email-queue]
 verify_jwt = true
+
+[functions.crm-ai-map]
+verify_jwt = true
+
+[functions.crm-import]
+verify_jwt = true

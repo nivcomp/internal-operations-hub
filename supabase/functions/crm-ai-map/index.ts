@@ -8,7 +8,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
  * written to a lead, price or scope without the admin confirming in the UI.
  */
 
-const MODEL = "openai/gpt-5.6-terra";
+const MODEL = Deno.env.get("CRM_MAPPING_MODEL")?.trim() || "google/gemini-2.5-flash-lite";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/responses";
 
 const json = (body: unknown, status = 200) =>
@@ -31,7 +31,14 @@ async function askModel(apiKey: string, instructions: string, input: string) {
   });
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`AI request failed [${response.status}]: ${detail.slice(0, 300)}`);
+    if ((response.status === 400 || response.status === 404) && /model|unsupported|not found/i.test(detail)) {
+      throw new Error("The selected AI model is unavailable.");
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("AI mapping is not configured. You may continue with manual column mapping.");
+    }
+    if (response.status === 429) throw new Error("AI mapping is temporarily busy. Try again shortly.");
+    throw new Error(`AI mapping request failed [${response.status}].`);
   }
   const payload = await response.json();
   const text = payload.output_text
@@ -55,20 +62,27 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: "Server configuration is incomplete." }, 500);
+  }
+  const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: claims } = await anon.auth.getClaims(authHeader.replace("Bearer ", ""));
   if (!claims?.claims) return json({ error: "Unauthorized" }, 401);
   const callerId = claims.claims.sub as string;
 
-  const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data: caller } = await admin.from("profiles").select("role, is_active").eq("id", callerId).maybeSingle();
   if (!caller || caller.role !== "agency_admin" || caller.is_active !== true) return json({ error: "Forbidden" }, 403);
 
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) return json({ error: "AI is not configured" }, 500);
+  if (!apiKey) {
+    return json({ error: "AI mapping is not configured. You may continue with manual column mapping." }, 503);
+  }
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
