@@ -31,6 +31,7 @@ async function askModel(apiKey: string, instructions: string, input: string) {
   });
   if (!response.ok) {
     const detail = await response.text();
+    console.error("AI gateway error", response.status, MODEL, detail.slice(0, 500));
     if ((response.status === 400 || response.status === 404) && /model|unsupported|not found/i.test(detail)) {
       throw new Error("The selected AI model is unavailable.");
     }
