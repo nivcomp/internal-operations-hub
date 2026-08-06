@@ -5,23 +5,42 @@ import type {
 
 const CHUNK_SIZE = 200;
 
-async function callImport<T>(payload: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke("crm-import", { body: payload });
-  if (error) {
-    const context = (error as any)?.context as Response | undefined;
-    if (context && typeof context.text === "function") {
-      const detail = await context.clone().text().catch(() => "");
-      if (detail) {
-        try {
-          const parsed = JSON.parse(detail);
-          if (parsed?.error) throw new Error(String(parsed.error));
-        } catch (parseError) {
-          if (parseError instanceof Error && !/JSON/i.test(parseError.message)) throw parseError;
-        }
+async function functionErrorMessage(name: string, error: unknown): Promise<string> {
+  const context = (error as any)?.context as Response | undefined;
+  const status = context?.status;
+  let serverMessage = "";
+  if (context && typeof context.text === "function") {
+    const detail = await context.clone().text().catch(() => "");
+    if (detail) {
+      try {
+        const parsed = JSON.parse(detail);
+        serverMessage = String(parsed?.error ?? parsed?.message ?? "");
+        if (parsed?.code === "NOT_FOUND") return `Function ${name} is not deployed.`;
+      } catch {
+        serverMessage = detail.slice(0, 240);
       }
     }
-    throw new Error(error.message);
   }
+  if (status === 404) return `Function ${name} is not deployed.`;
+  if (status === 401) return "Your session expired. Sign in again.";
+  if (status === 403) return "You do not have permission to import CRM data.";
+  if (/AI mapping is not configured/i.test(serverMessage)) {
+    return "AI mapping is not configured. You may continue with manual column mapping.";
+  }
+  if (/selected AI model is unavailable|model.+(not found|unsupported|unavailable)/i.test(serverMessage)) {
+    return "The selected AI model is unavailable.";
+  }
+  if (serverMessage) return serverMessage;
+  const fallback = String((error as Error)?.message ?? "");
+  if (/failed to send|fetch/i.test(fallback)) {
+    return `Could not reach ${name}. The function may not be deployed or the network may be unavailable.`;
+  }
+  return fallback || `Function ${name} failed.`;
+}
+
+async function callImport<T>(payload: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("crm-import", { body: payload });
+  if (error) throw new Error(await functionErrorMessage("crm-import", error));
   if (data && typeof data === "object" && "error" in data && (data as any).error) {
     throw new Error(String((data as any).error));
   }
@@ -51,7 +70,7 @@ export async function suggestMapping(sheets: SheetPlan[]): Promise<{
     const { data, error } = await supabase.functions.invoke("crm-ai-map", {
       body: { action: "suggestMapping", sheets: payload },
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(await functionErrorMessage("crm-ai-map", error));
     return data as any;
   })();
   return data?.sheets ?? [];

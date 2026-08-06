@@ -153,15 +153,20 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: "Server configuration is incomplete." }, 500);
+  }
+  const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: claimsData, error: claimsError } = await anon.auth.getClaims(authHeader.replace("Bearer ", ""));
   if (claimsError || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
   const callerId = claimsData.claims.sub as string;
 
-  const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data: caller } = await admin.from("profiles").select("role, is_active").eq("id", callerId).maybeSingle();
   if (!caller || caller.role !== "agency_admin" || caller.is_active !== true) return json({ error: "Forbidden" }, 403);
 
