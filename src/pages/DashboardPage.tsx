@@ -4,7 +4,7 @@ import { RulePanel } from "../components/RulePanel";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAppData, type ActivityEntry } from "../context/AppDataContext";
-import { canWorkStart, currency, getClient, marginAmount, statusLabels } from "../lib/domainHelpers";
+import { canWorkStart, currency, getClient, statusLabels } from "../lib/domainHelpers";
 import { buildProjectCommercials, needsScheduleAttention } from "../lib/projectCommercials";
 import { formatDate, riskTone, targetDateStatusLabels } from "../lib/scheduling";
 import type { ChangeRequest, Client, Project, TimeEntry } from "../types/domain";
@@ -30,7 +30,7 @@ export function DashboardPage({
   onProjectSelect,
 }: DashboardPageProps) {
   const {
-    scopes, projectPricing, supplierPayments, projectSchedules, estimateSummaries, supplierProfiles,
+    scopes, supplierPayments, projectSchedules, estimateSummaries, supplierProfiles,
   } = useAppData();
 
   const scheduleRows = useMemo(() => projects.map((project) => ({
@@ -44,7 +44,9 @@ export function DashboardPage({
   })).filter((row) => needsScheduleAttention(row.commercials, row.project)),
   [projects, projectSchedules, estimateSummaries, supplierProfiles]);
   const metrics = useMemo(() => {
-    const totals = marginAmount(projectPricing);
+    const revenue = estimateSummaries.reduce((sum, estimate) => sum + (estimate.finalFixedPrice ?? estimate.estimatedBudgetMax), 0);
+    const cost = estimateSummaries.reduce((sum, estimate) => sum + estimate.internalCost, 0);
+    const totals = { revenue, cost, margin: revenue - cost };
     return {
       newLeads: clients.filter((client) => client.status === "lead").length,
       waitingPricing: projects.filter((project) => project.status === "waiting_for_agency_pricing").length,
@@ -56,7 +58,7 @@ export function DashboardPage({
       supplierOwed: supplierPayments.reduce((sum, payment) => sum + payment.amountOwed - payment.amountPaid, 0),
       ...totals,
     };
-  }, [clients, projects, changeRequests, timeEntries, projectPricing, supplierPayments]);
+  }, [clients, projects, changeRequests, timeEntries, estimateSummaries, supplierPayments]);
 
   const projectsNeedingAttention = projects.filter(
     (project) =>

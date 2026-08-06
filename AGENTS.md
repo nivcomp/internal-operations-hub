@@ -1,6 +1,10 @@
 # Codex Automation Instructions
 
-Work on the repository `nivcomp/client-to-scope-ai` from the project directory attached to the task.
+Work on the repository `nivcomp/internal-operations-hub` from the project directory attached to the task.
+
+This repository contains one React application with two presentation modes, `simple` and `advanced`. They must always share the same `App.tsx`, authentication, providers, services, domain records, Supabase project, migrations, and Edge Functions. Never split the two modes into separate applications, repositories, deployments, or databases.
+
+`project_estimates` and its related estimate tables are the only canonical pricing model. Legacy `project_pricing` and `phase_pricing` records may be read only for historical compatibility and must not drive current calculations, AI context, proposals, or commercial dashboards.
 
 ## Product goal
 

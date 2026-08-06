@@ -1,79 +1,52 @@
 # Architecture
 
-## Current stack
+## Repository and application boundary
 
-- Frontend: React 18.
-- Language: TypeScript.
-- Build tool and development server: Vite 5.
-- Package manager used in repository instructions: pnpm.
-- Current persistence: mock records and local in-memory React state.
-- Current deployment, database, authentication, payment, and AI providers: not yet implemented.
+The canonical repository is `nivcomp/internal-operations-hub`.
 
-## Current application structure
+It contains one React 18 + TypeScript + Vite application. `simple` and `advanced` are presentation modes selected inside `src/App.tsx`; they are not separate applications. Both modes share:
 
-- `src/App.tsx` owns the active view and shared in-memory workflow state.
-- `src/pages/` contains the internal MVP screens.
-- `src/components/` contains reusable UI components.
-- `src/types/domain.ts` contains the domain record types.
-- `src/data/mockData.ts` contains static development records.
-- `src/lib/domainHelpers.ts` contains shared lookup and formatting helpers.
-- `src/lib/domainHelpers.ts` also centralizes the current local work-start rule: approved scope plus received payment or available paid hours.
-- `docs/` contains detailed product and workflow documentation.
+- `AuthProvider`, `AppDataProvider`, `OnboardingProvider`, `CopilotProvider` and navigation context.
+- The same domain records and services under `src/services/`.
+- The same Supabase client and project (`jvluliwmugamojdqstha`).
+- The same authentication, RLS policies, migrations, storage buckets and Edge Functions.
 
-## Current constraints
+Do not split the modes into different repositories, applications, deployments or databases.
 
-- Workflow changes reset after a page refresh.
-- There is no production database.
-- There is no real user authentication or role enforcement.
-- There are no real client or supplier accounts.
-- There are no live AI API calls.
-- There is no payment provider integration.
-- The current system is an internal application foundation, not a public SaaS application.
+## Runtime architecture
 
-## Architecture principles
+- Frontend: React 18, TypeScript and Vite 5.
+- Persistence and authentication: Supabase Postgres, Auth, Storage and RLS.
+- Server operations and AI: Supabase Edge Functions. AI calls are server-side and use role-filtered context, typed actions and explicit human confirmation for business mutations.
+- State: `AppDataProvider` loads shared operational records from Supabase. Simple and advanced screens consume the same provider state; neither owns a parallel data model.
+- Public registration is bundled separately at startup to avoid authenticated-client boot failures, but writes to the same Supabase project.
 
-- Preserve and improve the existing stack unless a documented requirement justifies a change.
-- Prefer small, testable, reversible work units.
-- Keep UI, business rules, persistence, and external integrations separated.
-- Centralize workflow rules so pages do not each implement different versions of the same rule.
-- Treat client approval and payment readiness as explicit domain state.
-- Keep client pricing, supplier costs, and margin separate.
-- Do not store secrets in the repository.
-- Validate all external and AI-generated input before persistence or business action.
-- Any future database schema change must be represented by a repeatable migration.
-- Add real persistence only after confirming the workflow and domain model against the current MVP documents.
+## Canonical domain systems
 
-## Planned domain boundaries
+- Clients and projects: `clients`, `projects`; imported prospects stay in `crm_leads` until linked or converted.
+- Meeting and discovery: `client_meetings`, `meeting_sources`.
+- Project conversation: `project_conversations`, `conversation_participants`, `chat_messages`, `ai_runs`, `ai_generated_drafts`.
+- Specification: `specification_sections`, `specification_section_sources`, `specification_versions`, plus existing briefs, requirements, assumptions and questions.
+- Pricing: `project_estimates`, `estimate_items`, allocations, adjustments, scenarios, supplier reviews and estimate versions.
+- Proposals and acceptance: `proposal_versions`, `proposal_signatures`, `project_documents`.
+- Change and delivery: `change_requests`, `execution_packages`, schedules, supplier assignments, payments and paid hours.
 
-- Authentication and roles.
-- Clients.
-- Projects and discovery.
-- Scope and approval.
-- Pricing and margin.
-- Payments and hour banks.
-- Suppliers and assignments.
-- Supplier time tracking and payables.
-- Change requests.
-- Files, links, notes, and activity history.
-- AI-assisted drafting and summarization.
+## Pricing source of truth
 
-## Testing and quality
+`project_estimates` is the only canonical source for calculation rate, hours, budget range, internal cost, buffers, margin and fixed price. Current screens, AI context, proposal publication and handoff generation must use it and its related estimate tables.
 
-The current package scripts provide `pnpm run build`, which runs TypeScript compilation and a Vite production build. No lint or automated test script is currently defined in `package.json`.
+`project_pricing` and `phase_pricing` are legacy historical tables. They remain available for read-only compatibility when a project has no estimate, but they must not be written by new code or drive current commercial calculations.
 
-Until tests are introduced, every implementation cycle must at minimum:
+## Security boundaries
 
-1. Run `pnpm run build`.
-2. Exercise the changed workflow manually when the environment permits.
-3. Record missing test coverage in `WORK_LOG.md` rather than claiming tests exist.
+- `agency_admin` sees agency-authorized internal data.
+- Clients see only their own client-safe project data and published artifacts.
+- Suppliers see only assigned supplier-safe work and their own terms; never client price, calculation rate, internal cost or agency margin.
+- AI context is built server-side and role-filtered. AI produces suggestions or typed proposed actions; final scope, price, assignment, approval and readiness remain human-controlled.
+- Signed proposal versions and signatures are immutable.
+- Uploaded meeting/import files use private storage buckets.
+- No service-role key is present in frontend code.
 
-## Evolution path
+## Quality
 
-1. Stabilize internal workflows and shared domain rules.
-2. Introduce durable persistence.
-3. Introduce authentication and role-aware access.
-4. Replace mock and local state incrementally rather than rewriting the application at once.
-5. Add client and supplier portals backed by real records.
-6. Add external services such as payments and AI only after the core workflow is reliable.
-
-This document must be updated whenever the actual implementation or selected infrastructure changes.
+`pnpm run build` runs TypeScript compilation and a production Vite build. There is currently no lint or automated test script in `package.json`; missing runtime coverage must be recorded honestly in `WORK_LOG.md`.
