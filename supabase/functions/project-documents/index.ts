@@ -128,5 +128,20 @@ Output clean Markdown with clear headings, short paragraphs and bullet lists. No
     metadata: { model: DEFAULT_MODEL, language, docType },
   });
 
+  const audience = supplierFacing ? "supplier" : clientFacing ? "client" : "agency";
+  const { data: latest } = await admin.from("project_documents")
+    .select("version").eq("project_id", projectId).eq("document_type", docType)
+    .order("version", { ascending: false }).limit(1).maybeSingle();
+  await admin.from("project_documents").insert({
+    project_id: projectId,
+    document_type: docType,
+    audience,
+    language,
+    version: (latest?.version ?? 0) + 1,
+    status: "draft",
+    markdown: text,
+    created_by: userId,
+  });
+
   return json({ ok: true, docType, language, markdown: text });
 });

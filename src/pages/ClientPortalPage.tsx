@@ -6,6 +6,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { BudgetSimulator } from "../components/estimation/BudgetSimulator";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { TargetDateForm } from "../components/project/TargetDateForm";
+import { ProposalPanel } from "../components/proposal/ProposalPanel";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -158,6 +159,8 @@ export function ClientPortalPage({
       />
 
       <ProjectInsights projectId={project.id} role="client" />
+
+      <ProposalPanel projectId={project.id} mode="client" readOnly={isPreview} />
 
       <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
       <TargetDateForm project={project} readOnly={isPreview} />

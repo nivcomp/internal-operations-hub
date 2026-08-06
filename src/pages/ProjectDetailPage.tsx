@@ -13,6 +13,8 @@ import { buildProjectCommercials } from "../lib/projectCommercials";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Tabs, type TabDef } from "../components/ui/Tabs";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
+import { MeetingWorkspace } from "../components/meeting/MeetingWorkspace";
+import { ProposalPanel } from "../components/proposal/ProposalPanel";
 import { useNav } from "../context/NavContext";
 import {
   MutationKeys,
@@ -46,7 +48,7 @@ const initialChangeForm: NewChangeRequestInput = { title: "", description: "", a
 const initialTimeForm: NewTimeEntryInput = { supplierId: "", date: new Date().toISOString().slice(0, 10), hours: 1, description: "" };
 const initialPaymentForm: NewClientPaymentInput = { amount: 0, dueDate: "", notes: "" };
 
-type ProjectTab = "overview" | "scope" | "estimate" | "commercial" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "documents" | "files";
+type ProjectTab = "overview" | "meeting" | "scope" | "estimate" | "commercial" | "proposal" | "suppliers" | "money" | "changes" | "timeline" | "assistant" | "documents" | "files";
 
 export function ProjectDetailPage({
   selectedProjectId, clients, projects, changeRequests, timeEntries, clientPayments,
@@ -170,9 +172,11 @@ export function ProjectDetailPage({
   const pendingTime = projectTimeEntries.filter((entry) => entry.status === "submitted").length;
   const tabs: TabDef<ProjectTab>[] = [
     { key: "overview", label: "Overview" },
+    { key: "meeting", label: "חדר אפיון" },
     { key: "scope", label: "Scope", badge: items.length || undefined },
     { key: "estimate", label: "Estimate" },
     { key: "commercial", label: "Commercial & dates" },
+    { key: "proposal", label: "Proposal & signature" },
     { key: "suppliers", label: "Suppliers", badge: activeProject.assignedSupplierIds.length || undefined, attention: pendingTime > 0 },
     { key: "money", label: "Money", attention: Boolean(payment && payment.status !== "received") },
     { key: "changes", label: "Changes", badge: projectChanges.length || undefined, attention: pendingChanges > 0 },
@@ -201,6 +205,8 @@ export function ProjectDetailPage({
       />
       <PageHeader title={activeProject.name} subtitle={`${client?.company ?? "Unassigned client"} · ${statusLabels[activeProject.status]} · ${ready ? "Ready to start" : "Start blocked"}`} />
       <Tabs tabs={tabs} active={tab} onChange={setTab} ariaLabel="Project workspace sections" />
+      {tab === "meeting" ? <MeetingWorkspace projectId={activeProject.id} projectName={activeProject.name} /> : null}
+      {tab === "proposal" ? <ProposalPanel projectId={activeProject.id} mode="admin" /> : null}
       {tab === "overview" || tab === "commercial" ? (
         <ProjectControlSummary
           commercials={buildProjectCommercials({
