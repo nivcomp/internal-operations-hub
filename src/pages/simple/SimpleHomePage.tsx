@@ -28,6 +28,11 @@ export function SimpleHomePage({ onSearch }: Props) {
   const [registrations, setRegistrations] = useState<PublicRegistration[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
+  const [meetingProjectId, setMeetingProjectId] = useState("");
+
+  useEffect(() => {
+    if (!meetingProjectId && projects[0]) setMeetingProjectId(projects[0].id);
+  }, [projects, meetingProjectId]);
 
   useEffect(() => {
     void (async () => {
@@ -82,6 +87,40 @@ export function SimpleHomePage({ onSearch }: Props) {
         <h1>{total > 0 ? `${total} דברים מחכים לך` : "אין משימות פתוחות"}</h1>
         <p className="simple-note">כל השאר נשאר בצד עד שתצטרך אותו.</p>
       </header>
+
+      <section className="card simple-card simple-meeting-card" dir="rtl">
+        <div>
+          <p className="eyebrow">פגישה עם לקוח</p>
+          <h2>פגישה פרונטלית חדשה</h2>
+          <p className="simple-note">בחר פרויקט ופתח מיד את חדר האפיון עם שיחה, תמלול, קבצים, אפיון חי ותמחור.</p>
+        </div>
+        {projects.length ? (
+          <div className="simple-meeting-actions">
+            <label>
+              פרויקט
+              <select value={meetingProjectId} onChange={(event) => setMeetingProjectId(event.target.value)}>
+                {projects.map((project) => {
+                  const client = clients.find((item) => item.id === project.clientId);
+                  return <option key={project.id} value={project.id}>{client?.company ? `${client.company} — ` : ""}{project.name}</option>;
+                })}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="primary-button simple-meeting-button"
+              disabled={!meetingProjectId}
+              onClick={() => {
+                window.sessionStorage.setItem("open-project-meeting", meetingProjectId);
+                openAdvanced("project-detail", { projectId: meetingProjectId });
+              }}
+            >
+              פתח חדר אפיון
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="primary-button" onClick={() => openAdvanced("clients")}>צור לקוח ופרויקט ראשון</button>
+        )}
+      </section>
 
       <section className="simple-attention">
         {attention.filter((item) => item.count > 0).map((item) => (
