@@ -2389,3 +2389,9 @@ kbd {
 .proposal-preview small { overflow-wrap: anywhere; }
 .signature-form { display: grid; gap: .75rem; margin-top: 1rem; max-width: 44rem; }
 @media (max-width: 850px) { .meeting-grid { grid-template-columns: 1fr; } .meeting-head { align-items: stretch; flex-direction: column; } }
+.simple-meeting-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr); gap: 1.25rem; align-items: center; border: 2px solid var(--color-accent, #0f766e); }
+.simple-meeting-card h2 { margin: .15rem 0 .35rem; font-size: clamp(1.35rem, 2vw, 1.8rem); }
+.simple-meeting-actions { display: grid; gap: .75rem; }
+.simple-meeting-actions select { width: 100%; }
+.simple-meeting-button { min-height: 3rem; font-size: 1.05rem; }
+@media (max-width: 700px) { .simple-meeting-card { grid-template-columns: 1fr; } }

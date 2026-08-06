@@ -64,7 +64,14 @@ export function ProjectDetailPage({
   const [timeForm, setTimeForm] = useState<NewTimeEntryInput>(initialTimeForm);
   const [paymentForm, setPaymentForm] = useState<NewClientPaymentInput>(initialPaymentForm);
   const [supplierToAssign, setSupplierToAssign] = useState("");
-  const [tab, setTab] = useState<ProjectTab>("overview");
+  const [tab, setTab] = useState<ProjectTab>(() => {
+    const requestedProject = window.sessionStorage.getItem("open-project-meeting");
+    if (requestedProject && requestedProject === selectedProjectId) {
+      window.sessionStorage.removeItem("open-project-meeting");
+      return "meeting";
+    }
+    return "overview";
+  });
   const nav = useNav();
   const project = selectedProjectId ? getProjectById(selectedProjectId, projects) : undefined;
 
