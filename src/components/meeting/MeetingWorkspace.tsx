@@ -5,6 +5,8 @@ import { addTranscript, finishMeeting, loadMeetingWorkspace, saveSection, startM
 import type { ProjectEstimate } from "../../types/estimation";
 import { ProjectDocumentsPanel } from "../project/ProjectDocumentsPanel";
 import { PrototypeStudio } from "../prototype/PrototypeStudio";
+import { loadRegistrationSettings, publicRegistrationLink } from "../../services/registrationApi";
+import { copyToClipboard } from "../../services/accessApi";
 
 type Props = {
   projectId: string; projectName: string; clientName?: string; companyName?: string;
@@ -37,6 +39,23 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
   const [manualOpen, setManualOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [error, setError] = useState("");
+  const [clientLink, setClientLink] = useState<string | null>(null);
+  const [linkState, setLinkState] = useState<"idle" | "loading" | "copied" | "error">("idle");
+
+  async function shareClientLink() {
+    setLinkState("loading");
+    try {
+      const settings = await loadRegistrationSettings();
+      const clientSettings = settings.find((item) => item.role === "client");
+      if (!clientSettings) throw new Error("no settings");
+      const link = publicRegistrationLink(clientSettings);
+      setClientLink(link);
+      await copyToClipboard(link);
+      setLinkState("copied");
+    } catch {
+      setLinkState("error");
+    }
+  }
 
   async function refresh() {
     const [workspace, estimation] = await Promise.all([loadMeetingWorkspace(projectId), fetchProjectEstimation(projectId)]);
@@ -88,7 +107,7 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
   const selectedBank = hourBanks.find((bank) => bank.id === selectedBankId);
 
   return <div className="meeting-workspace" dir="rtl">
-    <header className="card meeting-head"><div><p className="eyebrow">{companyName || "פגישת לקוח"}</p><h2>חדר אפיון — {projectName}</h2><p>{clientName ? `איש קשר: ${clientName} · ` : ""}מצב: {meeting.status === "active" ? "פגישה פעילה" : "הפגישה הסתיימה"}</p><div className="meeting-time-strip"><span><small>התחלה</small><strong>{new Date(meeting.started_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</strong></span><span><small>{meeting.ended_at ? "סיום" : "זמן חי"}</small><strong>{meeting.ended_at ? new Date(meeting.ended_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "● פעיל"}</strong></span><span><small>משך הפגישה</small><strong>{formatDuration(elapsed)}</strong></span>{meetingCharge ? <span><small>שעות אפיון</small><strong>{meetingCharge.billable_hours}</strong></span> : null}</div><small>{savedAt ? `נשמר לאחרונה ${savedAt.toLocaleTimeString("he-IL")}` : "המידע נשמר ב-Supabase"}</small></div><div className="action-row"><button onClick={() => void refresh().then(() => setSavedAt(new Date()))}>שמור</button><button onClick={() => setDocumentsOpen((value) => !value)}>מסמכי הפרויקט</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא</button> : null}{meeting.status === "active" ? <button className="primary-button" onClick={openFinish}>סיים פגישה</button> : null}</div></header>
+    <header className="card meeting-head"><div><p className="eyebrow">{companyName || "פגישת לקוח"}</p><h2>חדר אפיון — {projectName}</h2><p>{clientName ? `איש קשר: ${clientName} · ` : ""}מצב: {meeting.status === "active" ? "פגישה פעילה" : "הפגישה הסתיימה"}</p><div className="meeting-time-strip"><span><small>התחלה</small><strong>{new Date(meeting.started_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</strong></span><span><small>{meeting.ended_at ? "סיום" : "זמן חי"}</small><strong>{meeting.ended_at ? new Date(meeting.ended_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "● פעיל"}</strong></span><span><small>משך הפגישה</small><strong>{formatDuration(elapsed)}</strong></span>{meetingCharge ? <span><small>שעות אפיון</small><strong>{meetingCharge.billable_hours}</strong></span> : null}</div><small>{savedAt ? `נשמר לאחרונה ${savedAt.toLocaleTimeString("he-IL")}` : "המידע נשמר ב-Supabase"}</small></div><div className="action-row"><button onClick={() => void refresh().then(() => setSavedAt(new Date()))}>שמור</button><button onClick={() => setDocumentsOpen((value) => !value)}>מסמכי הפרויקט</button><button onClick={() => void shareClientLink()} disabled={linkState === "loading"}>{linkState === "loading" ? "מכין לינק…" : linkState === "copied" ? "הלינק הועתק" : "לינק ללקוח להמשך אפיון"}</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא</button> : null}{meeting.status === "active" ? <button className="primary-button" onClick={openFinish}>סיים פגישה</button> : null}</div>{linkState === "error" ? <p className="form-error">לא הצלחנו להפיק לינק הרשמה ללקוח. ודא שההרשמה הציבורית ללקוחות פעילה.</p> : null}{clientLink ? <div className="meeting-client-link"><small>הלקוח נרשם עם המייל שלו וסיסמה, וממשיך את האפיון לבד:</small><input readOnly dir="ltr" value={clientLink} onFocus={(event) => event.currentTarget.select()} /><div className="action-row"><button onClick={() => void copyToClipboard(clientLink).then(() => setLinkState("copied"))}>העתק לינק</button><a className="button-link" href={clientLink} target="_blank" rel="noreferrer">פתח</a><a className="button-link" href={`https://wa.me/?text=${encodeURIComponent(`היי, זה הלינק להמשך האפיון של הפרויקט: ${clientLink}`)}`} target="_blank" rel="noreferrer">שלח ב‑WhatsApp</a></div></div> : null}</header>
     {error && <p className="form-error">{error}</p>}
     {documentsOpen ? <ProjectDocumentsPanel projectId={projectId} simple /> : null}
     <div className="guided-meeting-layout">

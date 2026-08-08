@@ -2700,3 +2700,6 @@ html, body, #root { max-width: 100%; }
   .prototype-canvas { min-height: 380px; padding: 1rem; }
   .prototype-head { flex-direction: column; }
 }
+
+.meeting-client-link { margin-top: 0.75rem; display: grid; gap: 0.5rem; }
+.meeting-client-link input { width: 100%; font-family: ui-monospace, monospace; }
