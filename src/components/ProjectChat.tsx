@@ -198,7 +198,7 @@ export function ProjectChat({
       setMessages(data.messages ?? []);
       setDrafts(data.drafts ?? []);
       setPendingActions(data.pendingActions ?? []);
-      if (data.usage) setUsage(data.usage);
+      setUsage(data.usage ?? null);
       setLoadState("ready");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -229,7 +229,7 @@ export function ProjectChat({
     if (intent) requestProjectView(projectId, intent);
     try {
       const result = await sendChatMessage(agent, projectId, trimmed);
-      if (result.usage) setUsage(result.usage);
+      setUsage(result.usage ?? null);
       setMessages((prev) => [...prev, result.userMessage, result.aiMessage]);
       if (result.draft) setDrafts((prev) => [result.draft as ChatDraft, ...prev].slice(0, 5));
       if (result.pendingActions?.length) {

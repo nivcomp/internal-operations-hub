@@ -42,6 +42,17 @@ Authentication as an agency admin must not make private commercial information a
 **Consequences**
 Simple and Advanced still share one application and the same canonical records. The separation is a role-and-surface visibility boundary, not another app or database. Only estimates explicitly marked `client_visible` may appear in the shared meeting.
 
+### 2026-08-08 — Agency project chat is unmetered
+
+**Decision**
+Daily/monthly message quotas, cooldowns, automatic usage pauses and usage meters apply to client and supplier project chats, but not to `agency_admin` in either Simple or Advanced Mode.
+
+**Reason**
+The internal operator must not be blocked while running a live client meeting or managing a project. External portal usage still needs fair-use protection.
+
+**Consequences**
+Agency events remain logged for cost visibility, and message-length plus input safety validation remain active. This exception is based on the authenticated server-side profile role, not a frontend mode or caller-provided flag.
+
 ### 2026-07-11 — Internal operating system first
 
 **Decision**  

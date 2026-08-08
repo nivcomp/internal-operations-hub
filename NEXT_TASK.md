@@ -2,7 +2,7 @@
 
 ## Current result
 
-Simple Mode can open the shared project document center without switching modes. It is now a client-safe meeting surface even when an agency admin is signed in: the chat uses the client project guide, private commercial controls are absent, and estimates/documents appear only when explicitly shared. Agency operators can generate versioned functional, technical, implementation and meeting documents from approved sections. Advanced Mode retains the private commercial controls and full document view.
+Simple Mode can open the shared project document center without switching modes. It is now a client-safe meeting surface even when an agency admin is signed in: the chat uses the client project guide, private commercial controls are absent, and estimates/documents appear only when explicitly shared. Agency project chat is unmetered in both Simple and Advanced Mode; client and supplier portal quotas remain enforced. Agency operators can generate versioned documents from approved sections, while Advanced Mode retains private commercial controls and the full document view.
 
 Remaining limitation: the changed `project-documents` and previously changed `project-chat` Edge Functions must be deployed to the connected Supabase project and exercised with signed-in agency and client sessions. The repository also contains two pre-existing migration files that define the meeting-to-handoff tables; this work introduced no migration and did not alter that history.
 

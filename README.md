@@ -23,6 +23,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Simple and advanced dashboards over the same `AppDataProvider` state.
 - Client and supplier portals with strict visibility rules.
 - Project chat, onboarding chat, persistent Copilot and voice Copilot.
+- Client and supplier project chats retain usage quotas; agency-admin project chats are unmetered in both Simple and Advanced Mode while still retaining input safety controls and usage logging.
 - Interactive project-room chat shared with the client portal, including voice input and safe structured flow, wireframe, table and checklist artifacts.
 - Shared project document center in Simple, Advanced and the client portal, using approved specification sections and existing `project_documents` records.
 - Meetings, source uploads/transcripts and structured specification records.

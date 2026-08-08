@@ -45,6 +45,7 @@ Do not split the modes into different repositories, applications, deployments or
 - Clients see only their own client-safe project data and published artifacts.
 - Suppliers see only assigned supplier-safe work and their own terms; never client price, calculation rate, internal cost or agency margin.
 - AI context is built server-side and role-filtered. AI produces suggestions or typed proposed actions; final scope, price, assignment, approval and readiness remain human-controlled.
+- Project-chat quotas, cooldowns and automatic usage pauses apply to client and supplier profiles. The agency admin remains unmetered across Simple and Advanced presentation modes; events are still logged and message-length/input safety checks remain active.
 - Project chat may return bounded structured visual artifacts (`flow`, `wireframe`, `table`, `checklist`) inside `chat_messages.structured_payload`. The Edge Function sanitizes and caps these structures; the frontend renders them without HTML or executable diagram syntax.
 - Signed proposal versions and signatures are immutable.
 - AI-generated specification documents are new drafts based on explicitly approved `specification_sections`. Choosing a client audience is an explicit agency sharing action; portal reads remain restricted to client-audience rows by RLS and frontend filtering.

@@ -2306,3 +2306,32 @@ Create automatic reviewed specification documents and expose the existing projec
 
 **Next**
 - Deploy and verify the existing `project-chat` and `project-documents` Edge Functions with agency and client sessions.
+
+---
+
+### 2026-08-08 — Unmetered agency project chat
+
+**Work unit**
+Remove project-chat usage quotas from the agency admin while preserving client and supplier portal limits.
+
+**Changes**
+- `project-chat` no longer returns a usage meter or enforces quota, cooldown, automatic pause or burst blocking when the authenticated profile is `agency_admin`.
+- Client and supplier behavior is unchanged.
+- Usage events and message-length/input safety checks remain active for the agency.
+- The frontend clears stale usage state when the server intentionally omits a meter.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No automated test suite exists. The changed Edge Function still requires deployment and authenticated role verification.
+
+**Files**
+- `supabase/functions/project-chat/index.ts`
+- `src/components/ProjectChat.tsx`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and PR.
+
+**Next**
+- Deploy and verify `project-chat` and `project-documents` with separate agency, client and supplier sessions.
