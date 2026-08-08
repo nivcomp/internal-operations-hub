@@ -249,6 +249,15 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
               </label>
               {selected.notes ? <p className="simple-note">{selected.notes}</p> : null}
 
+              <CallLogger
+                leadId={selected.id}
+                phone={selected.phone}
+                onSaved={(note) => {
+                  setNotes((current) => [note, ...current]);
+                  void reload();
+                }}
+              />
+
               <label>
                 הערה מהירה
                 <textarea value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} rows={3} />
@@ -269,8 +278,12 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
 
               <ul className="crm-notes">
                 {notes.map((note) => (
-                  <li key={note.id}>
-                    <span className="simple-note">{note.createdAt.slice(0, 10)}{note.originalSource ? ` · ${note.originalSource}` : ""}</span>
+                  <li key={note.id} className={note.noteType === "call" ? "crm-note-call" : undefined}>
+                    <span className="simple-note">
+                      {note.noteType === "call" ? "📞 " : ""}
+                      {new Date(note.createdAt).toLocaleString("he-IL")}
+                      {note.originalSource ? ` · ${note.originalSource}` : ""}
+                    </span>
                     <p>{note.body}</p>
                   </li>
                 ))}
