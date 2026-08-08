@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     await admin.from("registration_audit_log").insert({
       event: "project_continuation_activated",
       role: "client",
-      ip_hash: ipHash,
+      ip_hash: await hashIp((req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown"),
       email,
       detail: { project_id: invitation.project_id },
     });
