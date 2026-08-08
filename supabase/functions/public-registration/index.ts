@@ -140,6 +140,17 @@ Deno.serve(async (req) => {
       invited_profile_id: created.user.id,
     }).eq("id", invitation.id);
 
+    // The project brief was already captured with Yaniv in the meeting, so this
+    // client must never be sent back through the onboarding wizard.
+    await admin.from("onboarding_state").upsert({
+      profile_id: created.user.id,
+      role: "client",
+      current_step: 0,
+      completion_percentage: 100,
+      onboarding_completed_at: new Date().toISOString(),
+      answers: { source: "project_continuation", project_id: invitation.project_id },
+    }, { onConflict: "profile_id" });
+
     await admin.from("registration_audit_log").insert({
       event: "project_continuation_activated",
       role: "client",

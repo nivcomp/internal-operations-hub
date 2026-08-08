@@ -512,7 +512,7 @@ function AppShell() {
 function OnboardingGate() {
   const { profile } = useAuth();
   const { loading, needsOnboarding, refresh } = useOnboarding();
-  const { reload } = useAppData();
+  const { reload, projects, status: dataStatus } = useAppData();
   // Both roles start in the AI onboarding workspace; the classic form stays as a fallback.
   const [useClassicForm, setUseClassicForm] = useState(false);
 
@@ -521,7 +521,14 @@ function OnboardingGate() {
     reload();
   }
 
-  if (loading) {
+  // A client whose project was already started with Yaniv in a meeting must go
+  // straight into that project instead of re-briefing from scratch.
+  const hasExistingProject =
+    profile?.role === "client" &&
+    !!profile.clientId &&
+    projects.some((project) => project.clientId === profile.clientId);
+
+  if (loading || (profile?.role === "client" && dataStatus === "loading")) {
     return (
       <div className="auth-screen">
         <div className="card auth-card"><p>Preparing your workspace…</p></div>
@@ -529,7 +536,7 @@ function OnboardingGate() {
     );
   }
 
-  if (needsOnboarding && (profile?.role === "client" || profile?.role === "supplier")) {
+  if (needsOnboarding && !hasExistingProject && (profile?.role === "client" || profile?.role === "supplier")) {
     if (useClassicForm) {
       return profile.role === "client"
         ? <ClientOnboardingWizard onDone={() => void finishOnboarding()} />
