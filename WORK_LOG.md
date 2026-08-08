@@ -2210,3 +2210,33 @@ Build the complete client/project meeting-start flow and reusable live discovery
 
 **Next**
 - Create automatic specification documents and an accessible document center from Simple Mode using existing document infrastructure.
+
+---
+
+### 2026-08-08 — Chat-first Simple meeting refinement
+
+**Work unit**
+Replace the long form-first meeting experience with a guided conversational flow before merging PR #6.
+
+**Changes**
+- Made one Hebrew discovery question at a time the primary Simple Mode meeting surface.
+- Added text or voice answers with explicit draft/approval controls before updating existing specification sections.
+- Stored approved guided answers through the existing meeting/specification services; raw audio is not retained.
+- Moved free AI chat, file/source management, canonical estimate controls and manual section forms behind an optional advanced-tools disclosure.
+- Kept the meeting inside Simple Mode and retained the optional explicit Advanced Mode link.
+
+**Tests**
+- `pnpm run build` passed, including TypeScript; the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No Edge Function or new migration was introduced by this refinement.
+
+**Files**
+- `src/components/meeting/MeetingWorkspace.tsx`
+- `src/styles.css`
+- `WORK_LOG.md`
+
+**Commit**
+- Created after this log entry; the final report records the SHA and merge commit.
+
+**Next**
+- Verify the deployed Simple Mode flow, then continue with the existing document-center work unit.
