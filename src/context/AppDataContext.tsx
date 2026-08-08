@@ -153,6 +153,9 @@ export type AppDataValue = {
   ) => Promise<void>;
   saveProjectSchedule: (projectId: string, patch: Partial<ProjectSchedule>) => Promise<ProjectSchedule>;
   refreshCommercials: () => Promise<void>;
+  /** Project ids that changed in the database since you last opened them. */
+  liveUpdates: Record<string, number>;
+  markProjectSeen: (projectId: string) => void;
 } & MutationHelpers;
 
 // Mutation keys — stable strings used to look up pending/error/success state
