@@ -2703,3 +2703,8 @@ html, body, #root { max-width: 100%; }
 
 .meeting-client-link { margin-top: 0.75rem; display: grid; gap: 0.5rem; }
 .meeting-client-link input { width: 100%; font-family: ui-monospace, monospace; }
+
+/* Save-link / add-to-home-screen card */
+.shortcut-card { display: grid; gap: 0.6rem; }
+.shortcut-card input { width: 100%; font-size: 0.85rem; }
+.shortcut-card .action-row { flex-wrap: wrap; gap: 0.5rem; }

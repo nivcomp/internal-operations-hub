@@ -90,6 +90,8 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
         />
       </div>
 
+      <SaveShortcutCard />
+
       <Disclosure title="More details">
         <p>Open the full project view for scope, messages, files and change requests.</p>
         <button type="button" onClick={() => onNavigate("client-portal")}>Open full project view</button>
