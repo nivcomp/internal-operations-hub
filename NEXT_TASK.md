@@ -2,30 +2,26 @@
 
 ## Current result
 
-The Simple Mode meeting now uses the persistent full project chat as its primary surface. Agency and client portal conversations share the existing project conversation records, support voice input, and can display sanitized flow, wireframe, table and checklist artifacts. Client-facing estimates remain visibility-gated and all commercial mutations require confirmation.
+Simple Mode can open the shared project document center without switching modes. It is now a client-safe meeting surface even when an agency admin is signed in: the chat uses the client project guide, private commercial controls are absent, and estimates/documents appear only when explicitly shared. Agency operators can generate versioned functional, technical, implementation and meeting documents from approved sections. Advanced Mode retains the private commercial controls and full document view.
 
-Remaining limitation: the changed `project-chat` Edge Function must be deployed to the connected Supabase project before newly generated visual artifacts appear in live AI responses.
+Remaining limitation: the changed `project-documents` and previously changed `project-chat` Edge Functions must be deployed to the connected Supabase project and exercised with signed-in agency and client sessions. The repository also contains two pre-existing migration files that define the meeting-to-handoff tables; this work introduced no migration and did not alter that history.
 
 ## Recommended next work unit
 
-Create automatic specification documents and an accessible document center from Simple Mode.
-
-Use the existing approved `specification_sections`, `specification_versions`, `project_documents`, proposal/signature infrastructure and current project records. Do not create another document, proposal or storage system.
+Deploy and verify the existing project-room and document Edge Functions in the connected Supabase environment.
 
 ## Constraints
 
-- Keep one React application, repository and Supabase project.
-- Keep Simple and Advanced as two views over the same records.
-- Generate documents only from reviewed or explicitly approved source data.
+- Do not create or regenerate migrations, tables, document systems or pricing records.
 - Keep `project_estimates` as the only canonical pricing source.
-- Preserve authentication, RLS and client/supplier visibility.
-- Do not publish, email, sign or create a commercial commitment without explicit agency approval.
+- Test agency generation and actual client visibility with separate authenticated roles.
+- Do not publish, sign or create an execution commitment during verification.
 
 ## Acceptance criteria
 
-- Simple Mode can open a project document center without switching modes.
-- The operator can generate a reviewed specification document from existing sections.
-- Generated documents are stored through the existing `project_documents` infrastructure.
-- Existing Advanced Mode document, proposal and signature workflows continue to use the same records.
-- No duplicate migrations, tables, services, buckets or records are introduced.
-- Frozen install, TypeScript/build and `git diff --check` pass.
+- `project-chat` and `project-documents` deploy successfully from `main`.
+- An agency user generates a Hebrew functional specification from approved sections.
+- The saved row appears immediately in Simple and Advanced Mode.
+- A client sees only a document explicitly assigned the client audience and cannot see agency documents.
+- Internal cost, supplier cost and margin never appear in client output.
+- Build and targeted authenticated browser checks pass.

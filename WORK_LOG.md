@@ -2272,3 +2272,37 @@ Make the existing persistent project chat the primary Simple Mode meeting experi
 
 **Next**
 - Build automatic specification documents and the Simple Mode document center from approved project-room content.
+
+---
+
+### 2026-08-08 — Shared Simple Mode document center
+
+**Work unit**
+Create automatic reviewed specification documents and expose the existing project document system in Simple Mode and the client portal.
+
+**Changes**
+- Added a shared document center with version history and safe Markdown preview to Simple and Advanced Mode.
+- Added explicit agency/client audience selection and a client portal view that filters to client-audience documents even during agency preview.
+- Separated the client-facing Simple meeting from private agency operations: it now uses the client-safe project guide, hides rate/cost/margin controls and displays only explicitly client-visible estimates and documents.
+- Simplified the shared meeting chat presentation with wider conversational bubbles, a single conversation column and lighter suggestion controls.
+- Extended `project-documents` to require approved specification content for specification-derived documents, use only approved sections, hide unpublished estimates and internal commercial data from client output, and return the saved document row.
+- Reused `project_documents`, `specification_sections` and `project_estimates`; no migration or duplicate service was added.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed before documentation updates and is rerun before publication.
+- No automated test or lint script exists. Deno and a signed-in Supabase browser session are unavailable in this environment, so the Edge Function and role-specific runtime paths require deployment verification.
+
+**Files**
+- `src/components/meeting/MeetingWorkspace.tsx`
+- `src/components/project/ProjectDocumentsPanel.tsx`
+- `src/pages/ClientPortalPage.tsx`
+- `src/services/documentsApi.ts`, `src/styles.css`
+- `supabase/functions/project-documents/index.ts`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and PR.
+
+**Next**
+- Deploy and verify the existing `project-chat` and `project-documents` Edge Functions with agency and client sessions.

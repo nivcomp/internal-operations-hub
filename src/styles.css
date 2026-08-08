@@ -2088,8 +2088,16 @@ kbd {
   margin-top: 0.75rem; padding: 0.9rem 1rem; border-radius: 12px; background: rgba(15, 23, 42, 0.04);
   white-space: pre-wrap; font: inherit; font-size: 0.88rem; max-height: 60vh; overflow: auto;
 }
+.project-document-layout { display: grid; grid-template-columns: minmax(180px, 0.32fr) minmax(0, 1fr); gap: 1rem; margin-top: 1rem; }
+.project-document-list { display: grid; align-content: start; gap: 0.45rem; }
+.project-document-list button { display: grid; gap: 0.2rem; text-align: start; padding: 0.65rem 0.75rem; }
+.project-document-list button.active { border-color: var(--primary); background: rgba(15, 118, 110, 0.08); }
+.project-document-list small { color: var(--text-muted, #6b7280); }
+.generated-document header { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+.generated-document pre { margin: 0; white-space: pre-wrap; font: inherit; }
 @media (max-width: 960px) {
   .ai-onboarding-grid { grid-template-columns: minmax(0, 1fr); }
+  .project-document-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---- Copilot Operator Mode -------------------------------------------- */
@@ -2437,6 +2445,14 @@ kbd {
 .meeting-chat-primary { min-width: 0; }
 .meeting-chat-primary .chat-panel { min-height: 68vh; }
 .meeting-chat-primary .chat-messages { min-height: 420px; max-height: 62vh; }
+.meeting-chat-primary .chat-body { grid-template-columns: minmax(0, 1fr); }
+.meeting-chat-primary .chat-side { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.meeting-chat-primary .chat-head > button { opacity: .55; }
+.meeting-chat-primary .chat-bubble { max-width: 84%; border-radius: 18px; padding: .8rem 1rem; }
+.meeting-chat-primary .chat-human { margin-inline-start: auto; background: #e6f4f1; border-color: #c4e4dd; }
+.meeting-chat-primary .chat-ai { margin-inline-end: auto; background: #fff; border: 1px solid var(--border, #e2e8f0); padding: .8rem 1rem; }
+.meeting-chat-primary .chat-suggestions { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .2rem; }
+.meeting-chat-primary .chat-suggestions button { white-space: nowrap; border-radius: 999px; }
 .client-safe-estimate { padding: .8rem; border-radius: .7rem; background: var(--surface-muted, #f8fafc); }
 .client-safe-estimate h4, .client-safe-estimate p { margin: .25rem 0; }
 .chat-artifact { display: grid; gap: .7rem; margin-top: .8rem; padding: 1rem; border: 1px solid var(--border, #dbe2ea); border-radius: .8rem; background: #fff; color: var(--text, #172033); }
