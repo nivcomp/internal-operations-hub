@@ -540,6 +540,7 @@ Deno.serve(async (req) => {
     const actor = await resolveActor(req.headers.get("Authorization"));
     if ("error" in actor) return json({ error: actor.error }, actor.status);
     const profile = actor.profile;
+    const isAgencyAdmin = profile.role === "agency_admin";
 
     const body = await req.json().catch(() => ({}));
     const action: string = body.action ?? "history";
@@ -563,14 +564,14 @@ Deno.serve(async (req) => {
       const { data: pending } = await admin.from("ai_generated_drafts")
         .select("*").eq("project_id", projectId).neq("action_kind", "")
         .eq("status", "awaiting_agency_review").order("created_at", { ascending: false }).limit(20);
-      const limits = await resolveLimits(admin, profile, projectId);
-      const usage = await loadUsage(admin, profile.id, projectId);
+      const limits = isAgencyAdmin ? null : await resolveLimits(admin, profile, projectId);
+      const usage = isAgencyAdmin ? null : await loadUsage(admin, profile.id, projectId);
       return json({
         conversation,
         messages,
         drafts: (drafts ?? []).filter((d: any) => !d.action_kind && draftVisibleTo(d, profile)),
         pendingActions: (pending ?? []).filter((d: any) => draftVisibleTo(d, profile) && canConfirm(d, agent, profile)),
-        usage: {
+        usage: limits && usage ? {
           percentUsed: usagePercent(usage, limits),
           messagesToday: usage.dayMessages,
           dailyMessageLimit: limits.daily_message_limit,
@@ -578,7 +579,7 @@ Deno.serve(async (req) => {
           paused: limits.is_paused,
           pausedReason: limits.paused_reason,
           maximumMessageLength: limits.maximum_message_length,
-        },
+        } : undefined,
       });
     }
 
@@ -689,7 +690,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (limits.is_paused) {
+    if (!isAgencyAdmin && limits.is_paused) {
       return await deny({
         outcome: "blocked", classification: "repeated_spam", reason: `AI paused at ${limits.pausedScope} level.`,
         message: he
@@ -700,7 +701,7 @@ Deno.serve(async (req) => {
     }
 
     // Cooldown between consecutive requests.
-    if (usage.lastActivityAt && limits.cooldown_seconds > 0) {
+    if (!isAgencyAdmin && usage.lastActivityAt && limits.cooldown_seconds > 0) {
       const gap = (Date.now() - new Date(usage.lastActivityAt).getTime()) / 1000;
       if (gap < limits.cooldown_seconds) {
         return await deny({
@@ -712,7 +713,7 @@ Deno.serve(async (req) => {
     }
 
     // Hard stop on usage limits.
-    if (percent >= limits.hard_stop_threshold_percent) {
+    if (!isAgencyAdmin && percent >= limits.hard_stop_threshold_percent) {
       await raiseAlert(admin, {
         alert_type: "limit_reached", severity: "critical", profile_id: profile.id, project_id: projectId,
         title: "AI usage limit reached",
@@ -727,13 +728,13 @@ Deno.serve(async (req) => {
         status: 429,
       });
     }
-    if (percent >= 90) {
+    if (!isAgencyAdmin && percent >= 90) {
       await raiseAlert(admin, {
         alert_type: "limit_90", severity: "warning", profile_id: profile.id, project_id: projectId,
         title: "AI usage at 90%", detail: `${profile.full_name || profile.role} is at ${percent}% of the allowance.`,
         metadata: { percent },
       });
-    } else if (percent >= limits.warning_threshold_percent) {
+    } else if (!isAgencyAdmin && percent >= limits.warning_threshold_percent) {
       await raiseAlert(admin, {
         alert_type: "limit_warning", severity: "info", profile_id: profile.id, project_id: projectId,
         title: `AI usage at ${percent}%`, detail: `${profile.full_name || profile.role} passed the warning threshold.`,
@@ -742,8 +743,8 @@ Deno.serve(async (req) => {
     }
 
     // Repeated / spam behaviour.
-    const spam = await detectSpam(admin, profile.id, messageHash);
-    if (spam.burst >= 10) {
+    const spam = isAgencyAdmin ? { burst: 0, isSpam: false } : await detectSpam(admin, profile.id, messageHash);
+    if (!isAgencyAdmin && spam.burst >= 10) {
       await raiseAlert(admin, {
         alert_type: "message_burst", severity: "warning", profile_id: profile.id, project_id: projectId,
         title: "Rapid AI message burst", detail: `${spam.burst} AI messages in the last minute.`, metadata: spam,
@@ -754,7 +755,7 @@ Deno.serve(async (req) => {
         status: 429,
       });
     }
-    if (spam.isSpam) {
+    if (!isAgencyAdmin && spam.isSpam) {
       const pausePatch = {
         is_paused: true,
         paused_reason: "Automatic pause after repeated identical or unrelated prompts.",
@@ -997,7 +998,7 @@ Deno.serve(async (req) => {
 
       return json({
         conversation, userMessage, aiMessage, draft: draftRow, pendingActions, rejectedActions: rejected,
-        usage: {
+        usage: isAgencyAdmin ? undefined : {
           percentUsed: percent,
           messagesToday: usage.dayMessages + 1,
           dailyMessageLimit: limits.daily_message_limit,
