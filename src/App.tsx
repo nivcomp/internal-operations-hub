@@ -42,6 +42,7 @@ import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { JoinPage } from "./pages/JoinPage";
+import { ContinueProjectPage } from "./pages/ContinueProjectPage";
 import { claimPublicRegistration } from "./services/registrationApi";
 import { SupplierDetailPage } from "./pages/SupplierDetailPage";
 import { SupplierPortalPage } from "./pages/SupplierPortalPage";
@@ -656,6 +657,7 @@ function App() {
     return null;
   })();
   if (joinRole) return <JoinPage role={joinRole} />;
+  if (window.location.pathname === "/continue") return <ContinueProjectPage />;
 
   return (
     <AuthProvider>
