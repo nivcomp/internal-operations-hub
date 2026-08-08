@@ -2708,3 +2708,5 @@ html, body, #root { max-width: 100%; }
 .shortcut-card { display: grid; gap: 0.6rem; }
 .shortcut-card input { width: 100%; font-size: 0.85rem; }
 .shortcut-card .action-row { flex-wrap: wrap; gap: 0.5rem; }
+
+.prototype-auto-share { display:flex; align-items:center; gap:.5rem; font-size:.85rem; color:var(--muted-foreground, #64748b); grid-column:1 / -1; }
