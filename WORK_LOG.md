@@ -1,5 +1,33 @@
 # Work Log
 
+### 2026-08-08 — Saved interactive MVP prototype studio
+
+**Work unit**
+Create a versioned, client-safe interactive MVP studio inside the existing project meeting and portal.
+
+**Changes**
+- Added project-owned prototype, immutable version and exact-version approval records with role-specific RLS.
+- Added an agency-only `project-prototype` Edge Function that generates bounded app, WhatsApp or automation screen schemas from existing project context and optional supplied text.
+- Added a responsive React renderer with screen navigation, realistic UI blocks, revision history, explicit client sharing and portal approval/change requests.
+- Added TXT/Markdown/JSON and DOCX text intake; DOCX extraction runs locally through Mammoth.
+- Added a reviewed manual Lovable handoff copy action. Generated code is never executed and no external publish occurs automatically.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); Mammoth is lazy-loaded as a separate chunk and the existing large App chunk warning remains.
+- Migration audit found one coherent prototype model and no duplicate project/chat/specification system.
+- Deno and Supabase CLI are unavailable, so function type checking, migration application and live authenticated RLS verification remain deployment checks.
+
+**Files**
+- `supabase/migrations/20260808150000_interactive_prototype_studio.sql`
+- `supabase/functions/project-prototype/index.ts`, `supabase/config.toml`
+- `src/components/prototype/PrototypeStudio.tsx`, `src/services/prototypeApi.ts`
+- Meeting, portal, styles, dependencies and project memory files
+
+**Next**
+- Add private prototype media assets, pinned review annotations and PNG/PDF export.
+
+---
+
 ### 2026-08-08 — Responsive meeting visuals and simplified client portal
 
 **Work unit**
