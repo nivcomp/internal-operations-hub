@@ -239,6 +239,30 @@ export function ProjectChat({
 
   useEffect(() => { void load(); }, [load]);
 
+  // Live sync: a message written by the client (or the agency) in another
+  // session appears here without a manual refresh.
+  const aiStateRef = useRef(aiState);
+  aiStateRef.current = aiState;
+  useEffect(() => {
+    let timer = 0;
+    const channel = supabase
+      .channel(`chat-${agent}-${projectId}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "chat_messages", filter: `project_id=eq.${projectId}` },
+        () => {
+          if (aiStateRef.current === "thinking") return;
+          window.clearTimeout(timer);
+          timer = window.setTimeout(() => { void load(); }, 500);
+        },
+      )
+      .subscribe();
+    return () => {
+      window.clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [agent, projectId, load]);
+
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, aiState]);
