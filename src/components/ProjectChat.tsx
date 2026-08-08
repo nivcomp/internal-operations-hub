@@ -7,6 +7,7 @@ import { notifyEstimationChanged } from "../lib/estimationEvents";
 import { detectProjectViewIntent, requestProjectView } from "../lib/projectViewEvents";
 import { startRecording, type Recorder } from "../lib/voice";
 import { transcribeAudio } from "../services/copilotApi";
+import { supabase } from "../integrations/supabase/client";
 
 type ProjectChatProps = {
   projectId: string;
