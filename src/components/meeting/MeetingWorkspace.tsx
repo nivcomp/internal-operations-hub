@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ProjectChat } from "../ProjectChat";
-import { fetchProjectEstimation, createEstimate, updateEstimate } from "../../services/estimationApi";
+import { fetchProjectEstimation } from "../../services/estimationApi";
 import { addTranscript, finishMeeting, loadMeetingWorkspace, saveSection, startMeeting, uploadMeetingSource, type Meeting, type MeetingSource, type SpecificationSection } from "../../services/meetingWorkflowApi";
-import { useAppData } from "../../context/AppDataContext";
 import type { ProjectEstimate } from "../../types/estimation";
+import { ProjectDocumentsPanel } from "../project/ProjectDocumentsPanel";
 
 type Props = {
   projectId: string; projectName: string; clientName?: string; companyName?: string;
@@ -12,44 +12,28 @@ type Props = {
 
 const money = (value: number | null | undefined, currency: string) => value == null ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
 
-export function MeetingWorkspace({ projectId, projectName, clientName, companyName, onSaveExit, onFinished, onOpenAdvanced }: Props) {
-  const { refreshCommercials } = useAppData();
+export function MeetingWorkspace({ projectId, projectName, clientName, companyName, onSaveExit, onFinished }: Props) {
   const [meeting, setMeeting] = useState<Meeting>();
   const [sections, setSections] = useState<SpecificationSection[]>([]);
   const [sources, setSources] = useState<MeetingSource[]>([]);
   const [estimate, setEstimate] = useState<ProjectEstimate>();
-  const [rate, setRate] = useState(0);
-  const [currency, setCurrency] = useState("ILS");
   const [transcript, setTranscript] = useState("");
   const [uploads, setUploads] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<Date>();
   const [finishOpen, setFinishOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
   const [error, setError] = useState("");
 
   async function refresh() {
     const [workspace, estimation] = await Promise.all([loadMeetingWorkspace(projectId), fetchProjectEstimation(projectId)]);
     setMeeting(workspace.meeting); setSections(workspace.sections); setSources(workspace.sources);
     const current = estimation.estimates[0]; setEstimate(current);
-    if (current) { setRate(current.client_calculation_rate); setCurrency(current.currency); }
   }
   useEffect(() => { void refresh().catch((e) => setError(e.message)); }, [projectId]);
 
   async function begin() { setBusy(true); try { await startMeeting(projectId); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
-  async function saveRate() {
-    setBusy(true); setError("");
-    try {
-      const current = (await fetchProjectEstimation(projectId)).estimates[0];
-      const patch: Partial<ProjectEstimate> = { client_calculation_rate: rate, currency };
-      if (current) {
-        patch.estimated_budget_min = current.estimated_hours_min * rate;
-        patch.estimated_budget_max = current.estimated_hours_max * rate;
-        await updateEstimate(current.id, patch);
-      } else await createEstimate(projectId, { ...patch, status: "draft" }, 1);
-      await Promise.all([refreshCommercials(), refresh()]); setSavedAt(new Date());
-    } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
-  }
   async function saveTranscript() {
     if (!meeting || !transcript.trim()) return;
     setBusy(true); setError("");
@@ -77,15 +61,15 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
   const openQuestions = sections.find((section) => section.section_key === "open_questions")?.content.trim() ?? "";
 
   return <div className="meeting-workspace" dir="rtl">
-    <header className="card meeting-head"><div><p className="eyebrow">{companyName || "פגישת לקוח"}</p><h2>חדר אפיון — {projectName}</h2><p>{clientName ? `איש קשר: ${clientName} · ` : ""}מצב: {meeting.status === "active" ? "פגישה פעילה" : "הפגישה הסתיימה"} · התחלה: {new Date(meeting.started_at).toLocaleString("he-IL")}</p><small>{savedAt ? `נשמר לאחרונה ${savedAt.toLocaleTimeString("he-IL")}` : "המידע נשמר ב-Supabase"}</small></div><div className="action-row"><button onClick={() => void refresh().then(() => setSavedAt(new Date()))}>שמור</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא</button> : null}{onOpenAdvanced ? <button onClick={onOpenAdvanced}>פתח כלים מתקדמים</button> : null}{meeting.status === "active" ? <button className="primary-button" onClick={() => setFinishOpen(true)}>סיים פגישה</button> : null}</div></header>
+    <header className="card meeting-head"><div><p className="eyebrow">{companyName || "פגישת לקוח"}</p><h2>חדר אפיון — {projectName}</h2><p>{clientName ? `איש קשר: ${clientName} · ` : ""}מצב: {meeting.status === "active" ? "פגישה פעילה" : "הפגישה הסתיימה"} · התחלה: {new Date(meeting.started_at).toLocaleString("he-IL")}</p><small>{savedAt ? `נשמר לאחרונה ${savedAt.toLocaleTimeString("he-IL")}` : "המידע נשמר ב-Supabase"}</small></div><div className="action-row"><button onClick={() => void refresh().then(() => setSavedAt(new Date()))}>שמור</button><button onClick={() => setDocumentsOpen((value) => !value)}>מסמכי הפרויקט</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא</button> : null}{meeting.status === "active" ? <button className="primary-button" onClick={() => setFinishOpen(true)}>סיים פגישה</button> : null}</div></header>
     {error && <p className="form-error">{error}</p>}
+    {documentsOpen ? <ProjectDocumentsPanel projectId={projectId} simple /> : null}
     <div className="guided-meeting-layout">
-      <main className="meeting-chat-primary"><ProjectChat projectId={projectId} projectName={projectName} agent="agency_control" title="עוזר האפיון של הפרויקט" subtitle="דברו איתי בחופשיות כמו בצ׳אט. אשאל שאלות המשך, אציג תרשימים וסקיצות, ואציע אפיון ואומדן לאישור — בלי לשנות דבר בעצמי." showVisibility suggestions={["התחל אפיון ושאל אותי שאלה אחת", "הצג תרשים של התהליך שהבנת", "צור סקיצה למסכים המרכזיים", "מה עדיין חסר באפיון?", "הצע אומדן שעות ומחיר לבדיקה"]} /></main>
-      <aside className="guided-summary card"><h3>מצב הפרויקט בלייב</h3><dl><div><dt>מאושר</dt><dd>{approved}</dd></div><div><dt>חסר</dt><dd>{incomplete}</dd></div><div><dt>מקורות</dt><dd>{sources.length}</dd></div><div><dt>תמחור</dt><dd>{estimate?.status ?? "לא הוגדר"}</dd></div></dl><section className="client-safe-estimate"><h4>אומדן ללקוח</h4>{estimate?.client_visible ? <><p><strong>{estimate.estimated_hours_min}–{estimate.estimated_hours_max}</strong> שעות</p><p><strong>{money(estimate.estimated_budget_min, estimate.currency)}–{money(estimate.estimated_budget_max, estimate.currency)}</strong></p>{estimate.final_fixed_price ? <p>מחיר קבוע מאושר: <strong>{money(estimate.final_fixed_price, estimate.currency)}</strong></p> : <small>טווח הערכה בלבד, עד לאישור מחיר קבוע.</small>}</> : <p className="form-note">האומדן עדיין פנימי ולא פורסם ללקוח.</p>}</section><button onClick={() => setManualOpen((value) => !value)}>{manualOpen ? "הסתר כלים נוספים" : "קבצים, תמחור ועריכה מתקדמת"}</button></aside>
+      <main className="meeting-chat-primary"><ProjectChat projectId={projectId} projectName={projectName} agent="project_guide" title="בואו נאפיין את הפרויקט יחד" subtitle="ספרו לי בחופשיות מה צריך. אשאל, אציע רעיונות ואציג תרשימים וסקיצות תוך כדי השיחה." suggestions={["בוא נתחיל", "הצג את התהליך שהבנת", "צור סקיצה למסכים"]} /></main>
+      <aside className="guided-summary card"><h3>מצב הפרויקט בלייב</h3><dl><div><dt>מאושר</dt><dd>{approved}</dd></div><div><dt>עוד לבדיקה</dt><dd>{incomplete}</dd></div><div><dt>חומרים</dt><dd>{sources.length}</dd></div></dl><section className="client-safe-estimate"><h4>אומדן משותף</h4>{estimate?.client_visible ? <><p><strong>{estimate.estimated_hours_min}–{estimate.estimated_hours_max}</strong> שעות</p><p><strong>{money(estimate.estimated_budget_min, estimate.currency)}–{money(estimate.estimated_budget_max, estimate.currency)}</strong></p>{estimate.final_fixed_price && estimate.approved_by_yaniv ? <p>מחיר קבוע מאושר: <strong>{money(estimate.final_fixed_price, estimate.currency)}</strong></p> : <small>טווח הערכה בלבד, עד לאישור מחיר קבוע.</small>}</> : <p className="form-note">האומדן יוצג כאן רק לאחר אישור לשיתוף עם הלקוח.</p>}</section><button onClick={() => setManualOpen((value) => !value)}>{manualOpen ? "הסתר חומרים" : "קבצים וחומרי הפגישה"}</button></aside>
     </div>
     {manualOpen ? <section className="meeting-advanced-tools">
       <div className="meeting-grid"><main><section className="card"><h3>תמלול וקבצים</h3><textarea rows={4} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="הדבק תמלול כללי נוסף…"/><button disabled={busy || !transcript.trim()} onClick={() => void saveTranscript()}>שמור את הטקסט כתמלול כללי</button><label className="button-like">העלה תמונות / PDF / Word<input hidden multiple type="file" accept="image/*,.pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" capture="environment" onChange={(e) => void uploadFiles(e.target.files)} /></label>{Object.entries(uploads).map(([name, status]) => <p key={name}><strong>{name}</strong> — {status}</p>)}<div className="meeting-source-list">{sources.map((source) => <article key={source.id}><strong>{source.title}</strong><span>{source.source_type} · {new Date(source.captured_at).toLocaleString("he-IL")}</span><small>{source.review_status || "נשמר"}</small></article>)}</div></section></main><aside>
-        <section className="card"><h3>תמחור פנימי</h3><label>מחיר חישוב לשעה<input type="number" min="0" value={rate || ""} onChange={(e) => setRate(Number(e.target.value))} /></label><label>מטבע<select value={currency} onChange={(e) => setCurrency(e.target.value)}><option>ILS</option><option>GBP</option><option>USD</option><option>EUR</option></select></label><dl className="meeting-pricing-summary"><div><dt>טווח תקציב</dt><dd>{money(estimate?.estimated_budget_min, currency)} – {money(estimate?.estimated_budget_max, currency)}</dd></div><div><dt>עלות פנימית</dt><dd>{money(estimate?.internal_cost, currency)}</dd></div><div><dt>מחיר קבוע</dt><dd>{money(estimate?.final_fixed_price, currency)}</dd></div><div><dt>סטטוס</dt><dd>{estimate?.status ?? "טרם נוצר אומדן"}</dd></div></dl><button className="primary-button" disabled={busy || rate <= 0} onClick={() => void saveRate()}>אשר ושמור תמחור</button>{onOpenAdvanced ? <button onClick={onOpenAdvanced}>פתח בקרת תמחור מלאה</button> : null}</section>
         <section className="card specification-live"><h3>עריכה ידנית מתקדמת</h3>{sections.map((section) => <SectionEditor key={section.id} section={section} onSaved={async () => { await refresh(); setSavedAt(new Date()); }} />)}</section>
       </aside></div>
     </section> : null}

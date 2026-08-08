@@ -20,6 +20,7 @@ Do not split the modes into different repositories, applications, deployments or
 - Server operations and AI: Supabase Edge Functions. AI calls are server-side and use role-filtered context, typed actions and explicit human confirmation for business mutations.
 - State: `AppDataProvider` loads shared operational records from Supabase. Simple and advanced screens consume the same provider state; neither owns a parallel data model.
 - Simple meeting navigation remembers only the selected project id locally so a refresh can restore the view; durable meeting, source, specification, conversation and estimate state remains in Supabase, and `startMeeting` is idempotent for active meetings.
+- Simple meeting sessions are intentionally client-safe even when an agency admin is signed in: they use the `project_guide` conversation/context and show only estimates explicitly marked `client_visible`. Internal rate, cost and margin controls exist only in Advanced Mode.
 - Public registration is bundled separately at startup to avoid authenticated-client boot failures, but writes to the same Supabase project.
 
 ## Canonical domain systems
@@ -46,6 +47,7 @@ Do not split the modes into different repositories, applications, deployments or
 - AI context is built server-side and role-filtered. AI produces suggestions or typed proposed actions; final scope, price, assignment, approval and readiness remain human-controlled.
 - Project chat may return bounded structured visual artifacts (`flow`, `wireframe`, `table`, `checklist`) inside `chat_messages.structured_payload`. The Edge Function sanitizes and caps these structures; the frontend renders them without HTML or executable diagram syntax.
 - Signed proposal versions and signatures are immutable.
+- AI-generated specification documents are new drafts based on explicitly approved `specification_sections`. Choosing a client audience is an explicit agency sharing action; portal reads remain restricted to client-audience rows by RLS and frontend filtering.
 - Uploaded meeting/import files use private storage buckets.
 - No service-role key is present in frontend code.
 

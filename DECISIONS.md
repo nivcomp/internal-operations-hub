@@ -20,6 +20,28 @@ Expected impact, constraints, and follow-up work.
 
 ---
 
+### 2026-08-08 — Reviewed specification documents share the canonical project record
+
+**Decision**
+Simple Mode, Advanced Mode and the client portal use the same `project_documents` records. AI document generation uses explicitly approved specification sections; an agency operator must explicitly choose client visibility.
+
+**Reason**
+This keeps draft conversation separate from reviewed scope and avoids a parallel document or handoff system.
+
+**Consequences**
+Document generation does not publish a proposal, create a signature or approve an execution package. Client and supplier visibility continues to be enforced by RLS, with an additional client-audience filter in the portal UI.
+
+### 2026-08-08 — Simple meeting mode is client-safe by design
+
+**Decision**
+The agency may operate Simple Mode while sitting with a client, so its meeting workspace uses the client-safe project guide and never renders calculation rate, internal cost, target margin or gross margin. Advanced Mode remains the agency's private operating surface.
+
+**Reason**
+Authentication as an agency admin must not make private commercial information appear on a screen being shared with a client.
+
+**Consequences**
+Simple and Advanced still share one application and the same canonical records. The separation is a role-and-surface visibility boundary, not another app or database. Only estimates explicitly marked `client_visible` may appear in the shared meeting.
+
 ### 2026-07-11 — Internal operating system first
 
 **Decision**  

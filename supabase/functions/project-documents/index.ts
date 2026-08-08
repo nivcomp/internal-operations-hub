@@ -2,8 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { callModel, DEFAULT_MODEL } from "../_shared/model.ts";
 
-// Agency-only structured document generation from an existing project's data.
-// Read-only: it never writes scope, pricing or approvals.
+// Agency-only structured document generation from reviewed project data.
+// It stores a document draft but never writes scope, pricing, proposals or approvals.
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     return json({ error: "Forbidden" }, 403);
   }
 
-  let body: { projectId?: string; docType?: string; language?: string; notes?: string };
+  let body: { projectId?: string; docType?: string; language?: string; notes?: string; audience?: string };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
 
   const projectId = String(body.projectId ?? "");
@@ -54,8 +54,12 @@ Deno.serve(async (req) => {
   const language = String(body.language ?? "English").slice(0, 40);
   if (!projectId) return json({ error: "projectId is required." }, 400);
   if (!DOC_TYPES[docType]) return json({ error: "Unknown document type." }, 400);
+  const requestedAudience = String(body.audience ?? "");
+  if (requestedAudience && !["agency", "client"].includes(requestedAudience)) {
+    return json({ error: "Unsupported document audience." }, 400);
+  }
 
-  const [project, brief, schedule, estimate, requirements, assumptions, questions, conversationSummary] =
+  const [project, brief, schedule, estimate, requirements, assumptions, questions, conversationSummary, specificationSections] =
     await Promise.all([
       admin.from("projects").select("*").eq("id", projectId).maybeSingle(),
       admin.from("project_briefs").select("*").eq("project_id", projectId).maybeSingle(),
@@ -66,6 +70,11 @@ Deno.serve(async (req) => {
       admin.from("project_assumptions").select("body, kind, status").eq("project_id", projectId).limit(100),
       admin.from("project_questions").select("question, answer, status").eq("project_id", projectId).limit(100),
       admin.from("ai_project_summaries").select("summary, audience_role").eq("project_id", projectId).limit(5),
+      admin.from("specification_sections")
+        .select("section_key, title, content, status, sort_order")
+        .eq("project_id", projectId)
+        .eq("status", "approved")
+        .order("sort_order"),
     ]);
 
   if (!project.data) return json({ error: "Project not found." }, 404);
@@ -79,16 +88,23 @@ Deno.serve(async (req) => {
   }
 
   const supplierFacing = docType === "supplier_brief";
-  const clientFacing = docType === "client_proposal";
-  const estimateContext = estimate.data
+  const audience = supplierFacing ? "supplier" : requestedAudience || (docType === "client_proposal" ? "client" : "agency");
+  const clientFacing = audience === "client";
+  const approvedSections = specificationSections.data ?? [];
+  if (["functional_spec", "technical_spec", "implementation_checklist", "meeting_summary"].includes(docType) && approvedSections.length === 0) {
+    return json({ error: "Approve at least one specification section before generating this document." }, 409);
+  }
+  const safeItems = clientFacing ? items.filter((item) => (item as { client_visible?: boolean }).client_visible) : items;
+  const safeEstimate = clientFacing && !estimate.data?.client_visible ? null : estimate.data;
+  const estimateContext = safeEstimate
     ? {
-        version: estimate.data.version,
-        hours: [estimate.data.estimated_hours_min, estimate.data.estimated_hours_max],
-        budget: supplierFacing ? "hidden" : [estimate.data.estimated_budget_min, estimate.data.estimated_budget_max],
-        currency: estimate.data.currency,
-        internalCost: supplierFacing || clientFacing ? "hidden" : estimate.data.internal_cost,
-        margin: supplierFacing || clientFacing ? "hidden" : estimate.data.target_margin_percent,
-        clientVisible: estimate.data.client_visible,
+        version: safeEstimate.version,
+        hours: [safeEstimate.estimated_hours_min, safeEstimate.estimated_hours_max],
+        budget: supplierFacing ? "hidden" : [safeEstimate.estimated_budget_min, safeEstimate.estimated_budget_max],
+        currency: safeEstimate.currency,
+        internalCost: supplierFacing || clientFacing ? "hidden" : safeEstimate.internal_cost,
+        margin: supplierFacing || clientFacing ? "hidden" : safeEstimate.target_margin_percent,
+        clientVisible: safeEstimate.client_visible,
       }
     : null;
 
@@ -97,7 +113,8 @@ Deno.serve(async (req) => {
     brief: brief.data ?? null,
     schedule: schedule.data ?? null,
     estimate: estimateContext,
-    items,
+    approvedSpecification: approvedSections,
+    items: safeItems,
     requirements: requirements.data ?? [],
     assumptions: assumptions.data ?? [],
     openQuestions: questions.data ?? [],
@@ -128,11 +145,10 @@ Output clean Markdown with clear headings, short paragraphs and bullet lists. No
     metadata: { model: DEFAULT_MODEL, language, docType },
   });
 
-  const audience = supplierFacing ? "supplier" : clientFacing ? "client" : "agency";
   const { data: latest } = await admin.from("project_documents")
     .select("version").eq("project_id", projectId).eq("document_type", docType)
     .order("version", { ascending: false }).limit(1).maybeSingle();
-  await admin.from("project_documents").insert({
+  const { data: document, error: documentError } = await admin.from("project_documents").insert({
     project_id: projectId,
     document_type: docType,
     audience,
@@ -141,7 +157,8 @@ Output clean Markdown with clear headings, short paragraphs and bullet lists. No
     status: "draft",
     markdown: text,
     created_by: userId,
-  });
+  }).select("id, project_id, document_type, audience, language, version, status, markdown, created_at").single();
+  if (documentError || !document) return json({ error: documentError?.message ?? "Could not save document." }, 500);
 
-  return json({ ok: true, docType, language, markdown: text });
+  return json({ ok: true, docType, language, markdown: text, document });
 });

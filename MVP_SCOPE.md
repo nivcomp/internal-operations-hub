@@ -13,9 +13,11 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - A shared interactive project room with persistent chat, voice input, visual process/screen artifacts, confirmation-gated estimate proposals and client-safe live estimate visibility.
 - Persistent Copilot with voice support, role-filtered context and typed confirmation-gated operator actions.
 - A complete Hebrew-first Simple Mode meeting flow: existing/new client, existing/new project, resumable live workspace, chat, reviewed voice transcripts, source uploads, specification and canonical pricing.
+- The Simple meeting is a shared client-safe presentation surface; internal calculation rate, supplier cost and margin remain restricted to Advanced Mode.
 - Structured requirements, assumptions, questions and specification sections/versions.
 - Canonical project estimation with structured items, roles, buffers, internal cost, budget ranges, supplier reviews, scenarios and snapshots.
 - Proposal versions, immutable digital signatures, stored project documents, change requests and draft execution packages.
+- A shared document center that creates versioned specification, technical and implementation drafts from approved sections and exposes only client-audience documents in the client portal.
 - Scope approval, payments/paid hours, schedules, supplier assignment, start gates, time tracking and supplier payables.
 - Excel/CSV import and CRM enrichment suggestions.
 

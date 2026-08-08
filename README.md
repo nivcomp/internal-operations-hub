@@ -24,8 +24,10 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Client and supplier portals with strict visibility rules.
 - Project chat, onboarding chat, persistent Copilot and voice Copilot.
 - Interactive project-room chat shared with the client portal, including voice input and safe structured flow, wireframe, table and checklist artifacts.
+- Shared project document center in Simple, Advanced and the client portal, using approved specification sections and existing `project_documents` records.
 - Meetings, source uploads/transcripts and structured specification records.
 - Simple Mode meeting launcher for existing/new clients and projects, with a resumable live discovery room that stays inside the compact application.
+- Client-safe Simple Mode meeting surface: it uses the shared client conversation and never renders calculation rate, internal cost, target margin or gross margin; those remain in Advanced Mode.
 - Structured estimates, client budget simulation and supplier estimate reviews.
 - Proposal versions, digital signatures and stored project documents.
 - Change requests, schedules, payment/paid-hours gates and supplier assignments.
