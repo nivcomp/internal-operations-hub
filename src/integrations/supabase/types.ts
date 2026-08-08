@@ -2572,15 +2572,18 @@ export type Database = {
           created_by: string | null
           email: string
           emailed: boolean
+          expires_at: string | null
           id: string
           invite_link: string
           invited_profile_id: string | null
           phone: string
+          project_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: string
           supplier_id: string | null
           token: string
           updated_at: string
+          used_at: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -2591,15 +2594,18 @@ export type Database = {
           created_by?: string | null
           email: string
           emailed?: boolean
+          expires_at?: string | null
           id?: string
           invite_link?: string
           invited_profile_id?: string | null
           phone?: string
+          project_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           status?: string
           supplier_id?: string | null
           token?: string
           updated_at?: string
+          used_at?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -2610,15 +2616,18 @@ export type Database = {
           created_by?: string | null
           email?: string
           emailed?: boolean
+          expires_at?: string | null
           id?: string
           invite_link?: string
           invited_profile_id?: string | null
           phone?: string
+          project_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           supplier_id?: string | null
           token?: string
           updated_at?: string
+          used_at?: string | null
         }
         Relationships: [
           {
@@ -2640,6 +2649,13 @@ export type Database = {
             columns: ["invited_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_invitations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
