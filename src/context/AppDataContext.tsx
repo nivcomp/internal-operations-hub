@@ -44,6 +44,7 @@ import {
   fetchEstimateSummaries, fetchProjectSchedules, saveProjectScheduleRow, type EstimateSummary,
 } from "../services/scheduleApi";
 import type { ProjectSchedule } from "../lib/scheduling";
+import { onAnyEstimationChanged } from "../lib/estimationEvents";
 import type {
   Approval,
   ChangeRequest,
@@ -593,6 +594,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       console.error("[AppData] commercial refresh failed", err);
     }
   }, []);
+
+  // Keep the shared commercial rollup in sync after Copilot or an estimate
+  // screen changes project_estimates. Simple, Advanced and the client portal
+  // therefore read the same freshly loaded canonical record.
+  useEffect(() => onAnyEstimationChanged(() => { void refreshCommercials(); }), [refreshCommercials]);
 
   const saveProjectSchedule = useCallback((projectId: string, patch: Partial<ProjectSchedule>) => {
     return runAction(MutationKeys.saveProjectSchedule(projectId), "Schedule saved.", async () => {

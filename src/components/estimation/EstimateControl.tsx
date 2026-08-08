@@ -15,7 +15,7 @@ import {
   complexityLevels, complexityMultipliers, estimateStatusLabels, responsibleRoles, roleLabels,
   type EstimateBundle, type EstimateItem, type ProjectEstimate,
 } from "../../types/estimation";
-import { onEstimationChanged } from "../../lib/estimationEvents";
+import { notifyEstimationChanged, onEstimationChanged } from "../../lib/estimationEvents";
 
 const emptyBundle: EstimateBundle = { estimates: [], items: [], allocations: [], reviews: [], adjustments: [], scenarios: [] };
 
@@ -65,7 +65,7 @@ export function EstimateControl({ projectId }: { projectId: string }) {
 
   async function run(fn: () => Promise<unknown>, message?: string) {
     setBusy(true); setNotice(null);
-    try { await fn(); await reload(); if (message) setNotice(message); }
+    try { await fn(); await reload(); notifyEstimationChanged(projectId); if (message) setNotice(message); }
     catch (e) { setNotice(e instanceof Error ? e.message : "Action failed."); }
     finally { setBusy(false); }
   }

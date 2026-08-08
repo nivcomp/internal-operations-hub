@@ -178,20 +178,32 @@ export function ProjectDetailPage({
   const pendingChanges = projectChanges.filter((request) => request.status !== "client_approved" && request.status !== "declined").length;
   const pendingTime = projectTimeEntries.filter((entry) => entry.status === "submitted").length;
   const tabs: TabDef<ProjectTab>[] = [
-    { key: "overview", label: "Overview" },
-    { key: "meeting", label: "חדר אפיון" },
-    { key: "scope", label: "Scope", badge: items.length || undefined },
-    { key: "estimate", label: "Estimate" },
-    { key: "commercial", label: "Commercial & dates" },
-    { key: "proposal", label: "Proposal & signature" },
-    { key: "suppliers", label: "Suppliers", badge: activeProject.assignedSupplierIds.length || undefined, attention: pendingTime > 0 },
-    { key: "money", label: "Money", attention: Boolean(payment && payment.status !== "received") },
-    { key: "changes", label: "Changes", badge: projectChanges.length || undefined, attention: pendingChanges > 0 },
-    { key: "timeline", label: "Timeline" },
-    { key: "assistant", label: "Assistant" },
-    { key: "documents", label: "Documents" },
-    { key: "files", label: "Files & decisions", badge: projectFiles.length || undefined },
+    { key: "overview", label: "סקירה" },
+    { key: "meeting", label: "אפיון ושיחה" },
+    { key: "scope", label: "היקף", badge: items.length || undefined },
+    { key: "estimate", label: "תמחור" },
+    { key: "proposal", label: "הצעה ואישור" },
+    { key: "suppliers", label: "ביצוע", badge: activeProject.assignedSupplierIds.length || undefined, attention: pendingTime > 0 || pendingChanges > 0 },
   ];
+  const secondaryTabs: { key: ProjectTab; label: string }[] = [
+    { key: "commercial", label: "הגדרות מסחריות ותאריכים" },
+    { key: "money", label: "תשלומים" },
+    { key: "changes", label: "בקשות שינוי" },
+    { key: "timeline", label: "ציר זמן" },
+    { key: "assistant", label: "עוזר אדמין" },
+    { key: "documents", label: "מסמכים" },
+    { key: "files", label: "קבצים והחלטות" },
+  ];
+  const estimateSummary = estimateSummaries.find((item) => item.projectId === activeProject.id);
+  const commercials = buildProjectCommercials({
+    project: activeProject,
+    schedule: projectSchedules.find((s) => s.projectId === activeProject.id),
+    summary: estimateSummary,
+    supplierProfiles,
+  });
+  const displayMoney = (amount: number | null | undefined) => amount == null
+    ? "לא הוגדר"
+    : new Intl.NumberFormat("he-IL", { style: "currency", currency: estimateSummary?.currency ?? "ILS", maximumFractionDigits: 0 }).format(amount);
   const siblingIndex = projects.findIndex((item) => item.id === activeProject.id);
   const previousProject = siblingIndex > 0 ? projects[siblingIndex - 1] : undefined;
   const nextProject = siblingIndex >= 0 && siblingIndex < projects.length - 1 ? projects[siblingIndex + 1] : undefined;
@@ -210,21 +222,52 @@ export function ProjectDetailPage({
           next: nextProject ? { label: nextProject.name, onClick: () => nav.openProject(nextProject.id) } : undefined,
         }}
       />
-      <PageHeader title={activeProject.name} subtitle={`${client?.company ?? "Unassigned client"} · ${statusLabels[activeProject.status]} · ${ready ? "Ready to start" : "Start blocked"}`} />
+      <PageHeader title={activeProject.name} subtitle={`${client?.company ?? "ללא לקוח"} · ${statusLabels[activeProject.status]} · ${ready ? "מוכן להתחלה" : "ממתין לתנאי התחלה"}`} />
+      <div className="project-command-bar">
+        <button type="button" className="primary-button" onClick={() => client && nav.openClientPortal(client.id)} disabled={!client}>צפה בדיוק במה שהלקוח רואה</button>
+        <label>כלים נוספים
+          <select value={secondaryTabs.some((item) => item.key === tab) ? tab : ""} onChange={(event) => event.target.value && setTab(event.target.value as ProjectTab)}>
+            <option value="">בחר כלי</option>
+            {secondaryTabs.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+          </select>
+        </label>
+      </div>
       <Tabs tabs={tabs} active={tab} onChange={setTab} ariaLabel="Project workspace sections" />
       {tab === "meeting" ? <MeetingWorkspace projectId={activeProject.id} projectName={activeProject.name} /> : null}
       {tab === "proposal" ? <ProposalPanel projectId={activeProject.id} mode="admin" /> : null}
       {tab === "overview" || tab === "commercial" ? (
         <ProjectControlSummary
-          commercials={buildProjectCommercials({
-            project: activeProject,
-            schedule: projectSchedules.find((s) => s.projectId === activeProject.id),
-            summary: estimateSummaries.find((s) => s.projectId === activeProject.id),
-            supplierProfiles,
-          })}
+          commercials={commercials}
           assignedSupplierNames={activeProject.assignedSupplierIds.map((id) => getSupplierName(id, suppliers)).join(", ")}
           onOpenDetails={tab === "overview" ? () => setTab("commercial") : undefined}
         />
+      ) : null}
+      {tab === "overview" || tab === "estimate" ? (
+        <section className="pricing-visibility-grid">
+          <article className="card client-visible-card">
+            <p className="eyebrow">מה הלקוח רואה</p>
+            <h2>{estimateSummary?.clientVisible ? "האומדן פורסם ללקוח" : "האומדן עדיין פנימי"}</h2>
+            {estimateSummary?.clientVisible ? (
+              <dl className="meta-list">
+                <div><dt>הערכת שעות</dt><dd>{estimateSummary.estimatedHoursMin}–{estimateSummary.estimatedHoursMax} שעות</dd></div>
+                <div><dt>{estimateSummary.approvedByYaniv && estimateSummary.finalFixedPrice != null ? "מחיר קבוע מאושר" : "טווח מחיר ללקוח"}</dt><dd>{estimateSummary.approvedByYaniv && estimateSummary.finalFixedPrice != null ? displayMoney(estimateSummary.finalFixedPrice) : `${displayMoney(estimateSummary.estimatedBudgetMin)}–${displayMoney(estimateSummary.estimatedBudgetMax)}`}</dd></div>
+                <div><dt>גרסה</dt><dd>v{estimateSummary.version}</dd></div>
+                <div><dt>סטטוס</dt><dd>{estimateSummary.status}</dd></div>
+              </dl>
+            ) : <p className="muted-text">הלקוח אינו רואה כרגע שעות או מחיר. כדי לשתף, יש לפרסם את האומדן מתוך מסך התמחור.</p>}
+            <button type="button" onClick={() => client && nav.openClientPortal(client.id)} disabled={!client}>פתח תצוגת לקוח</button>
+          </article>
+          <article className="card internal-only-card">
+            <p className="eyebrow">פנימי בלבד · לא נחשף ללקוח</p>
+            <h2>חישוב ורווחיות</h2>
+            <dl className="meta-list">
+              <div><dt>מחיר חישוב לשעה</dt><dd>{displayMoney(estimateSummary?.clientCalculationRate)}</dd></div>
+              <div><dt>עלות פנימית</dt><dd>{displayMoney(estimateSummary?.internalCost)}</dd></div>
+              <div><dt>עלות ספק משוערת</dt><dd>{pricing ? currency.format(pricing.supplierCostEstimate) : "לא הוגדרה"}</dd></div>
+              <div><dt>יעד רווח</dt><dd>{estimateSummary ? `${estimateSummary.targetMarginPercent}%` : "לא הוגדר"}</dd></div>
+            </dl>
+          </article>
+        </section>
       ) : null}
       {tab === "commercial" ? (
         <>
@@ -546,7 +589,16 @@ export function ProjectDetailPage({
         ) : <p>No change requests for this project.</p>}
       </section>
       ) : null}
-      {tab === "estimate" ? <EstimateControl projectId={project.id} /> : null}
+      {tab === "estimate" ? (
+        <>
+          <EstimateControl projectId={project.id} />
+          <details className="advanced-commercial-details">
+            <summary>הגדרות מסחריות ותאריכים מתקדמות</summary>
+            <CommercialSettingsPanel project={activeProject} />
+            <TargetDateForm project={activeProject} readOnly />
+          </details>
+        </>
+      ) : null}
       {tab === "documents" ? <ProjectDocumentsPanel projectId={project.id} /> : null}
       {tab === "timeline" ? (
         <ProjectTimeline

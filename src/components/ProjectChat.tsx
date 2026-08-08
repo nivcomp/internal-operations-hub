@@ -75,13 +75,44 @@ function isRtl(text: string) {
   return /[\u0590-\u05FF\u0600-\u06FF]/.test(text);
 }
 
-function ArtifactPanel({ artifact }: { artifact: ChatArtifact }) {
+const xml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char] ?? char);
+
+function downloadArtifactImage(artifact: ChatArtifact, projectName: string) {
+  const entries = artifact.nodes?.length ? artifact.nodes.map((node) => `${node.label}${node.detail ? ` — ${node.detail}` : ""}`)
+    : artifact.items?.length ? artifact.items
+      : artifact.rows?.map((row) => row.join(" · ")) ?? [];
+  const width = 1200;
+  const height = Math.max(500, 230 + entries.length * 72);
+  const rows = entries.slice(0, 14).map((entry, index) => `<g transform="translate(80 ${205 + index * 72})"><rect width="1040" height="54" rx="14" fill="${index % 2 ? "#f4f8f7" : "#e7f3f0"}"/><circle cx="30" cy="27" r="16" fill="#0f766e"/><text x="30" y="33" text-anchor="middle" font-size="16" font-weight="700" fill="white">${index + 1}</text><text x="62" y="33" font-size="20" fill="#172033">${xml(entry.slice(0, 92))}</text></g>`).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#ffffff"/><rect x="40" y="40" width="1120" height="${height - 80}" rx="28" fill="#fbfdfc" stroke="#cbd5e1"/><text x="80" y="100" font-family="Arial,sans-serif" font-size="18" fill="#0f766e">${xml(projectName)}</text><text x="80" y="148" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#172033">${xml(artifact.title)}</text>${rows}</svg>`;
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${artifact.type}-${projectName}`.replace(/[^\p{L}\p{N}._-]+/gu, "-") + ".svg";
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function ArtifactPanel({ artifact, projectId, projectName }: { artifact: ChatArtifact; projectId: string; projectName: string }) {
+  const [copied, setCopied] = useState(false);
   const kind = artifact.type === "flow" ? "תרשים תהליך" : artifact.type === "wireframe" ? "סקיצה" : artifact.type === "table" ? "טבלה" : "רשימה";
+  const portalUrl = `${window.location.origin}/?portalProject=${encodeURIComponent(projectId)}`;
+  async function copyPortalLink() {
+    try {
+      await navigator.clipboard.writeText(portalUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      window.prompt("Copy portal link", portalUrl);
+    }
+  }
+  const emailHref = `mailto:?subject=${encodeURIComponent(`${projectName} — ${artifact.title}`)}&body=${encodeURIComponent(`הסקיצה והפרויקט זמינים בפורטל הלקוח:\n${portalUrl}`)}`;
   return <section className={`chat-artifact artifact-${artifact.type}`} dir="rtl"><header><span>{kind}</span><strong>{artifact.title}</strong></header>{artifact.description ? <p>{artifact.description}</p> : null}
-    {artifact.type === "flow" ? <div className="artifact-flow">{(artifact.nodes ?? []).map((node, index) => <div key={node.id || index} className="artifact-flow-step"><article><strong>{node.label}</strong>{node.detail ? <small>{node.detail}</small> : null}</article>{index < (artifact.nodes?.length ?? 0) - 1 ? <span>←</span> : null}</div>)}</div> : null}
-    {artifact.type === "wireframe" ? <div className="artifact-wireframe">{(artifact.nodes ?? []).map((node, index) => <article key={node.id || index}><strong>{node.label}</strong>{node.detail ? <p>{node.detail}</p> : null}</article>)}</div> : null}
+    {artifact.type === "flow" ? <div className="artifact-flow">{(artifact.nodes ?? []).map((node, index) => <div key={node.id || index} className="artifact-flow-step"><article><span className="artifact-flow-index">{index + 1}</span><div><strong>{node.label}</strong>{node.detail ? <small>{node.detail}</small> : null}</div></article>{index < (artifact.nodes?.length ?? 0) - 1 ? <span className="artifact-flow-arrow" aria-hidden="true">←</span> : null}</div>)}</div> : null}
+    {artifact.type === "wireframe" ? <div className="artifact-wireframe">{(artifact.nodes ?? []).map((node, index) => <article key={node.id || index}><header><span className="artifact-window-dots" aria-hidden="true"><i /><i /><i /></span><strong>{node.label}</strong></header><div className="artifact-screen-body"><span className="artifact-screen-hero" /><span className="artifact-screen-line wide" /><span className="artifact-screen-line" />{node.detail ? <p>{node.detail}</p> : null}<span className="artifact-screen-action">פעולה</span></div></article>)}</div> : null}
     {artifact.type === "table" && artifact.columns?.length ? <div className="table-scroll"><table><thead><tr>{artifact.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{(artifact.rows ?? []).map((row, rowIndex) => <tr key={rowIndex}>{artifact.columns!.map((_, cellIndex) => <td key={cellIndex}>{row[cellIndex] ?? ""}</td>)}</tr>)}</tbody></table></div> : null}
     {artifact.type === "checklist" ? <ul className="artifact-checklist">{(artifact.items ?? []).map((item, index) => <li key={index}>✓ {item}</li>)}</ul> : null}
+    <footer className="artifact-share-actions"><button type="button" onClick={() => downloadArtifactImage(artifact, projectName)}>הורד כתמונה</button><button type="button" onClick={() => void copyPortalLink()}>{copied ? "הקישור הועתק" : "העתק קישור לפורטל"}</button><a href={emailHref}>פתח טיוטת מייל</a></footer>
   </section>;
 }
 
@@ -345,7 +376,7 @@ export function ProjectChat({
                 {showVisibility && <span className="chat-visibility">{visibilityLabels[message.visibility]}</span>}
               </p>
               <p className="chat-text">{message.body}</p>
-              {(message.structured_payload?.artifacts ?? []).map((artifact, index) => <ArtifactPanel key={`${message.id}-${index}`} artifact={artifact} />)}
+              {(message.structured_payload?.artifacts ?? []).map((artifact, index) => <ArtifactPanel key={`${message.id}-${index}`} artifact={artifact} projectId={projectId} projectName={projectName} />)}
               {message.sender_type === "ai_agent" && message.structured_payload?.ai_draft && (
                 <p className="chat-draft-flag">AI draft — awaiting agency review</p>
               )}

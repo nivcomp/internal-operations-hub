@@ -113,10 +113,21 @@ function AppShell() {
   const [simpleMeetingProjectId, setSimpleMeetingProjectId] = useState(() => window.localStorage.getItem("cts.simple-meeting-project") ?? "");
   const [simpleView, setSimpleView] = useState<SimpleView>(() => simpleMeetingProjectId ? "meeting" : "home");
   const [cameFromSimple, setCameFromSimple] = useState(false);
+  const [portalProjectId] = useState(() => new URLSearchParams(window.location.search).get("portalProject") ?? undefined);
 
   useEffect(() => {
     if (!allowedViews.includes(activeView)) setActiveView(allowedViews[0]);
   }, [allowedViews, activeView]);
+
+  useEffect(() => {
+    if (!portalProjectId || status !== "ready") return;
+    const sharedProject = projects.find((project) => project.id === portalProjectId);
+    if (!sharedProject || (role === "client" && sharedProject.clientId !== profile?.clientId)) return;
+    setSelectedClientId(sharedProject.clientId);
+    setSelectedProjectId(sharedProject.id);
+    setActiveView("client-portal");
+    if (role === "agency_admin") setModeState("advanced");
+  }, [portalProjectId, status, projects, role, profile?.clientId]);
 
   const navigate = useCallback((view: ViewKey) => {
     if (!allowedViews.includes(view)) return;
@@ -361,6 +372,7 @@ function AppShell() {
         clientPayments={clientPayments}
         hourBanks={hourBanks}
         isPreview={role === "agency_admin"}
+        initialProjectId={portalProjectId}
       />
     ),
     "supplier-portal": (

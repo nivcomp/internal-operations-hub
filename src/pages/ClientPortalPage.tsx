@@ -1,7 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
-import ProjectInsights from "../components/ProjectInsights";
 import { StatusBadge } from "../components/StatusBadge";
 import { BudgetSimulator } from "../components/estimation/BudgetSimulator";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
@@ -20,6 +19,7 @@ type ClientPortalPageProps = {
   hourBanks: HourBank[];
   /** True when an agency admin is previewing the portal. */
   isPreview: boolean;
+  initialProjectId?: string;
 };
 
 const requestStatusLabels: Record<ChangeRequest["status"], string> = {
@@ -31,11 +31,43 @@ const requestStatusLabels: Record<ChangeRequest["status"], string> = {
   declined: "Declined",
 };
 
+type PortalLanguage = "he" | "en";
+
+const portalCopy = {
+  he: {
+    workspace: "הפורטל שלי", subtitle: "הפרויקט, ההחלטות והשלב הבא במקום אחד.", project: "פרויקט",
+    status: "מצב הפרויקט", ready: "מוכנים להתחיל", waiting: "ממתינים לאישור, תשלום או בנק שעות",
+    requests: "בקשות פתוחות", approvals: "ממתינים לאישור שלך", estimate: "הערכת הפרויקט",
+    estimatePending: "האומדן יופיע לאחר שהסוכנות תאשר לשתף אותו.", hours: "שעות", budget: "תקציב משוער",
+    fixedPrice: "מחיר קבוע מאושר", next: "מה השלב הבא?", chatTitle: "שיחה על הפרויקט",
+    chatSubtitle: "אפשר לשאול, לבקש דוגמה או סקיצה ולראות כאן את התוצרים המעודכנים מהשיחה.",
+    preview: "תצוגת אדמין של מה שהלקוח רשאי לראות. שליחת הודעות בשם הלקוח חסומה.",
+    details: "מסמכים, הצעה ופרטים נוספים", stages: ["אפיון", "אישור והצעה", "ביצוע", "מסירה"],
+  },
+  en: {
+    workspace: "My portal", subtitle: "Your project, decisions and next step in one place.", project: "Project",
+    status: "Project status", ready: "Ready to start", waiting: "Waiting for approval, payment or paid hours",
+    requests: "Open requests", approvals: "Waiting for your approval", estimate: "Project estimate",
+    estimatePending: "The estimate will appear after the agency approves it for sharing.", hours: "Hours", budget: "Estimated budget",
+    fixedPrice: "Approved fixed price", next: "What happens next?", chatTitle: "Project conversation",
+    chatSubtitle: "Ask questions, request examples or sketches, and see the latest conversation outputs here.",
+    preview: "Agency preview of what this client may see. Sending as the client is disabled.",
+    details: "Documents, proposal and more details", stages: ["Discovery", "Approval & proposal", "Delivery", "Handoff"],
+  },
+} as const;
+
+function projectStage(status: Project["status"]) {
+  if (["lead_started", "discovery_in_progress", "waiting_for_agency_pricing", "pricing_set", "brief_ready", "scope_ready"].includes(status)) return 0;
+  if (["waiting_for_client_approval", "approved_by_client", "waiting_for_payment", "paid_ready_to_start"].includes(status)) return 1;
+  if (["assigned_to_supplier", "in_development", "change_requested", "change_priced", "change_approved"].includes(status)) return 2;
+  return 3;
+}
+
 export function ClientPortalPage({
-  selectedClientId, clients, projects, changeRequests, clientPayments, hourBanks, isPreview,
+  selectedClientId, clients, projects, changeRequests, clientPayments, hourBanks, isPreview, initialProjectId,
 }: ClientPortalPageProps) {
   const {
-    approvals, fileLinks, projectMessages, scopeItems, scopes,
+    approvals, estimateSummaries, fileLinks, projectMessages, scopeItems, scopes,
     submitClientChangeRequest, updateApprovalStatus, updateChangeRequestStatus, createProjectMessage,
     isPending, getError, getSuccess,
   } = useAppData();
@@ -47,8 +79,18 @@ export function ClientPortalPage({
   );
   const clientProjectIds = clientProjects.map((project) => project.id);
 
-  const [activeProjectId, setActiveProjectId] = useState<string | undefined>();
+  const [activeProjectId, setActiveProjectId] = useState<string | undefined>(initialProjectId);
+  const [language, setLanguage] = useState<PortalLanguage>(() => {
+    const saved = window.localStorage.getItem("client-portal-language");
+    return saved === "en" || saved === "he" ? saved : (navigator.language.toLowerCase().startsWith("he") ? "he" : "en");
+  });
   const project = clientProjects.find((item) => item.id === activeProjectId) ?? clientProjects[0];
+  const t = portalCopy[language];
+
+  function changeLanguage(next: PortalLanguage) {
+    setLanguage(next);
+    window.localStorage.setItem("client-portal-language", next);
+  }
 
   const [requestForm, setRequestForm] = useState({ title: "", description: "" });
   const [messageBody, setMessageBody] = useState("");
@@ -81,6 +123,8 @@ export function ClientPortalPage({
   const pendingApprovals = approvalsForProject.filter(
     (approval) => approval.status === "pending" && approval.approverRole === "client",
   );
+  const estimate = estimateSummaries.find((item) => item.projectId === project.id && item.clientVisible);
+  const currentStage = projectStage(project.status);
   const paymentsForProject = clientPayments.filter((payment) => payment.projectId === project.id);
   const banks = hourBanks.filter((bank) => bank.clientId === client.id && (!bank.projectId || bank.projectId === project.id));
   const requests = changeRequests.filter((request) => request.projectId === project.id);
@@ -119,16 +163,21 @@ export function ClientPortalPage({
   }
 
   return (
-    <>
+    <div className="client-portal-shell" dir={language === "he" ? "rtl" : "ltr"}>
       <PageHeader
-        title={`${client.company} workspace`}
-        subtitle={isPreview ? "Agency preview of exactly what this client can see." : "Your projects, approvals, payments and requests in one place."}
+        title={`${client.company} · ${t.workspace}`}
+        subtitle={isPreview ? t.preview : t.subtitle}
       />
+
+      <div className="portal-language-switch" role="group" aria-label="Portal language">
+        <button type="button" className={language === "he" ? "primary-button" : "ghost-button"} onClick={() => changeLanguage("he")}>עברית</button>
+        <button type="button" className={language === "en" ? "primary-button" : "ghost-button"} onClick={() => changeLanguage("en")}>English</button>
+      </div>
 
       {clientProjects.length > 1 ? (
         <div className="filter-row">
           <label className="inline-label">
-            Project
+            {t.project}
             <select value={project.id} onChange={(event) => setActiveProjectId(event.target.value)}>
               {clientProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
@@ -136,31 +185,50 @@ export function ClientPortalPage({
         </div>
       ) : null}
 
-      <section className="card">
+      <section className="card portal-overview">
+        <p className="eyebrow">{t.status}</p>
         <h2>{project.name}</h2>
         <p className="muted-text">{project.summary}</p>
-        <dl className="meta-list">
-          <div><dt>Status</dt><dd><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></dd></div>
-          <div><dt>Work readiness</dt><dd>{canWorkStart(project, scopes) ? "Ready to start" : "Waiting for approval, payment or paid hours"}</dd></div>
-          <div><dt>Open requests</dt><dd>{requests.filter((r) => r.status !== "declined" && r.status !== "client_approved").length}</dd></div>
-          <div><dt>Pending approvals</dt><dd>{pendingApprovals.length}</dd></div>
+        <div className="portal-progress" aria-label={t.status}>
+          {t.stages.map((label, index) => (
+            <div key={label} className={`portal-progress-step${index < currentStage ? " done" : index === currentStage ? " active" : ""}`}>
+              <span>{index < currentStage ? "✓" : index + 1}</span><strong>{label}</strong>
+            </div>
+          ))}
+        </div>
+        <dl className="meta-list portal-summary-grid">
+          <div><dt>{t.status}</dt><dd><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></dd></div>
+          <div><dt>{t.next}</dt><dd>{canWorkStart(project, scopes) ? t.ready : t.waiting}</dd></div>
+          <div><dt>{t.requests}</dt><dd>{requests.filter((r) => r.status !== "declined" && r.status !== "client_approved").length}</dd></div>
+          <div><dt>{t.approvals}</dt><dd>{pendingApprovals.length}</dd></div>
         </dl>
+      </section>
+
+      <section className="card portal-estimate-card">
+        <h2>{t.estimate}</h2>
+        {!estimate ? <p className="muted-text">{t.estimatePending}</p> : (
+          <div className="portal-estimate-values">
+            <div><span>{t.hours}</span><strong>{estimate.estimatedHoursMin}–{estimate.estimatedHoursMax}</strong></div>
+            <div><span>{estimate.finalFixedPrice && estimate.approvedByYaniv ? t.fixedPrice : t.budget}</span><strong>{new Intl.NumberFormat(language === "he" ? "he-IL" : "en-GB", { style: "currency", currency: estimate.currency, maximumFractionDigits: 0 }).format(estimate.finalFixedPrice && estimate.approvedByYaniv ? estimate.finalFixedPrice : estimate.estimatedBudgetMax)}</strong></div>
+          </div>
+        )}
       </section>
 
       <ProjectChat
         projectId={project.id}
         projectName={project.name}
         agent="project_guide"
-        title="Project Guide"
-        subtitle="Explain what you need in your own words. The guide asks one question at a time and builds a draft for the agency to review."
+        title={t.chatTitle}
+        subtitle={t.chatSubtitle}
         readOnly={isPreview}
         readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the client is disabled."
         suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Show me the project flow", "Summarise what we agreed so far"]}
         safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
       />
 
-      <ProjectInsights projectId={project.id} role="client" />
-
+      <details className="portal-details">
+        <summary>{t.details}</summary>
+        <div className="portal-details-body">
       <ProjectDocumentsPanel projectId={project.id} readOnly />
 
       <ProposalPanel projectId={project.id} mode="client" readOnly={isPreview} />
@@ -377,6 +445,8 @@ export function ClientPortalPage({
           {getError(messageKey) ? <p className="form-error" role="alert">{getError(messageKey)}</p> : null}
         </form>
       </section>
-    </>
+        </div>
+      </details>
+    </div>
   );
 }
