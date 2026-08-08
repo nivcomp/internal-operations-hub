@@ -44,6 +44,7 @@ Do not split the modes into different repositories, applications, deployments or
 - Clients see only their own client-safe project data and published artifacts.
 - Suppliers see only assigned supplier-safe work and their own terms; never client price, calculation rate, internal cost or agency margin.
 - AI context is built server-side and role-filtered. AI produces suggestions or typed proposed actions; final scope, price, assignment, approval and readiness remain human-controlled.
+- Project chat may return bounded structured visual artifacts (`flow`, `wireframe`, `table`, `checklist`) inside `chat_messages.structured_payload`. The Edge Function sanitizes and caps these structures; the frontend renders them without HTML or executable diagram syntax.
 - Signed proposal versions and signatures are immutable.
 - Uploaded meeting/import files use private storage buckets.
 - No service-role key is present in frontend code.

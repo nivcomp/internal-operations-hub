@@ -57,10 +57,21 @@ export type ChatMessage = {
     confirmed_action?: string;
     drafts?: Record<string, unknown>;
     ai_draft?: boolean;
+    artifacts?: ChatArtifact[];
   };
   visibility: "client_agency" | "supplier_agency" | "agency_only" | "shared_all";
   status: string;
   created_at: string;
+};
+
+export type ChatArtifact = {
+  type: "flow" | "wireframe" | "table" | "checklist";
+  title: string;
+  description?: string;
+  nodes?: { id: string; label: string; detail?: string; next?: string[] }[];
+  columns?: string[];
+  rows?: string[][];
+  items?: string[];
 };
 
 export type ChatConversation = { id: string; project_id: string; kind: string; title: string };
