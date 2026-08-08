@@ -1,5 +1,28 @@
 # Work Log
 
+### 2026-08-08 — Focused client specification and MVP review
+
+**Work unit**
+Simplify the client-facing project review while preserving the existing unified application, pricing source and role boundaries.
+
+**Changes**
+- Added focused project, specification, interactive MVP and conversation views with full-screen desktop/mobile modes.
+- Kept client pricing transparent in hours: optional scope shows added hours, calculated money and hourly rates stay hidden, and only an approved fixed price is displayed.
+- Extended newly generated prototype versions with a structured data model, integrations and automation plan.
+- Added reviewed handoff copy actions for Lovable and Base44.
+- Preserved immutable MVP versions and the existing client approval/change-request flow.
+- Made the later duplicate prototype migration safe to apply after Lovable's earlier migration by dropping same-named policies before recreation; no duplicate tables or pricing sources were added.
+
+**Tests**
+- `pnpm install --frozen-lockfile` passed.
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Production visual verification is pending because the available browser session is not authenticated.
+
+**Deployment**
+- Deploy the updated `project-prototype` Edge Function and apply pending migrations in the Supabase project connected to Lovable.
+
+
 ### 2026-08-08 — Saved interactive MVP prototype studio
 
 **Work unit**

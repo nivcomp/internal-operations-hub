@@ -11,6 +11,9 @@ type PrototypeKind = "app" | "whatsapp" | "automation";
 type PrototypeContent = {
   theme: { primary: string; accent: string; style: string };
   startScreenId: string;
+  dataModel?: Array<{ name: string; purpose: string; fields: string[] }>;
+  integrations?: Array<{ name: string; purpose: string; direction: string }>;
+  automations?: Array<{ name: string; trigger: string; steps: string[]; outcome: string }>;
   screens: Array<{
     id: string; title: string; subtitle?: string; imagePrompt?: string;
     blocks: Array<{ type: "heading" | "text" | "image" | "input" | "card" | "message" | "status"; label: string; value?: string; sender?: "client" | "bot" }>;
@@ -42,6 +45,19 @@ function sanitize(raw: PrototypeContent): PrototypeContent {
     theme: { primary: String(raw?.theme?.primary || "#0f766e").slice(0, 20), accent: String(raw?.theme?.accent || "#dff5ef").slice(0, 20), style: String(raw?.theme?.style || "clean").slice(0, 60) },
     startScreenId: ids.has(raw?.startScreenId) ? raw.startScreenId : screens[0].id,
     screens,
+    dataModel: (Array.isArray(raw?.dataModel) ? raw.dataModel : []).slice(0, 20).map((entity) => ({
+      name: String(entity?.name || "Entity").slice(0, 100), purpose: String(entity?.purpose || "").slice(0, 400),
+      fields: (Array.isArray(entity?.fields) ? entity.fields : []).slice(0, 30).map((field) => String(field).slice(0, 120)),
+    })),
+    integrations: (Array.isArray(raw?.integrations) ? raw.integrations : []).slice(0, 20).map((integration) => ({
+      name: String(integration?.name || "Integration").slice(0, 100), purpose: String(integration?.purpose || "").slice(0, 400),
+      direction: String(integration?.direction || "two-way").slice(0, 80),
+    })),
+    automations: (Array.isArray(raw?.automations) ? raw.automations : []).slice(0, 20).map((automation) => ({
+      name: String(automation?.name || "Automation").slice(0, 100), trigger: String(automation?.trigger || "").slice(0, 300),
+      steps: (Array.isArray(automation?.steps) ? automation.steps : []).slice(0, 20).map((step) => String(step).slice(0, 300)),
+      outcome: String(automation?.outcome || "").slice(0, 400),
+    })),
   };
 }
 
@@ -88,7 +104,7 @@ Deno.serve(async (req) => {
     revisionInstructions: String(body.instructions || "").slice(0, 3000),
   }).slice(0, 30000);
   const raw = await callModel([
-    { role: "system", content: `Create a detailed, client-safe interactive ${kind} prototype in Hebrew unless the source is clearly English. Use only supplied facts. Never include price, supplier cost, internal cost, margin, secrets or executable code. Return JSON only with this schema: {"title":string,"summary":string,"theme":{"primary":"#hex","accent":"#hex","style":string},"startScreenId":string,"screens":[{"id":string,"title":string,"subtitle":string,"imagePrompt":string,"blocks":[{"type":"heading|text|image|input|card|message|status","label":string,"value":string,"sender":"client|bot"}],"actions":[{"id":string,"label":string,"targetScreenId":string,"tone":"primary|secondary|danger"}]}]}. Create 4-8 screens. For WhatsApp, include success, missing-information and fallback-to-human scenarios as separate screens. For apps, include realistic buttons, empty/error/success states and clear navigation. All targetScreenId values must reference an existing screen id.` },
+    { role: "system", content: `Create a detailed, client-safe interactive ${kind} prototype in Hebrew unless the source is clearly English. Use only supplied facts. Never include price, supplier cost, internal cost, margin, secrets or executable code. Return JSON only with this schema: {"title":string,"summary":string,"theme":{"primary":"#hex","accent":"#hex","style":string},"startScreenId":string,"screens":[{"id":string,"title":string,"subtitle":string,"imagePrompt":string,"blocks":[{"type":"heading|text|image|input|card|message|status","label":string,"value":string,"sender":"client|bot"}],"actions":[{"id":string,"label":string,"targetScreenId":string,"tone":"primary|secondary|danger"}]}],"dataModel":[{"name":string,"purpose":string,"fields":[string]}],"integrations":[{"name":string,"purpose":string,"direction":string}],"automations":[{"name":string,"trigger":string,"steps":[string],"outcome":string}]}. Create 4-8 screens. Describe only data entities, integrations and automations that are supported by the supplied scope; use empty arrays when none are known. For WhatsApp, include success, missing-information and fallback-to-human scenarios as separate screens. For apps, include realistic buttons, empty/error/success states and clear navigation. All targetScreenId values must reference an existing screen id.` },
     { role: "user", content: context },
   ], { maxOutputTokens: 7000 });
   const parsed = parseJsonOutput<any>(raw);

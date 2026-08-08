@@ -169,25 +169,16 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
           <p className="stat-value">{formatHours(hours.totalMin, hours.totalMax)}</p>
         </article>
         <article className="card subtle">
-          <h3>{priceApproved ? "Approved fixed price" : "Estimated budget"}</h3>
-          <p className="stat-value">
-            {priceApproved
-              ? formatMoney(estimate.final_fixed_price as number, estimate.currency)
-              : `${formatMoney(budget.min, estimate.currency)} – ${formatMoney(budget.max, estimate.currency)}`}
-          </p>
-          {estimate.show_hourly_rate_to_client ? (
-            <p className="muted-text">
-              Calculated at {formatMoney(estimate.client_calculation_rate, estimate.currency)} per hour. This is an
-              estimation rate only — it is not necessarily the final billing model.
-            </p>
-          ) : null}
+          <h3>{priceApproved ? "מחיר קבוע מאושר" : "מצב המחיר"}</h3>
+          <p className="stat-value">{priceApproved ? formatMoney(estimate.final_fixed_price as number, estimate.currency) : "ייקבע לאחר אישור ההיקף"}</p>
+          <p className="muted-text">עד לאישור מחיר קבוע מוצגת ללקוח השפעת הבחירות בשעות עבודה בלבד.</p>
         </article>
       </div>
 
       <p>
         {priceApproved
-          ? `Your approved fixed price is ${formatMoney(estimate.final_fixed_price as number, estimate.currency)}${estimate.delivery_range_label ? `, with delivery ${estimate.delivery_range_label}` : ""}.`
-          : `Based on your current choices, the project is estimated at ${formatHours(hours.totalMin, hours.totalMax)} and an estimated budget of ${formatMoney(budget.min, estimate.currency)}–${formatMoney(budget.max, estimate.currency)}. This is an initial estimate and is not a final quotation.`}
+          ? `המחיר הקבוע שאושר הוא ${formatMoney(estimate.final_fixed_price as number, estimate.currency)}${estimate.delivery_range_label ? `, עם מסירה ${estimate.delivery_range_label}` : ""}.`
+          : `לפי הבחירות הנוכחיות נדרשות בערך ${formatHours(hours.totalMin, hours.totalMax)}. הסכום הכספי יופיע רק לאחר אישור מחיר קבוע.`}
       </p>
 
       {included.length ? (
@@ -209,7 +200,7 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
         <p className="muted-text">There are no optional features in this estimate.</p>
       ) : (
         <table>
-          <thead><tr><th>Include</th><th>Feature</th><th>Level</th><th>Quantity</th></tr></thead>
+          <thead><tr><th>להוסיף</th><th>רכיב</th><th>תוספת שעות</th><th>רמה</th><th>כמות</th></tr></thead>
           <tbody>
             {optional.map((item) => {
               const sel = selection.get(item.id) ?? { selected: false, quantity: 1 };
@@ -228,6 +219,7 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
                     <strong>{item.client_visible_label || item.title}</strong>
                     {item.client_visible_description ? <><br />{item.client_visible_description}</> : null}
                   </td>
+                  <td><strong>+{formatHours(item.estimated_hours_min, item.estimated_hours_max)}</strong></td>
                   <td>
                     <StatusBadge
                       label={item.option_tier}

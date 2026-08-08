@@ -5,7 +5,14 @@ export type PrototypeKind = "app" | "whatsapp" | "automation";
 export type PrototypeBlock = { type: "heading" | "text" | "image" | "input" | "card" | "message" | "status"; label: string; value?: string; sender?: "client" | "bot" };
 export type PrototypeAction = { id: string; label: string; targetScreenId?: string; tone?: "primary" | "secondary" | "danger" };
 export type PrototypeScreen = { id: string; title: string; subtitle?: string; imagePrompt?: string; blocks: PrototypeBlock[]; actions: PrototypeAction[] };
-export type PrototypeContent = { theme: { primary: string; accent: string; style: string }; startScreenId: string; screens: PrototypeScreen[] };
+export type PrototypeContent = {
+  theme: { primary: string; accent: string; style: string };
+  startScreenId: string;
+  screens: PrototypeScreen[];
+  dataModel?: Array<{ name: string; purpose: string; fields: string[] }>;
+  integrations?: Array<{ name: string; purpose: string; direction: string }>;
+  automations?: Array<{ name: string; trigger: string; steps: string[]; outcome: string }>;
+};
 export type PrototypeVersion = { id: string; prototype_id: string; project_id: string; version: number; status: "draft" | "shared" | "approved" | "superseded"; audience: string; title: string; summary: string; content: PrototypeContent; source_notes: string; created_at: string };
 export type ProjectPrototype = { id: string; project_id: string; title: string; prototype_kind: PrototypeKind; created_at: string; updated_at: string; versions: PrototypeVersion[] };
 export type PrototypeApproval = { id: string; prototype_version_id: string; decision: "approved" | "changes_requested"; comment: string; approved_by: string; created_at: string };

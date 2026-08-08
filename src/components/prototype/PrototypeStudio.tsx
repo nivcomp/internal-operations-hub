@@ -21,6 +21,7 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [studioFullScreen, setStudioFullScreen] = useState(false);
   const [autoShare, setAutoShare] = useState(() => localStorage.getItem(`prototype-auto-share:${projectId}`) !== "off");
   useEffect(() => { localStorage.setItem(`prototype-auto-share:${projectId}`, autoShare ? "on" : "off"); }, [autoShare, projectId]);
 
@@ -83,13 +84,13 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
     catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   }
 
-  const lovablePrompt = useMemo(() => version ? `Build this reviewed client prototype. Preserve its screens and interactions exactly. Do not invent pricing, internal costs, supplier data or permissions.\n\n${JSON.stringify(version.content, null, 2)}` : "", [version]);
-  async function copyExport() { await navigator.clipboard.writeText(lovablePrompt); setNotice("חבילת ה־MVP הועתקה. יש לבדוק אותה לפני הדבקה ב־Lovable."); }
+  const handoffPayload = useMemo(() => version ? JSON.stringify({ project: projectName, prototypeType: prototype?.prototype_kind, version: version.version, summary: version.summary, ui: version.content, rules: ["Preserve the approved screens and interactions", "Implement authentication and role isolation", "Do not invent pricing or expose internal agency data", "Create the required database schema and integrations from the supplied specification"] }, null, 2) : "", [version, prototype?.prototype_kind, projectName]);
+  async function copyExport(platform: "Lovable" | "Base44") { await navigator.clipboard.writeText(`Build an implementation of this reviewed MVP in ${platform}. Treat the JSON as the approved product contract. Include the required database, authentication, permissions, integrations and automation flows. Ask before inventing missing business rules.\n\n${handoffPayload}`); setNotice(`חבילת ה־MVP הועתקה עבור ${platform}. יש לבדוק אותה לפני ההדבקה.`); }
 
   if (!version && readOnly) return <section className="card prototype-empty"><h2>ה־MVP החזותי</h2><p>עדיין לא שותף אב־טיפוס לפרויקט.</p></section>;
 
-  return <section className={`card prototype-studio${simple ? " prototype-simple" : ""}`} dir="rtl">
-    <header className="prototype-head"><div><p className="eyebrow">MVP חזותי שמור</p><h2>{prototype?.title || projectName}</h2><p>{version?.summary || "צור אב־טיפוס לחיץ מתוך השיחה, האפיון או קובץ Word."}</p></div>{version ? <span className={`prototype-status ${version.status}`}>v{version.version} · {version.status}</span> : null}</header>
+  return <section className={`card prototype-studio${simple ? " prototype-simple" : ""}${studioFullScreen ? " prototype-fullscreen" : ""}`} dir="rtl">
+    <header className="prototype-head"><div><p className="eyebrow">MVP חזותי שמור</p><h2>{prototype?.title || projectName}</h2><p>{version?.summary || "צור אב־טיפוס לחיץ מתוך השיחה, האפיון או קובץ Word."}</p></div><div className="prototype-head-actions">{version ? <span className={`prototype-status ${version.status}`}>v{version.version} · {version.status}</span> : null}<button type="button" onClick={() => setStudioFullScreen((value) => !value)}>{studioFullScreen ? "צא ממסך מלא" : "פתח MVP במסך מלא"}</button></div></header>
 
     {!readOnly ? <div className="prototype-authoring">
       {!prototype ? <label>סוג MVP<select value={kind} onChange={(e) => setKind(e.target.value as PrototypeKind)}>{Object.entries(kindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
@@ -97,7 +98,7 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
       <label className="prototype-file">צרף TXT / MD / Word<input type="file" accept=".txt,.md,.json,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => void readSource(e.target.files?.[0])} /></label>
       {sourceText ? <details><summary>טקסט שיצורף ל־AI ({sourceText.length} תווים)</summary><textarea rows={5} value={sourceText} onChange={(e) => setSourceText(e.target.value)} /></details> : null}
       <label className="prototype-auto-share"><input type="checkbox" checked={autoShare} onChange={(event) => setAutoShare(event.target.checked)} /> שתף אוטומטית כל גרסה חדשה עם הלקוח בפורטל שלו</label>
-      <div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void createRevision()}>{busy ? "יוצר…" : prototype ? "צור גרסה חדשה" : "צור MVP ראשון"}</button>{version?.status === "draft" ? <button disabled={busy} onClick={() => void share()}>שתף עם הלקוח</button> : null}{version ? <button type="button" onClick={() => void copyExport()}>העתק חבילה ל־Lovable</button> : null}</div>
+      <div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void createRevision()}>{busy ? "יוצר…" : prototype ? "צור גרסה חדשה" : "צור MVP ראשון"}</button>{version?.status === "draft" ? <button disabled={busy} onClick={() => void share()}>שתף עם הלקוח</button> : null}{version ? <><button type="button" onClick={() => void copyExport("Lovable")}>העתק ל־Lovable</button><button type="button" onClick={() => void copyExport("Base44")}>העתק ל־Base44</button></> : null}</div>
     </div> : null}
 
     {prototypes.length > 1 || (prototype?.versions.length ?? 0) > 1 ? <div className="prototype-selectors"><label>אב־טיפוס<select value={prototype?.id || ""} onChange={(e) => { setPrototypeId(e.target.value); const next = prototypes.find((item) => item.id === e.target.value)?.versions[0]; setVersionId(next?.id || ""); setScreenId(next?.content.startScreenId || ""); }}>{prototypes.map((item) => <option key={item.id} value={item.id}>{item.title} · {kindLabels[item.prototype_kind]}</option>)}</select></label><label>גרסה<select value={version?.id || ""} onChange={(e) => { setVersionId(e.target.value); const next = prototype?.versions.find((item) => item.id === e.target.value); setScreenId(next?.content.startScreenId || ""); }}>{prototype?.versions.map((item) => <option key={item.id} value={item.id}>v{item.version} · {item.status}</option>)}</select></label></div> : null}
