@@ -67,8 +67,9 @@ const ALLOWED_KINDS: Record<AgentType, ActionKind[]> = {
 function systemPrompt(agent: AgentType) {
   const shared = `You are part of an agency delivery system. Answer in the same language the user writes in (Hebrew or English). Never invent facts about the project; if information is missing, ask for it.
 You MUST reply with a single JSON object and nothing else, in this exact shape:
-{"reply": string, "language": "he" | "en", "drafts": object, "questions": string[], "proposed_actions": [{"kind": string, "title": string, "summary": string, "payload": object}]}
+{"reply": string, "language": "he" | "en", "drafts": object, "questions": string[], "artifacts": [{"type":"flow|wireframe|table|checklist","title":string,"description":string,"nodes":[{"id":string,"label":string,"detail":string,"next":string[]}],"columns":string[],"rows":string[][],"items":string[]}], "proposed_actions": [{"kind": string, "title": string, "summary": string, "payload": object}]}
 "reply" is the message the user sees. "drafts" may be empty. Never put pricing you were not given into any field.
+Use "artifacts" only when a visual structure materially helps. For a process or architecture use flow; for a screen idea use wireframe; for comparison use table; for acceptance criteria use checklist. Keep each artifact concise and grounded only in known project facts. Do not output HTML, SVG, Mermaid syntax, executable code or external URLs.
 Allowed action kinds for you: ${ALLOWED_KINDS[agent].join(", ")}. Any other kind is rejected.
 ${ACTION_GRAMMAR}`;
 
@@ -493,7 +494,25 @@ function parseModelOutput(raw: string) {
       if (typeof parsed.reply === "string") return parsed;
     } catch { /* fall through */ }
   }
-  return { reply: raw, language: "en", drafts: {}, questions: [], proposed_actions: [] };
+  return { reply: raw, language: "en", drafts: {}, questions: [], artifacts: [], proposed_actions: [] };
+}
+
+function normalizeArtifacts(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const allowed = new Set(["flow", "wireframe", "table", "checklist"]);
+  const text = (input: unknown, max = 240) => String(input ?? "").replace(/[<>]/g, "").trim().slice(0, max);
+  return value.slice(0, 3).flatMap((raw: any, artifactIndex: number) => {
+    const type = text(raw?.type, 20); const title = text(raw?.title, 100);
+    if (!allowed.has(type) || !title) return [];
+    const nodes = Array.isArray(raw?.nodes) ? raw.nodes.slice(0, 12).map((node: any, index: number) => ({
+      id: text(node?.id, 40) || `${artifactIndex}-${index}`, label: text(node?.label, 120), detail: text(node?.detail, 300),
+      next: Array.isArray(node?.next) ? node.next.slice(0, 4).map((item: unknown) => text(item, 40)).filter(Boolean) : [],
+    })).filter((node: any) => node.label) : [];
+    const columns = Array.isArray(raw?.columns) ? raw.columns.slice(0, 6).map((item: unknown) => text(item, 80)).filter(Boolean) : [];
+    const rows = Array.isArray(raw?.rows) ? raw.rows.slice(0, 12).map((row: unknown) => Array.isArray(row) ? row.slice(0, columns.length || 6).map((item) => text(item, 180)) : []) : [];
+    const items = Array.isArray(raw?.items) ? raw.items.slice(0, 15).map((item: unknown) => text(item, 220)).filter(Boolean) : [];
+    return [{ type, title, description: text(raw?.description, 400), nodes, columns, rows, items }];
+  });
 }
 
 /** The role that is actually acting right now (Yaniv in supplier mode acts as a supplier). */
@@ -904,6 +923,7 @@ Deno.serve(async (req) => {
           proposed_actions: validated.map((v) => ({ kind: v.kind, title: v.title, summary: v.summary })),
           rejected_actions: rejected,
           drafts: parsed.drafts ?? {},
+          artifacts: normalizeArtifacts(parsed.artifacts),
           ai_draft: true,
         },
         visibility: cfg.visibility,

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   cancelProposedAction, confirmProposedAction, loadChatHistory, sendChatMessage,
-  type ActionKind, type AgentType, type ChatDraft, type ChatMessage, type ChatUsage, type PendingAction,
+  type ActionKind, type AgentType, type ChatArtifact, type ChatDraft, type ChatMessage, type ChatUsage, type PendingAction,
 } from "../services/chatApi";
 import { notifyEstimationChanged } from "../lib/estimationEvents";
 import { detectProjectViewIntent, requestProjectView } from "../lib/projectViewEvents";
+import { startRecording, type Recorder } from "../lib/voice";
+import { transcribeAudio } from "../services/copilotApi";
 
 type ProjectChatProps = {
   projectId: string;
@@ -71,6 +73,16 @@ function formatTime(iso: string) {
 
 function isRtl(text: string) {
   return /[\u0590-\u05FF\u0600-\u06FF]/.test(text);
+}
+
+function ArtifactPanel({ artifact }: { artifact: ChatArtifact }) {
+  const kind = artifact.type === "flow" ? "תרשים תהליך" : artifact.type === "wireframe" ? "סקיצה" : artifact.type === "table" ? "טבלה" : "רשימה";
+  return <section className={`chat-artifact artifact-${artifact.type}`} dir="rtl"><header><span>{kind}</span><strong>{artifact.title}</strong></header>{artifact.description ? <p>{artifact.description}</p> : null}
+    {artifact.type === "flow" ? <div className="artifact-flow">{(artifact.nodes ?? []).map((node, index) => <div key={node.id || index} className="artifact-flow-step"><article><strong>{node.label}</strong>{node.detail ? <small>{node.detail}</small> : null}</article>{index < (artifact.nodes?.length ?? 0) - 1 ? <span>←</span> : null}</div>)}</div> : null}
+    {artifact.type === "wireframe" ? <div className="artifact-wireframe">{(artifact.nodes ?? []).map((node, index) => <article key={node.id || index}><strong>{node.label}</strong>{node.detail ? <p>{node.detail}</p> : null}</article>)}</div> : null}
+    {artifact.type === "table" && artifact.columns?.length ? <div className="table-scroll"><table><thead><tr>{artifact.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{(artifact.rows ?? []).map((row, rowIndex) => <tr key={rowIndex}>{artifact.columns!.map((_, cellIndex) => <td key={cellIndex}>{row[cellIndex] ?? ""}</td>)}</tr>)}</tbody></table></div> : null}
+    {artifact.type === "checklist" ? <ul className="artifact-checklist">{(artifact.items ?? []).map((item, index) => <li key={index}>✓ {item}</li>)}</ul> : null}
+  </section>;
 }
 
 function DraftPanel({ draft }: { draft: ChatDraft }) {
@@ -174,6 +186,9 @@ export function ProjectChat({
   const [usage, setUsage] = useState<ChatUsage | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const recorderRef = useRef<Recorder | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -262,6 +277,25 @@ export function ProjectChat({
     void send(input);
   }
 
+  async function toggleVoice() {
+    setError(null);
+    if (!recording) {
+      try { recorderRef.current = await startRecording(); setRecording(true); }
+      catch { setError("לא התקבלה הרשאה למיקרופון. אפשר להמשיך בהקלדה או לנסות שוב."); }
+      return;
+    }
+    const active = recorderRef.current; recorderRef.current = null; setRecording(false);
+    if (!active) return;
+    setTranscribing(true);
+    try {
+      const wav = await active.stop(); const result = await transcribeAudio(wav);
+      if (!result.text?.trim()) throw new Error("לא זוהה דיבור. נסה שוב.");
+      setInput((current) => current ? `${current}\n${result.text.trim()}` : result.text.trim());
+      inputRef.current?.focus();
+    } catch (err) { setError(err instanceof Error ? err.message : String(err)); }
+    finally { setTranscribing(false); }
+  }
+
   const latestDraft = drafts[0];
   const openQuestions = messages
     .slice()
@@ -311,6 +345,7 @@ export function ProjectChat({
                 {showVisibility && <span className="chat-visibility">{visibilityLabels[message.visibility]}</span>}
               </p>
               <p className="chat-text">{message.body}</p>
+              {(message.structured_payload?.artifacts ?? []).map((artifact, index) => <ArtifactPanel key={`${message.id}-${index}`} artifact={artifact} />)}
               {message.sender_type === "ai_agent" && message.structured_payload?.ai_draft && (
                 <p className="chat-draft-flag">AI draft — awaiting agency review</p>
               )}
@@ -414,6 +449,7 @@ export function ProjectChat({
           }}
         />
         <div className="action-row">
+          <button type="button" className={recording ? "danger-button" : "ghost-button"} disabled={readOnly || transcribing || aiState === "thinking"} onClick={() => void toggleVoice()}>{recording ? "■ עצור ותמלל" : transcribing ? "מתמלל…" : "🎙️ דבר"}</button>
           <button type="submit" disabled={readOnly || aiState === "thinking" || input.trim().length === 0}>
             {aiState === "thinking" ? "Sending…" : "Send"}
           </button>

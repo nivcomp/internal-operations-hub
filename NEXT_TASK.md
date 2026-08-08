@@ -1,5 +1,11 @@
 # Next Task
 
+## Current result
+
+The Simple Mode meeting now uses the persistent full project chat as its primary surface. Agency and client portal conversations share the existing project conversation records, support voice input, and can display sanitized flow, wireframe, table and checklist artifacts. Client-facing estimates remain visibility-gated and all commercial mutations require confirmation.
+
+Remaining limitation: the changed `project-chat` Edge Function must be deployed to the connected Supabase project before newly generated visual artifacts appear in live AI responses.
+
 ## Recommended next work unit
 
 Create automatic specification documents and an accessible document center from Simple Mode.

@@ -2240,3 +2240,35 @@ Replace the long form-first meeting experience with a guided conversational flow
 
 **Next**
 - Verify the deployed Simple Mode flow, then continue with the existing document-center work unit.
+
+---
+
+### 2026-08-08 — Interactive AI project room
+
+**Work unit**
+Make the existing persistent project chat the primary Simple Mode meeting experience and add safe visual artifacts and voice input shared with the client portal.
+
+**Changes**
+- Replaced the rigid guided questionnaire surface with the full persistent `ProjectChat` conversation.
+- Added microphone transcription directly to the shared chat composer for agency and client sessions.
+- Added bounded AI-generated flow, wireframe, table and checklist artifacts rendered inside saved messages.
+- Extended the server prompt and sanitized structured artifact persistence without accepting HTML, executable code or external URLs.
+- Added a client-safe live estimate summary; internal cost and margin remain restricted to agency-only controls.
+- Reused existing conversations, messages, estimates, portal and approval actions; no migration or duplicate system was added.
+
+**Tests**
+- `pnpm run build` passed, including TypeScript; the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Deno validation could not run because Deno is not installed in the environment; frontend TypeScript cannot type-check the Deno Edge Function.
+
+**Files**
+- `src/components/ProjectChat.tsx`, `src/components/meeting/MeetingWorkspace.tsx`
+- `src/services/chatApi.ts`, `src/styles.css`
+- `supabase/functions/project-chat/index.ts`
+- `README.md`, `ARCHITECTURE.md`, `MVP_SCOPE.md`, `WORK_LOG.md`
+
+**Commit**
+- Created after this log entry; the final report records the SHA and PR.
+
+**Next**
+- Build automatic specification documents and the Simple Mode document center from approved project-room content.
