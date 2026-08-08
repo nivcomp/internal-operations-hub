@@ -11,7 +11,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - Clients, CRM leads, projects, suppliers, invitations and role-specific home/portal screens.
 - Project conversations and server-side AI for client, agency and supplier roles.
 - Persistent Copilot with voice support, role-filtered context and typed confirmation-gated operator actions.
-- Client meetings, meeting sources and a Hebrew-first meeting workspace foundation.
+- A complete Hebrew-first Simple Mode meeting flow: existing/new client, existing/new project, resumable live workspace, chat, reviewed voice transcripts, source uploads, specification and canonical pricing.
 - Structured requirements, assumptions, questions and specification sections/versions.
 - Canonical project estimation with structured items, roles, buffers, internal cost, budget ranges, supplier reviews, scenarios and snapshots.
 - Proposal versions, immutable digital signatures, stored project documents, change requests and draft execution packages.
@@ -24,9 +24,8 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 
 ## Current limitations
 
-- The complete meeting journey is not yet contained inside Simple Mode. The current simple entry selects an existing project and opens the advanced project detail meeting tab.
-- Creating or choosing a client and project inside the compact meeting flow is not complete.
-- Live microphone transcription and automatic AI-to-specification section updates are partial.
+- Automatic AI-to-specification section updates are intentionally deferred; AI suggestions must not silently overwrite reviewed or approved sections.
+- Signed-in browser verification is still required for microphone, private storage and role-specific RLS paths after deployment.
 - Database migrations and Edge Functions require deployment verification in the connected Supabase environment.
 - No automated test or lint script is configured.
 - Payment-provider and accounting integrations are outside the current MVP.

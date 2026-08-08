@@ -117,3 +117,17 @@ Continuing to calculate current commercial state from `project_pricing` and `pha
 
 **Consequences**
 Legacy pricing tables remain read-only historical compatibility only. New writes, dashboards, AI context, proposals and calculations must use `project_estimates`.
+
+### 2026-08-06 — Simple meeting workspace uses shared workflow records
+
+**Decision**
+The client/project meeting launcher and live discovery room run inside Simple Mode while reusing the existing client, project, meeting, conversation, source, specification and estimate records.
+
+**Reason**
+Simple Mode is the normal operating surface during an in-person meeting; changing modes must be optional and must not fork workflow state.
+
+**Alternatives considered**
+Opening Project Detail automatically in Advanced Mode or creating a separate lightweight meeting store.
+
+**Consequences**
+The active Simple Mode project id may be remembered locally for navigation recovery, but Supabase remains the durable source. Refreshing never creates records, and `startMeeting` remains the idempotent entry point that prevents duplicate active meetings.

@@ -15,6 +15,7 @@ export const SPEC_SECTIONS = [
 
 export type Meeting = { id: string; project_id: string; status: string; language: "he" | "en"; started_at: string; ended_at: string | null };
 export type SpecificationSection = { id: string; project_id: string; section_key: string; title: string; content: string; status: "ai_draft" | "edited" | "approved" | "incomplete"; client_visible: boolean; sort_order: number };
+export type MeetingSource = { id: string; meeting_id: string; project_id: string; source_type: string; title: string; transcript?: string | null; storage_path?: string | null; mime_type?: string | null; review_status?: string | null; captured_at: string };
 
 function assert(error: any, label: string) { if (error) throw new Error(`${label}: ${error.message}`); }
 
@@ -25,7 +26,7 @@ export async function loadMeetingWorkspace(projectId: string) {
     db.from("meeting_sources").select("*").eq("project_id", projectId).order("captured_at", { ascending: false }),
   ]);
   assert(me, "Load meeting"); assert(se, "Load specification"); assert(so, "Load sources");
-  return { meeting: meetings?.[0] as Meeting | undefined, sections: (sections ?? []) as SpecificationSection[], sources: sources ?? [] };
+  return { meeting: meetings?.[0] as Meeting | undefined, sections: (sections ?? []) as SpecificationSection[], sources: (sources ?? []) as MeetingSource[] };
 }
 
 export async function startMeeting(projectId: string, language: "he" | "en" = "he") {

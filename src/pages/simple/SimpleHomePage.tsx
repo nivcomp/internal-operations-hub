@@ -13,10 +13,11 @@ import {
   getNeedsPricingItems, getSupplierTimeApprovalItems, getWaitingApprovalItems, getWaitingPaymentItems,
 } from "../../lib/actionQueue";
 import { buildProjectCommercials, needsScheduleAttention } from "../../lib/projectCommercials";
+import { SimpleMeetingWizard } from "../../components/meeting/SimpleMeetingWizard";
 
-type Props = { onSearch: () => void };
+type Props = { onSearch: () => void; onMeetingStarted: (projectId: string) => void };
 
-export function SimpleHomePage({ onSearch }: Props) {
+export function SimpleHomePage({ onSearch, onMeetingStarted }: Props) {
   const {
     clients, suppliers, projects, changeRequests, clientPayments, timeEntries,
     projectSchedules, estimateSummaries, supplierProfiles,
@@ -28,11 +29,7 @@ export function SimpleHomePage({ onSearch }: Props) {
   const [registrations, setRegistrations] = useState<PublicRegistration[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
-  const [meetingProjectId, setMeetingProjectId] = useState("");
-
-  useEffect(() => {
-    if (!meetingProjectId && projects[0]) setMeetingProjectId(projects[0].id);
-  }, [projects, meetingProjectId]);
+  const [meetingWizardOpen, setMeetingWizardOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -94,32 +91,7 @@ export function SimpleHomePage({ onSearch }: Props) {
           <h2>פגישה פרונטלית חדשה</h2>
           <p className="simple-note">בחר פרויקט ופתח מיד את חדר האפיון עם שיחה, תמלול, קבצים, אפיון חי ותמחור.</p>
         </div>
-        {projects.length ? (
-          <div className="simple-meeting-actions">
-            <label>
-              פרויקט
-              <select value={meetingProjectId} onChange={(event) => setMeetingProjectId(event.target.value)}>
-                {projects.map((project) => {
-                  const client = clients.find((item) => item.id === project.clientId);
-                  return <option key={project.id} value={project.id}>{client?.company ? `${client.company} — ` : ""}{project.name}</option>;
-                })}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="primary-button simple-meeting-button"
-              disabled={!meetingProjectId}
-              onClick={() => {
-                window.sessionStorage.setItem("open-project-meeting", meetingProjectId);
-                openAdvanced("project-detail", { projectId: meetingProjectId });
-              }}
-            >
-              פתח חדר אפיון
-            </button>
-          </div>
-        ) : (
-          <button type="button" className="primary-button" onClick={() => openAdvanced("clients")}>צור לקוח ופרויקט ראשון</button>
-        )}
+        <button type="button" className="primary-button simple-meeting-button" onClick={() => setMeetingWizardOpen(true)}>פתח חדר אפיון</button>
       </section>
 
       <section className="simple-attention">
@@ -174,6 +146,7 @@ export function SimpleHomePage({ onSearch }: Props) {
           }}
         />
       ) : null}
+      {meetingWizardOpen ? <SimpleMeetingWizard onClose={() => setMeetingWizardOpen(false)} onStarted={onMeetingStarted} /> : null}
     </div>
   );
 }

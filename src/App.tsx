@@ -21,6 +21,7 @@ import { SimpleRecordsPage } from "./pages/simple/SimpleRecordsPage";
 import { CrmWorkspace } from "./components/crm/CrmWorkspace";
 import { SimpleTasksPage } from "./pages/simple/SimpleTasksPage";
 import { SimpleFinancePage } from "./pages/simple/SimpleFinancePage";
+import { MeetingWorkspace } from "./components/meeting/MeetingWorkspace";
 import { CopilotProvider, useCopilotScreen } from "./context/CopilotContext";
 import { CopilotDock } from "./components/copilot/CopilotDock";
 import { emitCopilotFormIntent } from "./lib/copilotForms";
@@ -109,7 +110,8 @@ function AppShell() {
     const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
     return stored === "advanced" ? "advanced" : "simple";
   });
-  const [simpleView, setSimpleView] = useState<SimpleView>("home");
+  const [simpleMeetingProjectId, setSimpleMeetingProjectId] = useState(() => window.localStorage.getItem("cts.simple-meeting-project") ?? "");
+  const [simpleView, setSimpleView] = useState<SimpleView>(() => simpleMeetingProjectId ? "meeting" : "home");
   const [cameFromSimple, setCameFromSimple] = useState(false);
 
   useEffect(() => {
@@ -213,6 +215,20 @@ function AppShell() {
     setCameFromSimple(false);
     setModeState("simple");
     window.localStorage.setItem(MODE_STORAGE_KEY, "simple");
+  }, []);
+
+  const openSimpleMeeting = useCallback((projectId: string) => {
+    setSimpleMeetingProjectId(projectId);
+    window.localStorage.setItem("cts.simple-meeting-project", projectId);
+    setSimpleView("meeting");
+  }, []);
+
+  const closeSimpleMeeting = useCallback((finished = false) => {
+    if (finished) {
+      window.localStorage.removeItem("cts.simple-meeting-project");
+      setSimpleMeetingProjectId("");
+    }
+    setSimpleView("home");
   }, []);
 
   const modeApi = useMemo<ModeApi>(() => ({
@@ -363,7 +379,7 @@ function AppShell() {
   } satisfies Record<ViewKey, JSX.Element>;
 
   const simplePage: Record<SimpleView, JSX.Element> = {
-    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} />,
+    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} onMeetingStarted={openSimpleMeeting} />,
     crm: (
       <CrmWorkspace
         onClientSelect={(clientId) => openAdvanced("client-detail", { clientId })}
@@ -375,6 +391,15 @@ function AppShell() {
     suppliers: <SimpleRecordsPage kind="suppliers" />,
     tasks: <SimpleTasksPage />,
     finance: <SimpleFinancePage />,
+    meeting: (() => {
+      const project = projects.find((item) => item.id === simpleMeetingProjectId);
+      const client = project ? clients.find((item) => item.id === project.clientId) : undefined;
+      return project ? <MeetingWorkspace
+        projectId={project.id} projectName={project.name} clientName={client?.name} companyName={client?.company}
+        onSaveExit={() => closeSimpleMeeting(false)} onFinished={() => closeSimpleMeeting(true)}
+        onOpenAdvanced={() => openAdvanced("project-detail", { projectId: project.id })}
+      /> : <section className="card" dir="rtl"><h2>לא נמצאה פגישה להמשך</h2><p>ייתכן שהפרויקט אינו נגיש יותר.</p><button onClick={() => closeSimpleMeeting(true)}>חזרה למסך הראשי</button></section>;
+    })(),
   };
 
   const simpleModeActive = role === "agency_admin" && mode === "simple";

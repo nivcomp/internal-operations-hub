@@ -2178,3 +2178,65 @@ Audit and synchronize the unified repository, application architecture and persi
 
 **Next**
 - Build the complete existing/new client → existing/new project → meeting workspace flow inside Simple Mode without automatically navigating to Advanced Mode and without duplicating infrastructure.
+
+---
+
+### 2026-08-06 — Simple Mode live discovery meeting
+
+**Work unit**
+Build the complete client/project meeting-start flow and reusable live discovery room inside Simple Mode.
+
+**Changes**
+- Added a Hebrew existing/new client and existing/new project wizard using `AppDataProvider` mutations, including phone/email duplicate warnings.
+- Added a persistent Simple Mode meeting view that reuses `startMeeting` and safely resumes the selected project after refresh without creating records.
+- Expanded the shared meeting workspace with AI chat, editable voice transcription, multi-file upload and source history, protected live specification editing, canonical estimate pricing and a finish summary.
+- Kept Advanced Mode optional and unchanged as the detailed tooling surface.
+- Added no migration, table, bucket, Edge Function, pricing model or database.
+
+**Tests**
+- `pnpm run build` passed, including TypeScript; the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Frozen install and final build are recorded in the completion report.
+- No automated test script exists in `package.json`; signed-in microphone, storage and RLS paths require a deployed authenticated browser session for full end-to-end verification.
+
+**Files**
+- `src/App.tsx`, `src/context/ModeContext.tsx`, `src/pages/simple/SimpleHomePage.tsx`
+- `src/components/meeting/SimpleMeetingWizard.tsx`, `src/components/meeting/MeetingWorkspace.tsx`
+- `src/services/meetingWorkflowApi.ts`, `src/styles.css`
+- `DECISIONS.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Commit**
+- Created after this log entry; the final report records the SHA and PR.
+
+**Next**
+- Create automatic specification documents and an accessible document center from Simple Mode using existing document infrastructure.
+
+---
+
+### 2026-08-08 — Chat-first Simple meeting refinement
+
+**Work unit**
+Replace the long form-first meeting experience with a guided conversational flow before merging PR #6.
+
+**Changes**
+- Made one Hebrew discovery question at a time the primary Simple Mode meeting surface.
+- Added text or voice answers with explicit draft/approval controls before updating existing specification sections.
+- Stored approved guided answers through the existing meeting/specification services; raw audio is not retained.
+- Moved free AI chat, file/source management, canonical estimate controls and manual section forms behind an optional advanced-tools disclosure.
+- Kept the meeting inside Simple Mode and retained the optional explicit Advanced Mode link.
+
+**Tests**
+- `pnpm run build` passed, including TypeScript; the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No Edge Function or new migration was introduced by this refinement.
+
+**Files**
+- `src/components/meeting/MeetingWorkspace.tsx`
+- `src/styles.css`
+- `WORK_LOG.md`
+
+**Commit**
+- Created after this log entry; the final report records the SHA and merge commit.
+
+**Next**
+- Verify the deployed Simple Mode flow, then continue with the existing document-center work unit.
