@@ -94,6 +94,16 @@ export function publicRegistrationLink(settings: RegistrationSettings): string {
   return publicUrl(`/join/${settings.role}?c=${settings.path_code}`);
 }
 
+/**
+ * Single-use link that lets the client of one specific project set a password
+ * and continue that exact project — not a new general registration.
+ */
+export function createProjectContinuationLink(input: { projectId: string; email?: string }) {
+  return callAdmin<{ link: string; email: string; projectName: string }>({
+    action: "projectContinuationLink", ...input,
+  });
+}
+
 // ---- unauthenticated calls (used by the public join page) -------------------
 
 const FUNCTIONS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/public-registration`;

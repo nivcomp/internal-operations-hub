@@ -134,3 +134,40 @@ export async function resendVerification(email: string, redirectTo: string): Pro
   });
   return error?.message ?? null;
 }
+
+// ---- project continuation link ---------------------------------------------
+
+export type ContinuationInfo = {
+  valid: boolean;
+  reason?: "invalid" | "used" | "expired";
+  email?: string;
+  company?: string;
+  contactName?: string;
+  projectName?: string;
+  accountExists?: boolean;
+};
+
+/** Reads the public details of a single-use project continuation link. */
+export function continuationInfo(token: string) {
+  return callPublic<ContinuationInfo>({ action: "continueInfo", token });
+}
+
+/** Sets the password for the invited client and signs them in. */
+export async function activateContinuation(token: string, password: string): Promise<{
+  signedIn: boolean; accountExists?: boolean; error?: string;
+}> {
+  let result: { ok?: boolean; accountExists?: boolean; email?: string };
+  try {
+    result = await callPublic({ action: "continueActivate", token, password });
+  } catch (cause) {
+    const raw = cause instanceof Error ? cause.message : "";
+    if (raw === "password_too_short") return { signedIn: false, error: "הסיסמה חייבת להכיל לפחות 8 תווים." };
+    return { signedIn: false, error: "לא הצלחנו להשלים את הכניסה כרגע. נסו שוב בעוד רגע." };
+  }
+  if (result.accountExists) return { signedIn: false, accountExists: true };
+  if (!result.ok || !result.email) return { signedIn: false, error: "לא הצלחנו להשלים את הכניסה כרגע." };
+
+  const { error } = await getAuthClient().auth.signInWithPassword({ email: result.email, password });
+  if (error) return { signedIn: false, error: "החשבון נוצר, אך ההתחברות נכשלה. נסו להתחבר במסך הכניסה." };
+  return { signedIn: true };
+}
