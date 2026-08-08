@@ -875,6 +875,7 @@ export type Database = {
         Row: {
           conversation_id: string | null
           created_at: string
+          duration_minutes: number | null
           ended_at: string | null
           id: string
           language: string
@@ -889,6 +890,7 @@ export type Database = {
         Insert: {
           conversation_id?: string | null
           created_at?: string
+          duration_minutes?: number | null
           ended_at?: string | null
           id?: string
           language?: string
@@ -903,6 +905,7 @@ export type Database = {
         Update: {
           conversation_id?: string | null
           created_at?: string
+          duration_minutes?: number | null
           ended_at?: string | null
           id?: string
           language?: string
@@ -2487,6 +2490,71 @@ export type Database = {
           },
           {
             foreignKeyName: "meeting_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_time_charges: {
+        Row: {
+          actual_minutes: number
+          billable_hours: number
+          created_at: string
+          created_by: string | null
+          deducted_at: string | null
+          id: string
+          meeting_id: string
+          paid_hours_id: string | null
+          project_id: string
+        }
+        Insert: {
+          actual_minutes: number
+          billable_hours: number
+          created_at?: string
+          created_by?: string | null
+          deducted_at?: string | null
+          id?: string
+          meeting_id: string
+          paid_hours_id?: string | null
+          project_id: string
+        }
+        Update: {
+          actual_minutes?: number
+          billable_hours?: number
+          created_at?: string
+          created_by?: string | null
+          deducted_at?: string | null
+          id?: string
+          meeting_id?: string
+          paid_hours_id?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_time_charges_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_time_charges_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
+            referencedRelation: "client_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_time_charges_paid_hours_id_fkey"
+            columns: ["paid_hours_id"]
+            isOneToOne: false
+            referencedRelation: "paid_hours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_time_charges_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -4611,6 +4679,34 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      finish_client_meeting: {
+        Args: {
+          p_billable_hours?: number
+          p_meeting_id: string
+          p_paid_hours_id?: string
+        }
+        Returns: {
+          conversation_id: string | null
+          created_at: string
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          language: string
+          lead_id: string | null
+          project_id: string
+          started_at: string
+          started_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "client_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       move_to_dlq: {
         Args: {
