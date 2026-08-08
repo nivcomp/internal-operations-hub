@@ -181,21 +181,31 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
           })}
         </section>
       ) : (
-        <section className="card">
-          <table>
-            <thead><tr><th>חברה</th><th>איש קשר</th><th>שלב</th><th>תחום</th><th>מעקב</th></tr></thead>
-            <tbody>
-              {filtered.map((lead) => (
-                <tr key={lead.id} className="clickable-row" onClick={() => setSelected(lead)}>
-                  <td>{lead.company || "—"}</td>
-                  <td>{lead.name || "—"}</td>
-                  <td>{STAGE_LABELS_HE[lead.stage]}</td>
-                  <td>{lead.serviceInterest ?? "—"}</td>
-                  <td>{lead.nextFollowUpAt ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <section className="crm-mobile-list">
+          {filtered.map((lead) => {
+            const match = noteMatches.find((note) => note.leadId === lead.id);
+            return (
+              <article key={lead.id} className="card crm-mobile-card">
+                <button type="button" className="crm-mobile-main" onClick={() => setSelected(lead)}>
+                  <strong>{lead.company || lead.name || "—"}</strong>
+                  <span className="simple-note">
+                    {lead.name || "—"} · {STAGE_LABELS_HE[lead.stage]}
+                    {lead.serviceInterest ? ` · ${lead.serviceInterest}` : ""}
+                  </span>
+                  {lead.nextFollowUpAt ? <em>מעקב: {lead.nextFollowUpAt}</em> : null}
+                  {match ? <em className="crm-match">נמצא בהיסטוריית שיחות: {match.body.slice(0, 70)}…</em> : null}
+                </button>
+                <div className="crm-mobile-actions">
+                  {lead.phone ? (
+                    <a className="primary-button crm-call-button" href={`tel:${lead.phone.replace(/[^\d+]/g, "")}`}>
+                      📞 {lead.phone}
+                    </a>
+                  ) : <span className="simple-note">ללא טלפון</span>}
+                  <button type="button" className="ghost-button" onClick={() => setSelected(lead)}>🎙️ תעד שיחה</button>
+                </div>
+              </article>
+            );
+          })}
           {filtered.length === 0 && !loading ? <p className="simple-note">אין לידים שתואמים לסינון.</p> : null}
         </section>
       )}
