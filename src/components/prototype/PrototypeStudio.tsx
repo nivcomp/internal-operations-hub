@@ -21,6 +21,8 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [autoShare, setAutoShare] = useState(() => localStorage.getItem(`prototype-auto-share:${projectId}`) !== "off");
+  useEffect(() => { localStorage.setItem(`prototype-auto-share:${projectId}`, autoShare ? "on" : "off"); }, [autoShare, projectId]);
 
   async function refresh(preferredPrototypeId?: string, preferredVersionId?: string) {
     const result = await listProjectPrototypes(projectId);
@@ -57,7 +59,14 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await generatePrototype({ projectId, prototypeId: prototype?.id, kind: prototype?.prototype_kind ?? kind, title: prototype?.title || `${projectName} MVP`, instructions, sourceText });
-      await refresh(result.prototypeId, result.version.id); setInstructions(""); setNotice(`נוצרה גרסה ${result.version.version}. היא טיוטה עד שתשתף אותה.`);
+      if (autoShare) {
+        await sharePrototype(projectId, result.version.id);
+        await refresh(result.prototypeId, result.version.id); setInstructions("");
+        setNotice(`נוצרה גרסה ${result.version.version} והיא שותפה אוטומטית עם הלקוח בפורטל שלו.`);
+      } else {
+        await refresh(result.prototypeId, result.version.id); setInstructions("");
+        setNotice(`נוצרה גרסה ${result.version.version}. היא טיוטה עד שתשתף אותה.`);
+      }
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   }
@@ -87,6 +96,7 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
       <label className="span-2">מה לשנות או להוסיף?<textarea rows={3} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="לדוגמה: הוסף מסך פתיחה, מצב שבו הבוט לא מבין וכפתור מעבר לנציג" /></label>
       <label className="prototype-file">צרף TXT / MD / Word<input type="file" accept=".txt,.md,.json,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => void readSource(e.target.files?.[0])} /></label>
       {sourceText ? <details><summary>טקסט שיצורף ל־AI ({sourceText.length} תווים)</summary><textarea rows={5} value={sourceText} onChange={(e) => setSourceText(e.target.value)} /></details> : null}
+      <label className="prototype-auto-share"><input type="checkbox" checked={autoShare} onChange={(event) => setAutoShare(event.target.checked)} /> שתף אוטומטית כל גרסה חדשה עם הלקוח בפורטל שלו</label>
       <div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void createRevision()}>{busy ? "יוצר…" : prototype ? "צור גרסה חדשה" : "צור MVP ראשון"}</button>{version?.status === "draft" ? <button disabled={busy} onClick={() => void share()}>שתף עם הלקוח</button> : null}{version ? <button type="button" onClick={() => void copyExport()}>העתק חבילה ל־Lovable</button> : null}</div>
     </div> : null}
 
