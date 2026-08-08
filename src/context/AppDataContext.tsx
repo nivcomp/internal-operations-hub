@@ -40,6 +40,7 @@ import {
   updateTimeEntryStatusRow,
 } from "../services/api";
 import { currency, getProjectName, getSupplierName } from "../lib/domainHelpers";
+import { supabase } from "../integrations/supabase/client";
 import {
   fetchEstimateSummaries, fetchProjectSchedules, saveProjectScheduleRow, type EstimateSummary,
 } from "../services/scheduleApi";
