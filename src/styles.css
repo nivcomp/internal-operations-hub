@@ -2469,3 +2469,27 @@ kbd {
 .artifact-wireframe p { margin: .35rem 0 0; font-size: .82rem; color: var(--text-muted, #6b7280); }
 .artifact-checklist { display: grid; gap: .35rem; margin: 0; padding: 0; list-style: none; }
 @media (max-width: 760px) { .guided-meeting-layout { grid-template-columns: 1fr; } .guided-summary { position: static; } .guided-controls { flex-direction: column; } }
+
+/* CRM mobile call list + call logger */
+.crm-mobile-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.crm-mobile-card { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem; }
+.crm-mobile-main {
+  display: flex; flex-direction: column; gap: 0.2rem; text-align: inherit;
+  background: none; border: 0; padding: 0; cursor: pointer; font: inherit;
+}
+.crm-mobile-main em { font-size: 0.78rem; font-style: normal; color: var(--text-muted, #6b7280); }
+.crm-mobile-main .crm-match { color: var(--primary, #2563eb); }
+.crm-mobile-actions, .crm-call-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.crm-call-button { text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; }
+.crm-mobile-actions button, .crm-call-actions button { min-height: 44px; }
+.crm-call-logger {
+  display: flex; flex-direction: column; gap: 0.6rem; padding: 0.75rem;
+  border: 1px solid var(--border, #e5e7eb); border-radius: 0.75rem; background: var(--surface-muted, #f8fafc);
+}
+.crm-call-logger textarea { width: 100%; font: inherit; padding: 0.6rem; border-radius: 0.6rem; border: 1px solid var(--border, #e5e7eb); }
+.crm-note-call { border-inline-start-color: var(--primary, #2563eb); }
+@media (max-width: 640px) {
+  .crm-toolbar { flex-direction: column; align-items: stretch; }
+  .crm-toolbar input, .crm-toolbar select, .crm-toolbar button { width: 100%; }
+  .crm-call-button, .crm-mobile-actions button { flex: 1 1 100%; justify-content: center; }
+}
