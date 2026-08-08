@@ -118,7 +118,11 @@ async function loadExisting(admin: any): Promise<Existing> {
   return { clients: clients ?? [], leads: leads ?? [] };
 }
 
-function findMatch(existing: Existing, candidate: { email: string; phone: string; company: string; name: string }) {
+function findMatch(
+  existing: Existing,
+  candidate: { email: string; phone: string; company: string; name: string },
+  strongOnly = false,
+) {
   if (candidate.email) {
     const client = existing.clients.find((c) => normEmail(c.email) === candidate.email);
     if (client) return { reason: "email", matchType: "client", matchId: client.id, matchLabel: client.company || client.name };
@@ -131,6 +135,9 @@ function findMatch(existing: Existing, candidate: { email: string; phone: string
     const lead = existing.leads.find((l) => (l.phone_normalized ?? "") === candidate.phone);
     if (lead) return { reason: "phone", matchType: "lead", matchId: lead.id, matchLabel: lead.company || lead.name };
   }
+  // Strong identifiers only: used when the row was explicitly marked "create",
+  // so a shared company/contact name never blocks an intentional new lead.
+  if (strongOnly) return null;
   const company = candidate.company.toLowerCase();
   if (company.length > 2) {
     const client = existing.clients.find((c) => clean(c.company).toLowerCase() === company);
