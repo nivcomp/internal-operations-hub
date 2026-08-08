@@ -5,7 +5,7 @@ import { addTranscript, finishMeeting, loadMeetingWorkspace, saveSection, startM
 import type { ProjectEstimate } from "../../types/estimation";
 import { ProjectDocumentsPanel } from "../project/ProjectDocumentsPanel";
 import { PrototypeStudio } from "../prototype/PrototypeStudio";
-import { loadRegistrationSettings, publicRegistrationLink } from "../../services/registrationApi";
+import { createProjectContinuationLink } from "../../services/registrationApi";
 import { copyToClipboard } from "../../services/accessApi";
 
 type Props = {
@@ -41,18 +41,23 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
   const [error, setError] = useState("");
   const [clientLink, setClientLink] = useState<string | null>(null);
   const [linkState, setLinkState] = useState<"idle" | "loading" | "copied" | "error">("idle");
+  const [linkEmail, setLinkEmail] = useState("");
+  const [needsEmail, setNeedsEmail] = useState(false);
 
-  async function shareClientLink() {
+  async function shareClientLink(email?: string) {
     setLinkState("loading");
     try {
-      const settings = await loadRegistrationSettings();
-      const clientSettings = settings.find((item) => item.role === "client");
-      if (!clientSettings) throw new Error("no settings");
-      const link = publicRegistrationLink(clientSettings);
-      setClientLink(link);
-      await copyToClipboard(link);
+      const result = await createProjectContinuationLink({ projectId, email: email?.trim() || undefined });
+      setNeedsEmail(false);
+      setClientLink(result.link);
+      await copyToClipboard(result.link);
       setLinkState("copied");
-    } catch {
+    } catch (cause) {
+      if (cause instanceof Error && cause.message === "missing_client_email") {
+        setNeedsEmail(true);
+        setLinkState("idle");
+        return;
+      }
       setLinkState("error");
     }
   }
