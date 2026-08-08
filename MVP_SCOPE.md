@@ -11,6 +11,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - Clients, CRM leads, projects, suppliers, invitations and role-specific home/portal screens.
 - Project conversations and server-side AI for client, agency and supplier roles.
 - A shared interactive project room with persistent chat, voice input, visual process/screen artifacts, confirmation-gated estimate proposals and client-safe live estimate visibility.
+- A versioned interactive prototype studio for app, WhatsApp-bot and automation demonstrations, with DOCX/text intake, client sharing, exact-version approval and reviewed Lovable export.
 - Responsive phone/tablet presentation for Simple Mode and client-safe artifact export/share actions that lead back to the authorized portal project.
 - Persistent Copilot with voice support, role-filtered context and typed confirmation-gated operator actions.
 - A complete Hebrew-first Simple Mode meeting flow: existing/new client, existing/new project, resumable live workspace, chat, reviewed voice transcripts, source uploads, specification and canonical pricing.

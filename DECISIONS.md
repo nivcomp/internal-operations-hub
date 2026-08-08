@@ -1,5 +1,14 @@
 # Decisions
 
+## 2026-08-08 — Prototypes are bounded data, not executable AI code
+
+**Decision**
+Interactive prototypes are stored as validated JSON screen/block/action schemas in immutable versions. The application renders only known React components and never evaluates generated HTML, JavaScript or external URLs.
+
+**Consequences**
+The same version is available in the meeting, Advanced project and authorized portal. Client approval references the exact immutable version. DOCX extraction occurs locally before bounded text is sent to the agency-only generator. Lovable export is a reviewed copy action, never an automatic external publish.
+
+
 This file records product and architecture decisions that future automation runs should not reopen without new evidence.
 
 ## Decision format

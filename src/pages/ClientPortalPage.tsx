@@ -7,6 +7,7 @@ import { MutationKeys, useAppData } from "../context/AppDataContext";
 import { TargetDateForm } from "../components/project/TargetDateForm";
 import { ProposalPanel } from "../components/proposal/ProposalPanel";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
+import { PrototypeStudio } from "../components/prototype/PrototypeStudio";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -225,6 +226,8 @@ export function ClientPortalPage({
         suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Show me the project flow", "Summarise what we agreed so far"]}
         safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
       />
+
+      <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} />
 
       <details className="portal-details">
         <summary>{t.details}</summary>

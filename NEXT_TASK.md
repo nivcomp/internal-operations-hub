@@ -2,30 +2,28 @@
 
 ## Current result
 
-Simple Mode and the client portal now have a responsive phone/tablet foundation. Conversation-generated flows and wireframes use readable responsive cards, can be downloaded as SVG images, and can be shared through an authenticated project-portal deep link or a user-controlled email draft. The client portal no longer displays a competing static process diagram: it shows a concise persisted-status journey and keeps the live process/sketch inside project chat. The portal adds a Hebrew/English presentation choice, a client-visible estimate summary and a collapsed details area. The Advanced project workspace now has six primary sections, a secondary-tools selector, an exact client-view shortcut, explicit client-visible/internal pricing cards and shared commercial refresh after estimate changes.
+The meeting and client portal now include a saved interactive prototype studio. Agency operators can create app, WhatsApp-bot or automation MVPs from existing chat/specification/meeting context plus pasted TXT/Markdown/JSON or locally extracted DOCX text. The output is a bounded React-rendered screen schema with buttons and navigation, not executable AI code. Revisions create immutable history; an explicit agency share makes one version client-visible; the client can approve or request changes against that exact version. A reviewed Lovable handoff can be copied manually.
 
-Remaining limitation: authenticated agency/client visual verification is still required after deployment. The language choice translates the new portal overview; older embedded project modules retain some existing English copy and should be moved to a shared portal locale layer in a focused follow-up.
+Remaining limitation: the migration and `project-prototype` Edge Function require deployment to the connected Supabase project. Deno/Supabase CLI and authenticated production sessions are unavailable here, so live agency/client RLS verification remains required. Generated image prompts currently render as safe visual placeholders; persistent uploaded or AI-generated prototype images are not yet implemented.
 
 ## Recommended next work unit
 
-Build a saved interactive visual prototype studio inside the project meeting.
+Add protected prototype media assets and visual review annotations.
 
-The AI should create client-safe screen prototypes for apps, bots and automation systems from reviewed project content. The operator and client should be able to navigate between screens, request revisions, compare versions and explicitly approve a version. Store the prototype and approval in existing project/chat/specification infrastructure where possible, adding only the minimum migration required for immutable prototype versions and approval evidence. Provide a safe export package or prompt for Lovable; do not publish directly to an external service without explicit agency confirmation.
+Store uploaded and AI-generated prototype images in a private Supabase bucket, associate assets with immutable prototype versions, allow comments pinned to a screen/block, and produce PNG/PDF exports from the reviewed version. Preserve the bounded renderer and never expose agency-only data in asset prompts or exports.
 
 ## Constraints
 
 - Keep one application, repository and Supabase project.
-- Reuse project chat, approved specification, documents and role visibility.
-- Never expose internal pricing, supplier cost or margin in a client prototype.
-- Treat generated UI/code as a draft until explicit agency/client approval.
-- Do not execute generated code inside the authenticated application without a sandbox.
+- Reuse the existing prototype versions, project records and role helpers.
+- Keep the asset bucket private and use RLS/signed reads.
+- Never include pricing, supplier cost, margin, secrets or personal data in image prompts.
+- Never mutate an approved version; create a new version instead.
 
 ## Acceptance criteria
 
-- Simple Mode can generate and display a navigable multi-screen prototype during a meeting.
-- Prototypes support app, chatbot and automation-flow presentations.
-- Revisions create versions instead of overwriting approved evidence.
-- Client approval records the exact immutable version and approver.
-- The approved prototype is accessible later from the project and client portal.
-- A reviewed export for Lovable can be copied/downloaded only after explicit agency action.
+- Agency can upload or generate an image for a specific prototype screen without making the bucket public.
+- Clients can read only assets belonging to shared versions in their own projects.
+- Screen/block annotations are version-specific and role-auditable.
+- PNG/PDF export matches the reviewed version and excludes internal data.
 - RLS tests, TypeScript/build and `git diff --check` pass.
