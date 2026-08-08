@@ -5,6 +5,8 @@ import { addTranscript, finishMeeting, loadMeetingWorkspace, saveSection, startM
 import type { ProjectEstimate } from "../../types/estimation";
 import { ProjectDocumentsPanel } from "../project/ProjectDocumentsPanel";
 import { PrototypeStudio } from "../prototype/PrototypeStudio";
+import { loadRegistrationSettings, publicRegistrationLink } from "../../services/registrationApi";
+import { copyToClipboard } from "../../services/accessApi";
 
 type Props = {
   projectId: string; projectName: string; clientName?: string; companyName?: string;
@@ -37,6 +39,23 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
   const [manualOpen, setManualOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [error, setError] = useState("");
+  const [clientLink, setClientLink] = useState<string | null>(null);
+  const [linkState, setLinkState] = useState<"idle" | "loading" | "copied" | "error">("idle");
+
+  async function shareClientLink() {
+    setLinkState("loading");
+    try {
+      const settings = await loadRegistrationSettings();
+      const clientSettings = settings.find((item) => item.role === "client");
+      if (!clientSettings) throw new Error("no settings");
+      const link = publicRegistrationLink(clientSettings);
+      setClientLink(link);
+      await copyToClipboard(link);
+      setLinkState("copied");
+    } catch {
+      setLinkState("error");
+    }
+  }
 
   async function refresh() {
     const [workspace, estimation] = await Promise.all([loadMeetingWorkspace(projectId), fetchProjectEstimation(projectId)]);
