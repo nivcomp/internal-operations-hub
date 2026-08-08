@@ -312,14 +312,19 @@ Deno.serve(async (req) => {
           } else {
             const lead = leadFromRow(fields, extraNotes);
             if (!lead.name && !lead.company) throw new Error("שורה ללא שם או חברה");
-            const match = (resolution === "merge" || resolution === "update")
-              ? findMatch(existing, {
-                  email: lead.email_normalized ?? "",
-                  phone: lead.phone_normalized ?? "",
-                  company: lead.company,
-                  name: lead.name,
-                })
-              : null;
+            // Always run duplicate detection. For rows explicitly marked "create"
+            // we only block on strong identifiers (email / phone), which also
+            // catches repeated rows inside the same imported file.
+            const match = findMatch(
+              existing,
+              {
+                email: lead.email_normalized ?? "",
+                phone: lead.phone_normalized ?? "",
+                company: lead.company,
+                name: lead.name,
+              },
+              resolution !== "merge" && resolution !== "update",
+            );
 
             if (match && match.matchType === "lead") {
               const { data: current } = await admin.from("crm_leads").select("*").eq("id", match.matchId).maybeSingle();
