@@ -12,13 +12,15 @@ type Body = {
     | "list" | "invite" | "link" | "setActive"
     | "quickInviteClient" | "quickInviteSupplier" | "listInvitations"
     | "registrationSettings" | "setRegistrationSettings"
-    | "listRegistrations" | "reviewRegistration" | "markRegistrationsSeen";
+    | "listRegistrations" | "reviewRegistration" | "markRegistrationsSeen"
+    | "projectContinuationLink";
   email?: string;
   fullName?: string;
   role?: Role;
   clientId?: string | null;
   supplierId?: string | null;
   userId?: string;
+  projectId?: string;
   isActive?: boolean;
   redirectTo?: string;
   company?: string;
@@ -135,6 +137,61 @@ Deno.serve(async (req) => {
   const action = body.action ?? "list";
 
   if (action === "list") return listAccounts();
+
+  // ---- project continuation link -------------------------------------------
+  // A single-use link for one specific project: the client only chooses a
+  // password and lands straight in the project that was started in the meeting.
+  if (action === "projectContinuationLink") {
+    const projectId = (body.projectId ?? "").trim();
+    if (!projectId) return json({ error: "A project is required." }, 400);
+
+    const { data: project } = await admin
+      .from("projects").select("id, name, client_id").eq("id", projectId).maybeSingle();
+    if (!project?.client_id) return json({ error: "This project has no linked client yet." }, 400);
+
+    const { data: client } = await admin
+      .from("clients").select("id, name, company, email, phone").eq("id", project.client_id).maybeSingle();
+    if (!client) return json({ error: "This project has no linked client yet." }, 400);
+
+    const provided = (body.email ?? "").trim().toLowerCase();
+    let email = String(client.email ?? "").trim().toLowerCase();
+    if (provided) {
+      if (!EMAIL_RE.test(provided)) return json({ error: "A valid email is required." }, 400);
+      if (provided !== email) {
+        await admin.from("clients").update({ email: provided }).eq("id", client.id);
+      }
+      email = provided;
+    }
+    if (!EMAIL_RE.test(email)) return json({ error: "missing_client_email" }, 400);
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: invitation, error: invitationError } = await admin
+      .from("onboarding_invitations")
+      .insert({
+        role: "client",
+        contact_name: client.name ?? "",
+        company: client.company ?? "",
+        email,
+        phone: client.phone ?? "",
+        client_id: client.id,
+        project_id: project.id,
+        expires_at: expiresAt,
+        created_by: callerId,
+        status: "pending",
+      })
+      .select("token")
+      .maybeSingle();
+    if (invitationError || !invitation) {
+      return json({ error: invitationError?.message ?? "Could not create the link." }, 400);
+    }
+
+    const base = safeRedirect("/", "/").replace(/\/$/, "");
+    const link = `${base}/continue?t=${invitation.token}`;
+    await admin.from("onboarding_invitations")
+      .update({ invite_link: link }).eq("token", invitation.token);
+
+    return json({ ok: true, link, email, projectName: project.name });
+  }
 
   if (action === "listInvitations") {
     const { data, error } = await admin

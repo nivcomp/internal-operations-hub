@@ -11,9 +11,11 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 type Role = "client" | "supplier";
 
 type Body = {
-  action?: "info" | "submit" | "register" | "claim";
+  action?: "info" | "submit" | "register" | "claim" | "continueInfo" | "continueActivate";
   role?: string;
   code?: string;
+  token?: string;
+  password?: string;
   company?: string;
   contactName?: string;
   email?: string;
@@ -53,6 +55,101 @@ Deno.serve(async (req) => {
 
   let body: Body;
   try { body = await req.json(); } catch { return json({ error: "Invalid request." }, 400); }
+
+  // ---- project continuation link (one project, password only) ---------------
+  if (body.action === "continueInfo" || body.action === "continueActivate") {
+    const token = clean(body.token, 128);
+    if (!token) return json({ error: "Invalid link." }, 400);
+
+    const { data: invitation } = await admin
+      .from("onboarding_invitations")
+      .select("id, email, company, contact_name, client_id, project_id, expires_at, used_at, status")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (!invitation || !invitation.project_id || !invitation.client_id) {
+      return json({ valid: false, reason: "invalid" });
+    }
+    if (invitation.used_at) return json({ valid: false, reason: "used" });
+    if (invitation.expires_at && new Date(invitation.expires_at).getTime() < Date.now()) {
+      return json({ valid: false, reason: "expired" });
+    }
+
+    const email = String(invitation.email ?? "").toLowerCase();
+
+    async function findUserId(): Promise<string | null> {
+      let page = 1;
+      while (page <= 10) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        if (error) break;
+        for (const user of data.users) {
+          if (String(user.email ?? "").toLowerCase() === email) return user.id;
+        }
+        if (data.users.length < 200) break;
+        page += 1;
+      }
+      return null;
+    }
+
+    const { data: project } = await admin
+      .from("projects").select("name").eq("id", invitation.project_id).maybeSingle();
+
+    if (body.action === "continueInfo") {
+      const existing = await findUserId();
+      return json({
+        valid: true,
+        email,
+        company: invitation.company ?? "",
+        contactName: invitation.contact_name ?? "",
+        projectName: project?.name ?? "",
+        accountExists: Boolean(existing),
+      });
+    }
+
+    const password = String(body.password ?? "");
+    if (password.length < 8) return json({ error: "password_too_short" }, 400);
+
+    const existing = await findUserId();
+    if (existing) return json({ ok: false, accountExists: true });
+
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: invitation.contact_name ?? "", role: "client", client_id: invitation.client_id },
+    });
+    if (createError || !created?.user) {
+      return json({ error: createError?.message ?? "Could not create the account." }, 400);
+    }
+
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: created.user.id,
+      email,
+      full_name: invitation.contact_name ?? email,
+      role: "client",
+      client_id: invitation.client_id,
+      supplier_id: null,
+      is_active: true,
+    });
+    if (profileError) return json({ error: profileError.message }, 400);
+
+    await admin.from("onboarding_invitations").update({
+      used_at: new Date().toISOString(),
+      accepted_at: new Date().toISOString(),
+      status: "accepted",
+      invited_profile_id: created.user.id,
+    }).eq("id", invitation.id);
+
+    await admin.from("registration_audit_log").insert({
+      event: "project_continuation_activated",
+      role: "client",
+      ip_hash: ipHash,
+      email,
+      detail: { project_id: invitation.project_id },
+    });
+
+    return json({ ok: true, email });
+  }
 
   const role = (body.role === "supplier" ? "supplier" : body.role === "client" ? "client" : null) as Role | null;
   if (!role) return json({ error: "Unknown registration link." }, 400);
