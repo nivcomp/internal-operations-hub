@@ -118,7 +118,11 @@ async function loadExisting(admin: any): Promise<Existing> {
   return { clients: clients ?? [], leads: leads ?? [] };
 }
 
-function findMatch(existing: Existing, candidate: { email: string; phone: string; company: string; name: string }) {
+function findMatch(
+  existing: Existing,
+  candidate: { email: string; phone: string; company: string; name: string },
+  strongOnly = false,
+) {
   if (candidate.email) {
     const client = existing.clients.find((c) => normEmail(c.email) === candidate.email);
     if (client) return { reason: "email", matchType: "client", matchId: client.id, matchLabel: client.company || client.name };
@@ -131,6 +135,9 @@ function findMatch(existing: Existing, candidate: { email: string; phone: string
     const lead = existing.leads.find((l) => (l.phone_normalized ?? "") === candidate.phone);
     if (lead) return { reason: "phone", matchType: "lead", matchId: lead.id, matchLabel: lead.company || lead.name };
   }
+  // Strong identifiers only: used when the row was explicitly marked "create",
+  // so a shared company/contact name never blocks an intentional new lead.
+  if (strongOnly) return null;
   const company = candidate.company.toLowerCase();
   if (company.length > 2) {
     const client = existing.clients.find((c) => clean(c.company).toLowerCase() === company);
@@ -208,6 +215,17 @@ Deno.serve(async (req) => {
         });
         if (match) duplicates.push({ rowIndex: row.rowIndex, ...match });
         else toCreate += 1;
+        // Track this row as a candidate so later rows in the SAME file that
+        // repeat the same phone / email / company are also flagged as duplicates.
+        if (!match) {
+          existing.leads.push({
+            id: `preview:${row.rowIndex}`,
+            name: clean(fields.name),
+            company: clean(fields.company),
+            email_normalized: validEmail(email) ? email : null,
+            phone_normalized: phone || null,
+          });
+        }
       }
 
       return json({
@@ -294,14 +312,19 @@ Deno.serve(async (req) => {
           } else {
             const lead = leadFromRow(fields, extraNotes);
             if (!lead.name && !lead.company) throw new Error("שורה ללא שם או חברה");
-            const match = (resolution === "merge" || resolution === "update")
-              ? findMatch(existing, {
-                  email: lead.email_normalized ?? "",
-                  phone: lead.phone_normalized ?? "",
-                  company: lead.company,
-                  name: lead.name,
-                })
-              : null;
+            // Always run duplicate detection. For rows explicitly marked "create"
+            // we only block on strong identifiers (email / phone), which also
+            // catches repeated rows inside the same imported file.
+            const match = findMatch(
+              existing,
+              {
+                email: lead.email_normalized ?? "",
+                phone: lead.phone_normalized ?? "",
+                company: lead.company,
+                name: lead.name,
+              },
+              resolution !== "merge" && resolution !== "update",
+            );
 
             if (match && match.matchType === "lead") {
               const { data: current } = await admin.from("crm_leads").select("*").eq("id", match.matchId).maybeSingle();
