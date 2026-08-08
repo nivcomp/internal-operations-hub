@@ -2602,6 +2602,18 @@ html, body, #root { max-width: 100%; }
 /* Client portal: one clear live project journey. Conversation artifacts are the
    only process sketches; this progress strip represents status, not a second spec. */
 .client-portal-shell { display: grid; gap: 1rem; min-width: 0; }
+.portal-focus-toolbar { position: sticky; top: .5rem; z-index: 20; display: flex; gap: .45rem; padding: .5rem; overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--surface) 96%, transparent); box-shadow: 0 10px 30px -24px rgba(15, 42, 29, .55); backdrop-filter: blur(12px); }
+.portal-focus-toolbar button { flex: 0 0 auto; min-height: 46px; white-space: nowrap; }
+.portal-focus-toolbar button.active { border-color: var(--brand); background: var(--brand); color: white; }
+.portal-fullscreen-toggle { margin-inline-start: auto; }
+.portal-focus-fullscreen { position: fixed; inset: 0; z-index: 1000; max-width: none; padding: clamp(.65rem, 2vw, 1.5rem); overflow: auto; background: var(--canvas); }
+.portal-focus-fullscreen > .page-header, .portal-focus-fullscreen > .portal-language-switch, .portal-focus-fullscreen > .filter-row { display: none; }
+.portal-spec-focus { display: grid; gap: 1rem; }
+.portal-spec-focus > h2, .portal-spec-focus > p { margin-block: 0; }
+.portal-spec-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: .8rem; }
+.portal-spec-cards article, .portal-spec-focus > article { padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-muted); }
+.portal-spec-cards article > span { color: var(--brand); font-size: .78rem; font-weight: 800; }
+.portal-spec-cards article > h3 { margin-block: .35rem; }
 .portal-language-switch { display: flex; gap: .4rem; justify-content: flex-end; }
 .portal-language-switch button { min-height: 40px; }
 .portal-progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 1.15rem 0; }
@@ -2636,6 +2648,7 @@ html, body, #root { max-width: 100%; }
 .prototype-studio { overflow: hidden; }
 .prototype-head, .prototype-selectors, .prototype-authoring, .prototype-workbench { display: flex; gap: 1rem; }
 .prototype-head { align-items: flex-start; justify-content: space-between; }
+.prototype-head-actions { display: flex; align-items: center; justify-content: flex-end; gap: .55rem; flex-wrap: wrap; }
 .prototype-head h2, .prototype-head p { margin-block: .2rem; }
 .prototype-status { flex: none; padding: .35rem .7rem; border-radius: 999px; background: var(--surface-muted); font-size: .78rem; font-weight: 800; }
 .prototype-status.shared, .prototype-status.approved { background: var(--success-bg); color: var(--success); }
@@ -2681,8 +2694,16 @@ html, body, #root { max-width: 100%; }
 .prototype-approval { margin-top: 1rem; padding: 1rem; border: 1px solid var(--success-line); border-radius: 14px; background: var(--success-bg); }
 .prototype-approval textarea { width: 100%; }
 .prototype-empty { padding: 1.25rem; text-align: center; }
+.prototype-fullscreen { position: fixed; inset: 0; z-index: 1100; margin: 0; padding: clamp(.65rem, 2vw, 1.5rem); overflow: auto; border: 0; border-radius: 0; background: var(--canvas); }
+.prototype-fullscreen .prototype-workbench { min-height: calc(100vh - 160px); }
+.prototype-fullscreen .prototype-device { width: min(100%, 980px); }
 
 @media (max-width: 760px) {
+  .portal-focus-toolbar { top: .25rem; margin-inline: -.25rem; border-radius: 12px; }
+  .portal-focus-toolbar button { min-height: 48px; }
+  .portal-fullscreen-toggle { margin-inline-start: 0; }
+  .portal-focus-fullscreen { padding: .45rem; }
+  .portal-spec-focus { padding: .9rem; }
   .portal-language-switch { position: sticky; top: .35rem; z-index: 5; padding: .35rem; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface) 94%, transparent); }
   .portal-progress { grid-template-columns: 1fr; gap: .4rem; }
   .portal-progress-step { grid-template-columns: 36px 1fr; justify-items: start; align-items: center; text-align: start; min-height: 50px; }
@@ -2699,6 +2720,11 @@ html, body, #root { max-width: 100%; }
   .prototype-device { border-radius: 14px; }
   .prototype-canvas { min-height: 380px; padding: 1rem; }
   .prototype-head { flex-direction: column; }
+  .prototype-head-actions, .prototype-head-actions button { width: 100%; }
+  .prototype-fullscreen { padding: .45rem; }
+  .prototype-fullscreen .prototype-head > div:first-child p { display: none; }
+  .prototype-fullscreen .prototype-workbench { min-height: 0; }
+  .prototype-approval { position: sticky; bottom: .35rem; z-index: 4; box-shadow: 0 -12px 30px -24px rgba(15,42,29,.7); }
 }
 
 .meeting-client-link { margin-top: 0.75rem; display: grid; gap: 0.5rem; }

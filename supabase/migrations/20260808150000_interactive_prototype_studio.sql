@@ -49,6 +49,18 @@ ALTER TABLE public.prototype_approvals ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_prototypes, public.prototype_versions TO authenticated;
 GRANT SELECT, INSERT ON public.prototype_approvals TO authenticated;
 
+-- Lovable may already have applied the earlier prototype migration. Recreate
+-- policies idempotently so this migration can safely run in either history.
+DROP POLICY IF EXISTS "agency manages prototypes" ON public.project_prototypes;
+DROP POLICY IF EXISTS "client reads own prototypes" ON public.project_prototypes;
+DROP POLICY IF EXISTS "supplier reads assigned prototypes" ON public.project_prototypes;
+DROP POLICY IF EXISTS "agency manages prototype versions" ON public.prototype_versions;
+DROP POLICY IF EXISTS "client reads shared prototype versions" ON public.prototype_versions;
+DROP POLICY IF EXISTS "supplier reads shared prototype versions" ON public.prototype_versions;
+DROP POLICY IF EXISTS "agency reads prototype approvals" ON public.prototype_approvals;
+DROP POLICY IF EXISTS "client reads own prototype approvals" ON public.prototype_approvals;
+DROP POLICY IF EXISTS "client records prototype decision" ON public.prototype_approvals;
+
 CREATE POLICY "agency manages prototypes" ON public.project_prototypes FOR ALL TO authenticated
   USING (private.is_agency_admin()) WITH CHECK (private.is_agency_admin());
 CREATE POLICY "client reads own prototypes" ON public.project_prototypes FOR SELECT TO authenticated

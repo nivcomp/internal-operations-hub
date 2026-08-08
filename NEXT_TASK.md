@@ -2,13 +2,13 @@
 
 ## Current result
 
-The meeting and client portal now include a saved interactive prototype studio. Agency operators can create app, WhatsApp-bot or automation MVPs from existing chat/specification/meeting context plus pasted TXT/Markdown/JSON or locally extracted DOCX text. The output is a bounded React-rendered screen schema with buttons and navigation, not executable AI code. Revisions create immutable history; an explicit agency share makes one version client-visible; the client can approve or request changes against that exact version. A reviewed Lovable handoff can be copied manually.
+The client portal now has four large focus views: project status, specification, interactive MVP and conversation/change requests. Each can be opened without the advanced agency interface and the whole client view or MVP can run full-screen on desktop and mobile. Clients see estimate hours and the incremental hours of optional requests, but no calculated money, hourly rate, supplier cost or margin; money appears only after an agency-approved fixed price exists.
 
-Remaining limitation: the migration and `project-prototype` Edge Function require deployment to the connected Supabase project. Deno/Supabase CLI and authenticated production sessions are unavailable here, so live agency/client RLS verification remains required. Generated image prompts currently render as safe visual placeholders; persistent uploaded or AI-generated prototype images are not yet implemented.
+The saved prototype includes immutable versions, client approval/change requests and a reviewed handoff for both Lovable and Base44. New AI-generated versions describe the approved UI, data model, integrations and automation flows in one bounded payload. The duplicate prototype migration was made safe to re-run, but the migration and updated `project-prototype` Edge Function still require deployment to the connected Supabase project. Authenticated agency/client RLS verification remains required.
 
 ## Recommended next work unit
 
-Add protected prototype media assets and visual review annotations.
+Add protected prototype media assets, visual review annotations and a downloadable reviewed handoff.
 
 Store uploaded and AI-generated prototype images in a private Supabase bucket, associate assets with immutable prototype versions, allow comments pinned to a screen/block, and produce PNG/PDF exports from the reviewed version. Preserve the bounded renderer and never expose agency-only data in asset prompts or exports.
 

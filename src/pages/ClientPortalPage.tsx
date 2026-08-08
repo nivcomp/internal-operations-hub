@@ -95,6 +95,8 @@ export function ClientPortalPage({
 
   const [requestForm, setRequestForm] = useState({ title: "", description: "" });
   const [messageBody, setMessageBody] = useState("");
+  const [focusMode, setFocusMode] = useState<"overview" | "spec" | "mvp" | "chat">("overview");
+  const [fullScreen, setFullScreen] = useState(false);
 
   if (!client) {
     return (
@@ -164,7 +166,7 @@ export function ClientPortalPage({
   }
 
   return (
-    <div className="client-portal-shell" dir={language === "he" ? "rtl" : "ltr"}>
+    <div className={`client-portal-shell${fullScreen ? " portal-focus-fullscreen" : ""}`} dir={language === "he" ? "rtl" : "ltr"}>
       <PageHeader
         title={`${client.company} · ${t.workspace}`}
         subtitle={isPreview ? t.preview : t.subtitle}
@@ -173,6 +175,14 @@ export function ClientPortalPage({
       <div className="portal-language-switch" role="group" aria-label="Portal language">
         <button type="button" className={language === "he" ? "primary-button" : "ghost-button"} onClick={() => changeLanguage("he")}>עברית</button>
         <button type="button" className={language === "en" ? "primary-button" : "ghost-button"} onClick={() => changeLanguage("en")}>English</button>
+      </div>
+
+      <div className="portal-focus-toolbar" role="tablist" aria-label="תצוגת הפרויקט">
+        <button type="button" className={focusMode === "overview" ? "active" : ""} onClick={() => setFocusMode("overview")}>מצב הפרויקט</button>
+        <button type="button" className={focusMode === "spec" ? "active" : ""} onClick={() => setFocusMode("spec")}>האפיון שלי</button>
+        <button type="button" className={focusMode === "mvp" ? "active" : ""} onClick={() => setFocusMode("mvp")}>ה־MVP שלי</button>
+        <button type="button" className={focusMode === "chat" ? "active" : ""} onClick={() => setFocusMode("chat")}>שיחה ושינויים</button>
+        <button type="button" className="portal-fullscreen-toggle" onClick={() => setFullScreen((value) => !value)}>{fullScreen ? "צא ממסך מלא" : "מסך מלא"}</button>
       </div>
 
       {clientProjects.length > 1 ? (
@@ -186,7 +196,7 @@ export function ClientPortalPage({
         </div>
       ) : null}
 
-      <section className="card portal-overview">
+      {focusMode === "overview" ? <section className="card portal-overview">
         <p className="eyebrow">{t.status}</p>
         <h2>{project.name}</h2>
         <p className="muted-text">{project.summary}</p>
@@ -203,19 +213,19 @@ export function ClientPortalPage({
           <div><dt>{t.requests}</dt><dd>{requests.filter((r) => r.status !== "declined" && r.status !== "client_approved").length}</dd></div>
           <div><dt>{t.approvals}</dt><dd>{pendingApprovals.length}</dd></div>
         </dl>
-      </section>
+      </section> : null}
 
-      <section className="card portal-estimate-card">
+      {focusMode === "overview" ? <section className="card portal-estimate-card">
         <h2>{t.estimate}</h2>
         {!estimate ? <p className="muted-text">{t.estimatePending}</p> : (
           <div className="portal-estimate-values">
             <div><span>{t.hours}</span><strong>{estimate.estimatedHoursMin}–{estimate.estimatedHoursMax}</strong></div>
-            <div><span>{estimate.finalFixedPrice && estimate.approvedByYaniv ? t.fixedPrice : t.budget}</span><strong>{new Intl.NumberFormat(language === "he" ? "he-IL" : "en-GB", { style: "currency", currency: estimate.currency, maximumFractionDigits: 0 }).format(estimate.finalFixedPrice && estimate.approvedByYaniv ? estimate.finalFixedPrice : estimate.estimatedBudgetMax)}</strong></div>
+            <div><span>{estimate.finalFixedPrice && estimate.approvedByYaniv ? t.fixedPrice : "מחיר"}</span><strong>{estimate.finalFixedPrice && estimate.approvedByYaniv ? new Intl.NumberFormat(language === "he" ? "he-IL" : "en-GB", { style: "currency", currency: estimate.currency, maximumFractionDigits: 0 }).format(estimate.finalFixedPrice) : "יוצג לאחר אישור מחיר קבוע"}</strong></div>
           </div>
         )}
-      </section>
+      </section> : null}
 
-      <ProjectChat
+      {focusMode === "chat" ? <ProjectChat
         projectId={project.id}
         projectName={project.name}
         agent="project_guide"
@@ -225,18 +235,25 @@ export function ClientPortalPage({
         readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the client is disabled."
         suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Show me the project flow", "Summarise what we agreed so far"]}
         safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
-      />
+      /> : null}
 
-      <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} />
+      {focusMode === "mvp" ? <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} /> : null}
 
-      <details className="portal-details">
+      {focusMode === "spec" ? <section className="card portal-spec-focus">
+        <p className="eyebrow">האפיון המאושר</p>
+        <h2>מה אנחנו בונים</h2>
+        {approvedScopes.length ? approvedScopes.map((item) => <article key={item.id}><h3>גרסה {item.version}</h3><p>{item.clientFacingSummary}</p></article>) : <p className="muted-text">האפיון עדיין בבדיקה. הוא יופיע כאן לאחר אישור.</p>}
+        {visibleScopeItems.length ? <div className="portal-spec-cards">{visibleScopeItems.map((item) => <article key={item.id}><span>{item.phase}</span><h3>{item.title}</h3><p>{item.description}</p>{item.acceptanceNotes ? <small>איך נדע שזה עובד: {item.acceptanceNotes}</small> : null}</article>)}</div> : null}
+        <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
+      </section> : null}
+
+      {!fullScreen ? <details className="portal-details">
         <summary>{t.details}</summary>
         <div className="portal-details-body">
       <ProjectDocumentsPanel projectId={project.id} readOnly />
 
       <ProposalPanel projectId={project.id} mode="client" readOnly={isPreview} />
 
-      <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
       <TargetDateForm project={project} readOnly={isPreview} />
       <section className="card">
         <h2>Approvals</h2>
@@ -449,7 +466,7 @@ export function ClientPortalPage({
         </form>
       </section>
         </div>
-      </details>
+      </details> : null}
     </div>
   );
 }
