@@ -723,10 +723,14 @@ export type Database = {
           agency_price: number | null
           approved_date: string | null
           created_at: string
+          delivery_impact: string
           description: string
           id: string
           project_id: string
           requested_by_client_id: string
+          requires_signature: boolean
+          revised_proposal_version_id: string | null
+          source_proposal_version_id: string | null
           status: string
           supplier_cost: number | null
           title: string
@@ -736,10 +740,14 @@ export type Database = {
           agency_price?: number | null
           approved_date?: string | null
           created_at?: string
+          delivery_impact?: string
           description?: string
           id?: string
           project_id: string
           requested_by_client_id: string
+          requires_signature?: boolean
+          revised_proposal_version_id?: string | null
+          source_proposal_version_id?: string | null
           status?: string
           supplier_cost?: number | null
           title: string
@@ -749,10 +757,14 @@ export type Database = {
           agency_price?: number | null
           approved_date?: string | null
           created_at?: string
+          delivery_impact?: string
           description?: string
           id?: string
           project_id?: string
           requested_by_client_id?: string
+          requires_signature?: boolean
+          revised_proposal_version_id?: string | null
+          source_proposal_version_id?: string | null
           status?: string
           supplier_cost?: number | null
           title?: string
@@ -771,6 +783,20 @@ export type Database = {
             columns: ["requested_by_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_requests_revised_proposal_version_id_fkey"
+            columns: ["revised_proposal_version_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_requests_source_proposal_version_id_fkey"
+            columns: ["source_proposal_version_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -839,6 +865,80 @@ export type Database = {
           {
             foreignKeyName: "chat_messages_sender_profile_id_fkey"
             columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_meetings: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          language: string
+          lead_id: string | null
+          project_id: string
+          started_at: string
+          started_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          language?: string
+          lead_id?: string | null
+          project_id: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          language?: string
+          lead_id?: string | null
+          project_id?: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_meetings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "project_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_meetings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_meetings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_meetings_started_by_fkey"
+            columns: ["started_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2085,6 +2185,74 @@ export type Database = {
           },
         ]
       }
+      execution_packages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          package: Json
+          project_id: string
+          proposal_version_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          package: Json
+          project_id: string
+          proposal_version_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          package?: Json
+          project_id?: string
+          proposal_version_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_packages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_packages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_packages_proposal_version_id_fkey"
+            columns: ["proposal_version_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_packages_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           added_by: string
@@ -2240,6 +2408,88 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_sources: {
+        Row: {
+          ai_derived: boolean
+          captured_at: string
+          created_at: string
+          created_by: string | null
+          external_url: string | null
+          extracted_text: string
+          id: string
+          meeting_id: string
+          mime_type: string | null
+          project_id: string
+          review_status: string
+          source_type: string
+          speaker: string
+          storage_path: string | null
+          title: string
+          transcript: string
+          updated_at: string
+        }
+        Insert: {
+          ai_derived?: boolean
+          captured_at?: string
+          created_at?: string
+          created_by?: string | null
+          external_url?: string | null
+          extracted_text?: string
+          id?: string
+          meeting_id: string
+          mime_type?: string | null
+          project_id: string
+          review_status?: string
+          source_type: string
+          speaker?: string
+          storage_path?: string | null
+          title?: string
+          transcript?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_derived?: boolean
+          captured_at?: string
+          created_at?: string
+          created_by?: string | null
+          external_url?: string | null
+          extracted_text?: string
+          id?: string
+          meeting_id?: string
+          mime_type?: string | null
+          project_id?: string
+          review_status?: string
+          source_type?: string
+          speaker?: string
+          storage_path?: string | null
+          title?: string
+          transcript?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_sources_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "client_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2810,6 +3060,76 @@ export type Database = {
           },
         ]
       }
+      project_documents: {
+        Row: {
+          audience: string
+          content_hash: string
+          created_at: string
+          created_by: string | null
+          document_type: string
+          id: string
+          language: string
+          markdown: string
+          project_id: string
+          proposal_version_id: string | null
+          status: string
+          storage_path: string | null
+          version: number
+        }
+        Insert: {
+          audience: string
+          content_hash?: string
+          created_at?: string
+          created_by?: string | null
+          document_type: string
+          id?: string
+          language?: string
+          markdown?: string
+          project_id: string
+          proposal_version_id?: string | null
+          status?: string
+          storage_path?: string | null
+          version?: number
+        }
+        Update: {
+          audience?: string
+          content_hash?: string
+          created_at?: string
+          created_by?: string | null
+          document_type?: string
+          id?: string
+          language?: string
+          markdown?: string
+          project_id?: string
+          proposal_version_id?: string | null
+          status?: string
+          storage_path?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_documents_proposal_version_id_fkey"
+            columns: ["proposal_version_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_estimates: {
         Row: {
           approved_by_yaniv: boolean
@@ -3327,6 +3647,7 @@ export type Database = {
           id: string
           name: string
           payment_gate_status: string
+          planning_readiness: string
           status: string
           summary: string
           updated_at: string
@@ -3339,6 +3660,7 @@ export type Database = {
           id?: string
           name: string
           payment_gate_status?: string
+          planning_readiness?: string
           status?: string
           summary?: string
           updated_at?: string
@@ -3351,6 +3673,7 @@ export type Database = {
           id?: string
           name?: string
           payment_gate_status?: string
+          planning_readiness?: string
           status?: string
           summary?: string
           updated_at?: string
@@ -3361,6 +3684,197 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_signatures: {
+        Row: {
+          acceptance_status: string
+          created_at: string
+          currency: string
+          document_hash: string
+          fixed_price: number
+          id: string
+          ip_address: unknown
+          payment_terms: string
+          project_id: string
+          proposal_version_id: string
+          signature_artifact: string
+          signed_at: string
+          signed_by: string | null
+          signer_email: string
+          signer_name: string
+          signer_role: string
+          specification_version_id: string
+          user_agent: string
+        }
+        Insert: {
+          acceptance_status?: string
+          created_at?: string
+          currency: string
+          document_hash: string
+          fixed_price: number
+          id?: string
+          ip_address?: unknown
+          payment_terms: string
+          project_id: string
+          proposal_version_id: string
+          signature_artifact: string
+          signed_at?: string
+          signed_by?: string | null
+          signer_email: string
+          signer_name: string
+          signer_role: string
+          specification_version_id: string
+          user_agent?: string
+        }
+        Update: {
+          acceptance_status?: string
+          created_at?: string
+          currency?: string
+          document_hash?: string
+          fixed_price?: number
+          id?: string
+          ip_address?: unknown
+          payment_terms?: string
+          project_id?: string
+          proposal_version_id?: string
+          signature_artifact?: string
+          signed_at?: string
+          signed_by?: string | null
+          signer_email?: string
+          signer_name?: string
+          signer_role?: string
+          specification_version_id?: string
+          user_agent?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_signatures_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_signatures_proposal_version_id_fkey"
+            columns: ["proposal_version_id"]
+            isOneToOne: true
+            referencedRelation: "proposal_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_signatures_signed_by_fkey"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_signatures_specification_version_id_fkey"
+            columns: ["specification_version_id"]
+            isOneToOne: false
+            referencedRelation: "specification_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_versions: {
+        Row: {
+          change_request_id: string | null
+          content: Json
+          created_at: string
+          created_by: string | null
+          currency: string
+          document_hash: string
+          estimate_id: string
+          fixed_price: number
+          id: string
+          language: string
+          payment_terms: string
+          project_id: string
+          proposal_kind: string
+          published_at: string | null
+          specification_version_id: string
+          status: string
+          version: number
+          viewed_at: string | null
+        }
+        Insert: {
+          change_request_id?: string | null
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          document_hash: string
+          estimate_id: string
+          fixed_price: number
+          id?: string
+          language?: string
+          payment_terms?: string
+          project_id: string
+          proposal_kind?: string
+          published_at?: string | null
+          specification_version_id: string
+          status?: string
+          version: number
+          viewed_at?: string | null
+        }
+        Update: {
+          change_request_id?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          document_hash?: string
+          estimate_id?: string
+          fixed_price?: number
+          id?: string
+          language?: string
+          payment_terms?: string
+          project_id?: string
+          proposal_kind?: string
+          published_at?: string | null
+          specification_version_id?: string
+          status?: string
+          version?: number
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_versions_change_request_id_fkey"
+            columns: ["change_request_id"]
+            isOneToOne: false
+            referencedRelation: "change_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_versions_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_versions_specification_version_id_fkey"
+            columns: ["specification_version_id"]
+            isOneToOne: false
+            referencedRelation: "specification_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -3654,6 +4168,167 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "scopes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specification_section_sources: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_source_id: string | null
+          message_id: string | null
+          section_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_source_id?: string | null
+          message_id?: string | null
+          section_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_source_id?: string | null
+          message_id?: string | null
+          section_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specification_section_sources_meeting_source_id_fkey"
+            columns: ["meeting_source_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specification_section_sources_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specification_section_sources_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "specification_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specification_sections: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          client_visible: boolean
+          content: string
+          created_at: string
+          id: string
+          meeting_id: string | null
+          project_id: string
+          section_key: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          client_visible?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          meeting_id?: string | null
+          project_id: string
+          section_key: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          client_visible?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          meeting_id?: string | null
+          project_id?: string
+          section_key?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specification_sections_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specification_sections_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "client_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specification_sections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specification_versions: {
+        Row: {
+          content_hash: string
+          created_at: string
+          created_by: string | null
+          id: string
+          project_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specification_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specification_versions_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
