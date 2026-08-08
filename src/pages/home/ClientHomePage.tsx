@@ -3,6 +3,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { ProjectChat } from "../../components/ProjectChat";
+import { SaveShortcutCard } from "../../components/SaveShortcutCard";
 import { useAppData } from "../../context/AppDataContext";
 import { statusLabels } from "../../lib/domainHelpers";
 import type { ViewKey } from "../../views";
@@ -88,6 +89,8 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
           ]}
         />
       </div>
+
+      <SaveShortcutCard />
 
       <Disclosure title="More details">
         <p>Open the full project view for scope, messages, files and change requests.</p>
