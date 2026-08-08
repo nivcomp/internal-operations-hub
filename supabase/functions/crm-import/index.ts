@@ -208,6 +208,17 @@ Deno.serve(async (req) => {
         });
         if (match) duplicates.push({ rowIndex: row.rowIndex, ...match });
         else toCreate += 1;
+        // Track this row as a candidate so later rows in the SAME file that
+        // repeat the same phone / email / company are also flagged as duplicates.
+        if (!match) {
+          existing.leads.push({
+            id: `preview:${row.rowIndex}`,
+            name: clean(fields.name),
+            company: clean(fields.company),
+            email_normalized: validEmail(email) ? email : null,
+            phone_normalized: phone || null,
+          });
+        }
       }
 
       return json({
