@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   addLeadNote, archiveLead, convertLeadToClient, createLead, enrichLead, fetchImportBatches,
-  fetchLeadNotes, fetchLeads, updateLead, updateLeadStage, type LeadEnrichment,
+  fetchLeadNotes, fetchLeads, searchContactNotes, updateLead, updateLeadStage, type LeadEnrichment,
 } from "../../services/crmApi";
+import { CallLogger } from "./CallLogger";
 import { ImportWizard } from "../import/ImportWizard";
 import { LEAD_STAGES, type ContactNote, type ImportBatch, type Lead, type LeadStage } from "../../types/crm";
 
@@ -40,6 +41,7 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", serviceInterest: "" });
+  const [noteMatches, setNoteMatches] = useState<ContactNote[]>([]);
 
   async function reload() {
     setLoading(true);
@@ -57,6 +59,16 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
 
   useEffect(() => { void reload(); }, []);
 
+  // Smart search also looks inside the saved call history.
+  useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) { setNoteMatches([]); return; }
+    const timer = window.setTimeout(() => {
+      void searchContactNotes(term).then(setNoteMatches).catch(() => setNoteMatches([]));
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     if (!selected) { setNotes([]); setEnrichment(null); return; }
     void fetchLeadNotes(selected.id).then(setNotes).catch(() => setNotes([]));
@@ -64,13 +76,15 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
+    const noteLeadIds = new Set(noteMatches.map((note) => note.leadId).filter(Boolean) as string[]);
     return leads.filter((lead) => {
       if (stageFilter !== "all" && lead.stage !== stageFilter) return false;
       if (!term) return true;
+      if (noteLeadIds.has(lead.id)) return true;
       return [lead.name, lead.company, lead.email, lead.phone, lead.serviceInterest]
         .some((value) => String(value ?? "").toLowerCase().includes(term));
     });
-  }, [leads, search, stageFilter]);
+  }, [leads, search, stageFilter, noteMatches]);
 
   const staleCount = useMemo(() => leads.filter((lead) =>
     !["won", "lost"].includes(lead.stage)
