@@ -169,6 +169,36 @@ export async function addLeadNote(leadId: string, bodyText: string): Promise<Con
   return mapNote(data);
 }
 
+/** Saves a phone-call log (voice transcript or typed) with its exact date and time. */
+export async function logLeadCall(
+  leadId: string,
+  bodyText: string,
+  startedAt: string,
+  source = "שיחת טלפון",
+): Promise<ContactNote> {
+  const stamp = new Date(startedAt).toLocaleString("he-IL");
+  const { data, error } = await supabase.from("contact_notes").insert({
+    lead_id: leadId,
+    body: bodyText.trim(),
+    note_type: "call",
+    original_source: `${source} · ${stamp}`,
+  }).select("*").maybeSingle();
+  if (error || !data) fail("logLeadCall", error);
+  await supabase.from("crm_leads")
+    .update({ last_contact_at: startedAt.slice(0, 10) }).eq("id", leadId);
+  return mapNote(data);
+}
+
+/** Smart search across the saved call history / notes. Returns matching notes. */
+export async function searchContactNotes(term: string): Promise<ContactNote[]> {
+  const clean = term.trim();
+  if (clean.length < 2) return [];
+  const { data, error } = await supabase.from("contact_notes").select("*")
+    .ilike("body", `%${clean}%`).order("created_at", { ascending: false }).limit(200);
+  if (error) fail("searchContactNotes", error);
+  return (data ?? []).map(mapNote);
+}
+
 /** Turns a lead into a real client record and keeps the history attached. */
 export async function convertLeadToClient(lead: Lead): Promise<string> {
   const { data: client, error } = await supabase.from("clients").insert({
