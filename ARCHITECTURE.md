@@ -27,6 +27,7 @@ Do not split the modes into different repositories, applications, deployments or
 
 - Clients and projects: `clients`, `projects`; imported prospects stay in `crm_leads` until linked or converted.
 - Meeting and discovery: `client_meetings`, `meeting_sources`.
+- Meeting accounting: client-safe timing is stored on `client_meetings`; one immutable agency-only `meeting_time_charges` row records confirmed billable discovery hours and the existing `paid_hours` bank deduction.
 - Project conversation: `project_conversations`, `conversation_participants`, `chat_messages`, `ai_runs`, `ai_generated_drafts`.
 - Specification: `specification_sections`, `specification_section_sources`, `specification_versions`, plus existing briefs, requirements, assumptions and questions.
 - Pricing: `project_estimates`, `estimate_items`, allocations, adjustments, scenarios, supplier reviews and estimate versions.

@@ -2386,6 +2386,10 @@ kbd {
 .import-map-table select { max-width: 200px; }
 .meeting-workspace { display: grid; gap: 1rem; }
 .meeting-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.meeting-time-strip { display: flex; flex-wrap: wrap; gap: .55rem; margin: .75rem 0; }
+.meeting-time-strip span { display: grid; gap: .12rem; min-width: 110px; padding: .55rem .7rem; border-radius: 12px; background: #f4f7f6; border: 1px solid var(--border, #dbe2ea); }
+.meeting-time-strip small { color: var(--text-muted, #6b7280); }
+.meeting-time-strip strong { font-variant-numeric: tabular-nums; }
 .meeting-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .85fr); gap: 1rem; align-items: start; }
 .meeting-grid main, .meeting-grid aside { display: grid; gap: 1rem; min-width: 0; }
 .specification-live { max-height: 70vh; overflow: auto; }

@@ -53,6 +53,17 @@ The internal operator must not be blocked while running a live client meeting or
 **Consequences**
 Agency events remain logged for cost visibility, and message-length plus input safety validation remain active. This exception is based on the authenticated server-side profile role, not a frontend mode or caller-provided flag.
 
+### 2026-08-08 — Meeting time deductions require an immutable agency ledger
+
+**Decision**
+Start, end and duration remain client-safe fields on `client_meetings`. Confirmed billable discovery hours and the selected existing `paid_hours` bank are stored once in an agency-only `meeting_time_charges` ledger row.
+
+**Reason**
+Updating the aggregate hour bank from the browser could double-charge a retried meeting, while putting billing metadata on a client-readable meeting would weaken visibility boundaries.
+
+**Consequences**
+The database function locks both meeting and bank, validates client/project ownership and remaining hours, then inserts one unique ledger row and updates the aggregate atomically. A meeting may finish without a bank, preserving unallocated billable time without inventing a balance deduction.
+
 ### 2026-07-11 — Internal operating system first
 
 **Decision**  

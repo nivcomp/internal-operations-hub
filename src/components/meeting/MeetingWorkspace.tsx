@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ProjectChat } from "../ProjectChat";
 import { fetchProjectEstimation } from "../../services/estimationApi";
-import { addTranscript, finishMeeting, loadMeetingWorkspace, saveSection, startMeeting, uploadMeetingSource, type Meeting, type MeetingSource, type SpecificationSection } from "../../services/meetingWorkflowApi";
+import { addTranscript, finishMeeting, loadMeetingWorkspace, saveSection, startMeeting, uploadMeetingSource, type Meeting, type MeetingHourBank, type MeetingSource, type MeetingTimeCharge, type SpecificationSection } from "../../services/meetingWorkflowApi";
 import type { ProjectEstimate } from "../../types/estimation";
 import { ProjectDocumentsPanel } from "../project/ProjectDocumentsPanel";
 
@@ -11,27 +11,43 @@ type Props = {
 };
 
 const money = (value: number | null | undefined, currency: string) => value == null ? "—" : new Intl.NumberFormat("he-IL", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
+const formatDuration = (milliseconds: number) => {
+  const totalMinutes = Math.max(0, Math.floor(milliseconds / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours ? `${hours} שעות ו-${minutes} דקות` : `${minutes} דקות`;
+};
 
 export function MeetingWorkspace({ projectId, projectName, clientName, companyName, onSaveExit, onFinished }: Props) {
   const [meeting, setMeeting] = useState<Meeting>();
   const [sections, setSections] = useState<SpecificationSection[]>([]);
   const [sources, setSources] = useState<MeetingSource[]>([]);
+  const [hourBanks, setHourBanks] = useState<MeetingHourBank[]>([]);
+  const [meetingCharge, setMeetingCharge] = useState<MeetingTimeCharge | null>(null);
   const [estimate, setEstimate] = useState<ProjectEstimate>();
   const [transcript, setTranscript] = useState("");
   const [uploads, setUploads] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<Date>();
   const [finishOpen, setFinishOpen] = useState(false);
+  const [billableHours, setBillableHours] = useState(0);
+  const [selectedBankId, setSelectedBankId] = useState("");
+  const [now, setNow] = useState(Date.now());
   const [manualOpen, setManualOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [error, setError] = useState("");
 
   async function refresh() {
     const [workspace, estimation] = await Promise.all([loadMeetingWorkspace(projectId), fetchProjectEstimation(projectId)]);
-    setMeeting(workspace.meeting); setSections(workspace.sections); setSources(workspace.sources);
+    setMeeting(workspace.meeting); setMeetingCharge(workspace.meetingCharge); setSections(workspace.sections); setSources(workspace.sources); setHourBanks(workspace.hourBanks);
     const current = estimation.estimates[0]; setEstimate(current);
   }
   useEffect(() => { void refresh().catch((e) => setError(e.message)); }, [projectId]);
+  useEffect(() => {
+    if (meeting?.status !== "active") return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [meeting?.status]);
 
   async function begin() { setBusy(true); try { await startMeeting(projectId); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
   async function saveTranscript() {
@@ -49,9 +65,16 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
     }
     await refresh(); setSavedAt(new Date());
   }
+  function openFinish() {
+    if (!meeting) return;
+    const elapsedMinutes = Math.max(0, (Date.now() - new Date(meeting.started_at).getTime()) / 60000);
+    setBillableHours(Math.ceil(elapsedMinutes / 15) * 0.25);
+    setSelectedBankId(hourBanks.find((bank) => bank.project_id === projectId)?.id ?? hourBanks[0]?.id ?? "");
+    setFinishOpen(true);
+  }
   async function confirmFinish() {
     if (!meeting) return; setBusy(true);
-    try { await finishMeeting(meeting.id); await refresh(); setFinishOpen(false); onFinished?.(); }
+    try { await finishMeeting(meeting.id, billableHours, selectedBankId || undefined); await refresh(); setFinishOpen(false); onFinished?.(); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -59,9 +82,12 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
   const approved = sections.filter((section) => section.status === "approved").length;
   const incomplete = sections.filter((section) => section.status === "incomplete").length;
   const openQuestions = sections.find((section) => section.section_key === "open_questions")?.content.trim() ?? "";
+  const meetingEnd = meeting.ended_at ? new Date(meeting.ended_at).getTime() : now;
+  const elapsed = Math.max(0, meetingEnd - new Date(meeting.started_at).getTime());
+  const selectedBank = hourBanks.find((bank) => bank.id === selectedBankId);
 
   return <div className="meeting-workspace" dir="rtl">
-    <header className="card meeting-head"><div><p className="eyebrow">{companyName || "פגישת לקוח"}</p><h2>חדר אפיון — {projectName}</h2><p>{clientName ? `איש קשר: ${clientName} · ` : ""}מצב: {meeting.status === "active" ? "פגישה פעילה" : "הפגישה הסתיימה"} · התחלה: {new Date(meeting.started_at).toLocaleString("he-IL")}</p><small>{savedAt ? `נשמר לאחרונה ${savedAt.toLocaleTimeString("he-IL")}` : "המידע נשמר ב-Supabase"}</small></div><div className="action-row"><button onClick={() => void refresh().then(() => setSavedAt(new Date()))}>שמור</button><button onClick={() => setDocumentsOpen((value) => !value)}>מסמכי הפרויקט</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא</button> : null}{meeting.status === "active" ? <button className="primary-button" onClick={() => setFinishOpen(true)}>סיים פגישה</button> : null}</div></header>
+    <header className="card meeting-head"><div><p className="eyebrow">{companyName || "פגישת לקוח"}</p><h2>חדר אפיון — {projectName}</h2><p>{clientName ? `איש קשר: ${clientName} · ` : ""}מצב: {meeting.status === "active" ? "פגישה פעילה" : "הפגישה הסתיימה"}</p><div className="meeting-time-strip"><span><small>התחלה</small><strong>{new Date(meeting.started_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</strong></span><span><small>{meeting.ended_at ? "סיום" : "זמן חי"}</small><strong>{meeting.ended_at ? new Date(meeting.ended_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "● פעיל"}</strong></span><span><small>משך הפגישה</small><strong>{formatDuration(elapsed)}</strong></span>{meetingCharge ? <span><small>שעות אפיון</small><strong>{meetingCharge.billable_hours}</strong></span> : null}</div><small>{savedAt ? `נשמר לאחרונה ${savedAt.toLocaleTimeString("he-IL")}` : "המידע נשמר ב-Supabase"}</small></div><div className="action-row"><button onClick={() => void refresh().then(() => setSavedAt(new Date()))}>שמור</button><button onClick={() => setDocumentsOpen((value) => !value)}>מסמכי הפרויקט</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא</button> : null}{meeting.status === "active" ? <button className="primary-button" onClick={openFinish}>סיים פגישה</button> : null}</div></header>
     {error && <p className="form-error">{error}</p>}
     {documentsOpen ? <ProjectDocumentsPanel projectId={projectId} simple /> : null}
     <div className="guided-meeting-layout">
@@ -73,7 +99,7 @@ export function MeetingWorkspace({ projectId, projectName, clientName, companyNa
         <section className="card specification-live"><h3>עריכה ידנית מתקדמת</h3>{sections.map((section) => <SectionEditor key={section.id} section={section} onSaved={async () => { await refresh(); setSavedAt(new Date()); }} />)}</section>
       </aside></div>
     </section> : null}
-    {finishOpen ? <div className="modal-backdrop"><section className="modal-card meeting-finish" role="dialog" aria-modal="true"><div className="modal-head"><h2>סיכום לפני סיום הפגישה</h2><button onClick={() => setFinishOpen(false)}>×</button></div><dl><div><dt>סעיפים מאושרים</dt><dd>{approved}</dd></div><div><dt>סעיפים חסרים</dt><dd>{incomplete}</dd></div><div><dt>מקורות שנשמרו</dt><dd>{sources.length}</dd></div><div><dt>מצב תמחור</dt><dd>{estimate?.status ?? "לא הוגדר"}</dd></div></dl><p><strong>שאלות פתוחות:</strong> {openQuestions || "לא תועדו"}</p>{incomplete ? <p className="form-error">עדיין חסר מידע בחלק מסעיפי האפיון.</p> : null}<div className="action-row"><button onClick={() => setFinishOpen(false)}>חזרה לפגישה</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא בלי לסיים</button> : null}<button className="primary-button" disabled={busy} onClick={() => void confirmFinish()}>אשר וסיים פגישה</button></div></section></div> : null}
+    {finishOpen ? <div className="modal-backdrop"><section className="modal-card meeting-finish" role="dialog" aria-modal="true"><div className="modal-head"><h2>סיכום וחיוב זמן האפיון</h2><button onClick={() => setFinishOpen(false)}>×</button></div><dl><div><dt>התחלה</dt><dd>{new Date(meeting.started_at).toLocaleString("he-IL")}</dd></div><div><dt>משך בפועל</dt><dd>{formatDuration(elapsed)}</dd></div><div><dt>סעיפים מאושרים</dt><dd>{approved}</dd></div><div><dt>סעיפים חסרים</dt><dd>{incomplete}</dd></div></dl><div className="form-grid"><label>שעות אפיון לחיוב<input type="number" min="0" step="0.25" value={billableHours} onChange={(event) => setBillableHours(Number(event.target.value))} /></label><label>בנק שעות<select value={selectedBankId} onChange={(event) => setSelectedBankId(event.target.value)}><option value="">לסיים ללא הורדה מבנק</option>{hourBanks.map((bank) => <option key={bank.id} value={bank.id}>{bank.project_id ? "בנק הפרויקט" : "בנק הלקוח"} — נותרו {bank.hours_remaining} שעות</option>)}</select></label></div>{selectedBank && billableHours > selectedBank.hours_remaining ? <p className="form-error">אין מספיק שעות בבנק שנבחר.</p> : null}{!selectedBankId && billableHours > 0 ? <p className="form-note">הפגישה תירשם עם שעות לחיוב, אך לא תופחת מבנק עד להסדרה.</p> : null}<p><strong>שאלות פתוחות:</strong> {openQuestions || "לא תועדו"}</p>{incomplete ? <p className="form-error">עדיין חסר מידע בחלק מסעיפי האפיון.</p> : null}<div className="action-row"><button onClick={() => setFinishOpen(false)}>חזרה לפגישה</button>{onSaveExit ? <button onClick={onSaveExit}>שמור וצא בלי לסיים</button> : null}<button className="primary-button" disabled={busy || billableHours < 0 || Boolean(selectedBank && billableHours > selectedBank.hours_remaining)} onClick={() => void confirmFinish()}>אשר, רשום שעות וסיים</button></div></section></div> : null}
   </div>;
 }
 

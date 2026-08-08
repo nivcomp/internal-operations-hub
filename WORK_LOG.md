@@ -2335,3 +2335,36 @@ Remove project-chat usage quotas from the agency admin while preserving client a
 
 **Next**
 - Deploy and verify `project-chat` and `project-documents` with separate agency, client and supplier sessions.
+
+---
+
+### 2026-08-08 — Discovery meeting time accounting
+
+**Work unit**
+Track live discovery duration and safely deduct confirmed meeting hours from the existing paid-hours bank.
+
+**Changes**
+- Added a live start/end/duration strip to the Simple meeting workspace.
+- Added a finish flow with editable quarter-hour billing and eligible project/client bank selection.
+- Added client-safe `duration_minutes` to `client_meetings` and an agency-only `meeting_time_charges` ledger.
+- Added `finish_client_meeting`, which locks the meeting and selected bank, validates ownership and balance, prevents duplicate deductions and updates the existing `paid_hours` aggregate atomically.
+- Meetings without an available bank retain their billable time in the ledger without falsely deducting a balance.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Migration/table audit confirmed this change alters the existing meeting record and adds only the required charge ledger; it does not duplicate meetings or hour banks.
+- Supabase CLI and an authenticated production session are unavailable, so migration application and live role/balance verification remain required.
+
+**Files**
+- `supabase/migrations/20260808113000_meeting_time_accounting.sql`
+- `src/components/meeting/MeetingWorkspace.tsx`
+- `src/services/meetingWorkflowApi.ts`
+- `src/integrations/supabase/types.ts`, `src/styles.css`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final report records the SHA and PR.
+
+**Next**
+- Build the saved interactive visual prototype studio with versioned client approval and reviewed Lovable export.
