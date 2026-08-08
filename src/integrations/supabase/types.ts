@@ -3476,6 +3476,51 @@ export type Database = {
           },
         ]
       }
+      project_prototypes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          project_id: string
+          prototype_kind: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          project_id: string
+          prototype_kind: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          project_id?: string
+          prototype_kind?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_prototypes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_prototypes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_questions: {
         Row: {
           answer: string
@@ -3943,6 +3988,125 @@ export type Database = {
             columns: ["specification_version_id"]
             isOneToOne: false
             referencedRelation: "specification_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prototype_approvals: {
+        Row: {
+          approved_by: string
+          comment: string
+          created_at: string
+          decision: string
+          id: string
+          project_id: string
+          prototype_version_id: string
+        }
+        Insert: {
+          approved_by: string
+          comment?: string
+          created_at?: string
+          decision: string
+          id?: string
+          project_id: string
+          prototype_version_id: string
+        }
+        Update: {
+          approved_by?: string
+          comment?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          project_id?: string
+          prototype_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prototype_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prototype_approvals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prototype_approvals_prototype_version_id_fkey"
+            columns: ["prototype_version_id"]
+            isOneToOne: false
+            referencedRelation: "prototype_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prototype_versions: {
+        Row: {
+          audience: string
+          content: Json
+          created_at: string
+          created_by: string
+          id: string
+          project_id: string
+          prototype_id: string
+          source_notes: string
+          status: string
+          summary: string
+          title: string
+          version: number
+        }
+        Insert: {
+          audience?: string
+          content: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          project_id: string
+          prototype_id: string
+          source_notes?: string
+          status?: string
+          summary?: string
+          title: string
+          version: number
+        }
+        Update: {
+          audience?: string
+          content?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          project_id?: string
+          prototype_id?: string
+          source_notes?: string
+          status?: string
+          summary?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prototype_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prototype_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prototype_versions_prototype_id_fkey"
+            columns: ["prototype_id"]
+            isOneToOne: false
+            referencedRelation: "project_prototypes"
             referencedColumns: ["id"]
           },
         ]
