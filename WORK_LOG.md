@@ -1,5 +1,38 @@
 # Work Log
 
+### 2026-08-08 — Responsive meeting visuals and simplified client portal
+
+**Work unit**
+Make the meeting/portal usable on mobile, improve visual artifacts, remove the duplicate client-facing flow, and add safe sharing.
+
+**Changes**
+- Added responsive foundations for Simple Mode, meeting chat, tables, modals and client portal layouts.
+- Reworked chat flow and wireframe artifacts into readable cards/screens that stack vertically on mobile.
+- Added local SVG image download, authenticated portal-link copy and a user-controlled email draft for chat artifacts.
+- Added an authenticated `portalProject` deep link that selects only a project already visible to the signed-in user.
+- Removed the separate static Project Flow from the client portal. The portal now uses persisted project status for a four-step overview and project-chat artifacts for the actual conversation-derived process/sketch.
+- Added Hebrew/English portal overview preference, client-visible estimate summary and a collapsed advanced-details section.
+- Reduced the Advanced project workspace from thirteen equal-weight tabs to six primary sections, with infrequent operational screens in a secondary-tools selector.
+- Added an always-available exact client-view shortcut and side-by-side client-visible versus agency-only commercial cards.
+- Direct estimate mutations now notify the shared application context, which reloads canonical `project_estimates` summaries for Advanced, Simple and portal views.
+- No migration, table, Edge Function, RLS policy or auth rule was changed.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large App chunk warning remains.
+- Browser login checks at desktop/mobile were completed earlier. Authenticated portal pages were unavailable in the browser session, so signed-in visual and role verification remains a deployment check.
+
+**Files**
+- `src/App.tsx`
+- `src/components/ProjectChat.tsx`
+- `src/pages/ClientPortalPage.tsx`
+- `src/styles.css`
+- Project memory files
+
+**Next**
+- Verify the merged build with separate agency/client sessions, then continue the saved interactive visual prototype studio.
+
+---
+
 Add one concise entry at the end of every autonomous work cycle.
 
 Do not delete previous entries. Record only work that actually happened and tests that actually ran.

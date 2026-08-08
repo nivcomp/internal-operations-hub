@@ -25,6 +25,8 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Project chat, onboarding chat, persistent Copilot and voice Copilot.
 - Client and supplier project chats retain usage quotas; agency-admin project chats are unmetered in both Simple and Advanced Mode while still retaining input safety controls and usage logging.
 - Interactive project-room chat shared with the client portal, including voice input and safe structured flow, wireframe, table and checklist artifacts.
+- Responsive Simple Mode meeting and portal presentation: visual artifacts reflow for phones and tablets, and flow/wireframe drafts can be downloaded as an SVG image, copied as an authenticated project-portal link or opened in an email draft.
+- The Advanced project workspace uses six primary sections with secondary operator tools behind progressive disclosure. Its pricing summary explicitly separates the published client view from internal rate, cost and margin data.
 - Shared project document center in Simple, Advanced and the client portal, using approved specification sections and existing `project_documents` records.
 - Meetings, source uploads/transcripts and structured specification records.
 - Live meeting timing with start/end/duration, plus an agency-only idempotent charge ledger that can deduct confirmed discovery hours from the existing client/project hour bank.

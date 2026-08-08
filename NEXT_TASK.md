@@ -2,9 +2,9 @@
 
 ## Current result
 
-The Simple meeting now shows a live timer, start/end times and final duration. On finish, the agency confirms billable discovery hours in quarter-hour increments and may select an eligible existing client/project hour bank. A protected database function performs a retry-safe atomic deduction and stores one agency-only charge ledger row. Client-readable meeting records do not expose bank or internal billing metadata.
+Simple Mode and the client portal now have a responsive phone/tablet foundation. Conversation-generated flows and wireframes use readable responsive cards, can be downloaded as SVG images, and can be shared through an authenticated project-portal deep link or a user-controlled email draft. The client portal no longer displays a competing static process diagram: it shows a concise persisted-status journey and keeps the live process/sketch inside project chat. The portal adds a Hebrew/English presentation choice, a client-visible estimate summary and a collapsed details area. The Advanced project workspace now has six primary sections, a secondary-tools selector, an exact client-view shortcut, explicit client-visible/internal pricing cards and shared commercial refresh after estimate changes.
 
-Remaining limitation: the new migration must be applied to the connected Supabase project. The latest `project-chat` and `project-documents` Edge Functions also still require deployment and authenticated role verification.
+Remaining limitation: authenticated agency/client visual verification is still required after deployment. The language choice translates the new portal overview; older embedded project modules retain some existing English copy and should be moved to a shared portal locale layer in a focused follow-up.
 
 ## Recommended next work unit
 
