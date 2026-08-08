@@ -40,6 +40,7 @@ import {
   updateTimeEntryStatusRow,
 } from "../services/api";
 import { currency, getProjectName, getSupplierName } from "../lib/domainHelpers";
+import { supabase } from "../integrations/supabase/client";
 import {
   fetchEstimateSummaries, fetchProjectSchedules, saveProjectScheduleRow, type EstimateSummary,
 } from "../services/scheduleApi";
@@ -153,6 +154,9 @@ export type AppDataValue = {
   ) => Promise<void>;
   saveProjectSchedule: (projectId: string, patch: Partial<ProjectSchedule>) => Promise<ProjectSchedule>;
   refreshCommercials: () => Promise<void>;
+  /** Project ids that changed in the database since you last opened them. */
+  liveUpdates: Record<string, number>;
+  markProjectSeen: (projectId: string) => void;
 } & MutationHelpers;
 
 // Mutation keys — stable strings used to look up pending/error/success state
@@ -600,6 +604,72 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   // therefore read the same freshly loaded canonical record.
   useEffect(() => onAnyEstimationChanged(() => { void refreshCommercials(); }), [refreshCommercials]);
 
+  // ---- Live sync ----------------------------------------------------------
+  // Everything the client does in their own portal is written to the same
+  // shared database. Realtime keeps the agency view in sync without a refresh.
+  const [liveUpdates, setLiveUpdates] = useState<Record<string, number>>({});
+  const markProjectSeen = useCallback((projectId: string) => {
+    setLiveUpdates((current) => {
+      if (!(projectId in current)) return current;
+      const next = { ...current };
+      delete next[projectId];
+      return next;
+    });
+  }, []);
+
+  const refreshTimers = useRef<Record<string, number>>({});
+  const scheduleRefresh = useCallback((key: string, fn: () => Promise<void>) => {
+    window.clearTimeout(refreshTimers.current[key]);
+    refreshTimers.current[key] = window.setTimeout(() => { void fn(); }, 400);
+  }, []);
+
+  useEffect(() => {
+    const timers = refreshTimers.current;
+    const touch = (row: any) => {
+      const projectId = row?.project_id;
+      if (typeof projectId === "string" && projectId) {
+        setLiveUpdates((current) => ({ ...current, [projectId]: Date.now() }));
+      }
+    };
+
+    const channel = supabase.channel("agency-live-sync");
+    const listen = (table: string, onChange: () => void) => {
+      channel.on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table },
+        (payload: any) => {
+          touch(payload.new ?? payload.old);
+          onChange();
+        },
+      );
+    };
+
+    listen("projects", () => scheduleRefresh("projects", async () => {
+      setProjects(await fetchProjects());
+    }));
+    listen("project_messages", () => scheduleRefresh("messages", async () => {
+      setProjectMessages(await fetchProjectMessages());
+    }));
+    listen("approvals", () => scheduleRefresh("approvals", async () => {
+      setApprovals(await fetchApprovals());
+    }));
+    listen("change_requests", () => scheduleRefresh("changeRequests", async () => {
+      setChangeRequests(await fetchChangeRequests());
+    }));
+    // Chat, questions, prototype decisions and signatures have no local
+    // collection here — they only flag the project as having a fresh update.
+    listen("chat_messages", () => {});
+    listen("project_questions", () => {});
+    listen("prototype_approvals", () => {});
+    listen("proposal_signatures", () => {});
+
+    channel.subscribe();
+    return () => {
+      Object.values(timers).forEach((id) => window.clearTimeout(id));
+      void supabase.removeChannel(channel);
+    };
+  }, [scheduleRefresh]);
+
   const saveProjectSchedule = useCallback((projectId: string, patch: Partial<ProjectSchedule>) => {
     return runAction(MutationKeys.saveProjectSchedule(projectId), "Schedule saved.", async () => {
       const persisted = await saveProjectScheduleRow(projectId, patch);
@@ -626,6 +696,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     createClientPayment, markPaymentReceived, updateProjectSupplierAssignment,
     updateTimeEntryStatus, updateChangeRequestStatus,
     saveProjectSchedule, refreshCommercials,
+    liveUpdates, markProjectSeen,
     isPending, getError, getSuccess, clearMutationState,
   };
 

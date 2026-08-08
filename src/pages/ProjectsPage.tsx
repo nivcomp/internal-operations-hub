@@ -13,10 +13,20 @@ type ProjectsPageProps = {
 };
 
 export function ProjectsPage({ clients, projects, onProjectSelect }: ProjectsPageProps) {
-  const { scopes, suppliers } = useAppData();
+  const { scopes, suppliers, liveUpdates } = useAppData();
 
   const columns: Column<Project>[] = [
-    { key: "name", header: "Project", render: (project) => <strong>{project.name}</strong>, sortValue: (project) => project.name },
+    {
+      key: "name",
+      header: "Project",
+      render: (project) => (
+        <span className="project-name-cell">
+          <strong>{project.name}</strong>
+          {liveUpdates[project.id] && <span className="live-update-dot" title="עדכון חדש מהלקוח">עדכון חדש מהלקוח</span>}
+        </span>
+      ),
+      sortValue: (project) => project.name,
+    },
     { key: "client", header: "Client", render: (project) => getClient(project, clients)?.company ?? "—", sortValue: (project) => getClient(project, clients)?.company ?? "" },
     {
       key: "status",

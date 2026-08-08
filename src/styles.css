@@ -2710,3 +2710,34 @@ html, body, #root { max-width: 100%; }
 .shortcut-card .action-row { flex-wrap: wrap; gap: 0.5rem; }
 
 .prototype-auto-share { display:flex; align-items:center; gap:.5rem; font-size:.85rem; color:var(--muted-foreground, #64748b); grid-column:1 / -1; }
+
+/* Live sync indicator: a project changed in the client portal since you last opened it. */
+.project-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.live-update-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--primary, #0f766e);
+  background: rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, 0.25);
+  white-space: nowrap;
+}
+
+.live-update-dot::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--primary, #0f766e);
+}

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { DetailNav } from "../components/DetailNav";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
@@ -58,6 +58,7 @@ export function ProjectDetailPage({
   const {
     scopes, scopeItems, projectBriefs, projectPricing, fileLinks, decisionLogs, suppliers, supplierProfiles,
     projectSchedules, estimateSummaries,
+    markProjectSeen,
     isPending, getError, getSuccess,
   } = useAppData();
   const [changeForm, setChangeForm] = useState<NewChangeRequestInput>(initialChangeForm);
@@ -74,6 +75,11 @@ export function ProjectDetailPage({
   });
   const nav = useNav();
   const project = selectedProjectId ? getProjectById(selectedProjectId, projects) : undefined;
+
+  // Opening the project clears its "new update from the client" flag.
+  useEffect(() => {
+    if (selectedProjectId) markProjectSeen(selectedProjectId);
+  }, [selectedProjectId, markProjectSeen]);
 
   if (!project) {
     return (
