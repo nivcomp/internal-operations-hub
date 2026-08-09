@@ -1,5 +1,22 @@
 # Work Log
 
+### 2026-08-09 — Client-requested MVP refresh
+
+**Work unit**
+Let a client request a new MVP version after a significant project change without giving the client direct AI or publishing authority.
+
+**Changes**
+- Added a focused Hebrew/English “Request an MVP update” form below the shared MVP in the client portal.
+- Saves the request in the existing `change_requests` workflow so agency review, hour impact, pricing and approval rules remain canonical.
+- The agency-only prototype generator now includes active project change requests in its source context.
+- Creating the next MVP revision still produces immutable version history and uses the existing automatic client sharing flow.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No table, pricing model or client-side AI execution path was added.
+
+
 ### 2026-08-09 — Reliable automatic MVP sharing and client-safe review
 
 **Work unit**

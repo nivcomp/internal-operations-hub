@@ -6,6 +6,8 @@ The client portal now has four large focus views: project status, specification,
 
 The saved prototype includes immutable versions, client approval/change requests and a reviewed handoff for both Lovable and Base44. New versions are shared atomically by the agency-only Edge Function, while the repair migration shares the latest existing client draft and corrects the client RLS correlation. New AI-generated versions describe the approved UI, data model, integrations and automation flows in one bounded payload. The repair migration and updated `project-prototype` Edge Function require deployment to the connected Supabase project. Authenticated agency/client RLS verification remains required.
 
+Clients can now request an MVP refresh from the shared MVP view. The request reuses `change_requests`; it does not execute AI directly. The next agency-generated revision includes active project requests and is shared through the existing versioned workflow.
+
 ## Recommended next work unit
 
 Add protected prototype media assets, visual review annotations and a downloadable reviewed handoff.

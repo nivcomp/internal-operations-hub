@@ -2614,6 +2614,9 @@ html, body, #root { max-width: 100%; }
 .portal-spec-cards article, .portal-spec-focus > article { padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-muted); }
 .portal-spec-cards article > span { color: var(--brand); font-size: .78rem; font-weight: 800; }
 .portal-spec-cards article > h3 { margin-block: .35rem; }
+.portal-mvp-refresh { display: grid; gap: .65rem; border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); }
+.portal-mvp-refresh > h2, .portal-mvp-refresh > p { margin-block: 0; }
+.portal-mvp-refresh form, .portal-mvp-refresh textarea { width: 100%; }
 .portal-language-switch { display: flex; gap: .4rem; justify-content: flex-end; }
 .portal-language-switch button { min-height: 40px; }
 .portal-progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 1.15rem 0; }

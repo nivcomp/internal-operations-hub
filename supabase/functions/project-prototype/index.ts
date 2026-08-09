@@ -84,11 +84,12 @@ Deno.serve(async (req) => {
   }
 
   const kind: PrototypeKind = ["app","whatsapp","automation"].includes(String(body.kind)) ? body.kind as PrototypeKind : "app";
-  const [project, sections, messages, sources] = await Promise.all([
+  const [project, sections, messages, sources, changeRequests] = await Promise.all([
     admin.from("projects").select("id,name,summary,status").eq("id", projectId).maybeSingle(),
     admin.from("specification_sections").select("title,content,status").eq("project_id", projectId).in("status", ["approved","edited"]).limit(40),
     admin.from("chat_messages").select("sender_type,body,structured_payload,created_at").eq("project_id", projectId).order("created_at", { ascending: false }).limit(30),
     admin.from("meeting_sources").select("title,source_type,transcript,review_status").eq("project_id", projectId).order("captured_at", { ascending: false }).limit(20),
+    admin.from("change_requests").select("title,description,status,delivery_impact,created_at").eq("project_id", projectId).neq("status", "declined").order("created_at", { ascending: false }).limit(20),
   ]);
   if (!project.data) return json({ error: "Project not found" }, 404);
 
@@ -101,6 +102,7 @@ Deno.serve(async (req) => {
   const context = JSON.stringify({
     project: project.data, specification: sections.data ?? [], conversation: (messages.data ?? []).reverse(),
     meetingSources: sources.data ?? [], suppliedText: String(body.sourceText || "").slice(0, 18000), previous,
+    activeChangeRequests: (changeRequests.data ?? []).reverse(),
     revisionInstructions: String(body.instructions || "").slice(0, 3000),
   }).slice(0, 30000);
   const raw = await callModel([
