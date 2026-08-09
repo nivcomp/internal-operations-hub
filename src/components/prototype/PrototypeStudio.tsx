@@ -58,6 +58,9 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await generatePrototype({ projectId, prototypeId: prototype?.id, kind: prototype?.prototype_kind ?? kind, title: prototype?.title || `${projectName} MVP`, instructions, sourceText });
+      if (result.version.status === "draft") {
+        try { await sharePrototype(projectId, result.version.id); } catch { /* keep the new version even if auto-share fails */ }
+      }
       await refresh(result.prototypeId, result.version.id); setInstructions("");
       setNotice(`נוצרה גרסה ${result.version.version} והיא שותפה אוטומטית עם הלקוח בפורטל שלו.`);
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
