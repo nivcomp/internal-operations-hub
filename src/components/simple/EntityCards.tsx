@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ClientEditDialog } from "../clients/ClientEditDialog";
 import { useAppData } from "../../context/AppDataContext";
 import { useMode } from "../../context/ModeContext";
 import { useCopilot } from "../../context/CopilotContext";
@@ -21,6 +23,7 @@ function AskAi({ question }: { question: string }) {
 }
 
 export function SimpleClientCard({ client, onContinue }: { client: Client; onContinue?: () => void }) {
+  const [editing, setEditing] = useState(false);
   const { projects } = useAppData();
   const { openAdvanced } = useMode();
   const mine = projects.filter((project) => project.clientId === client.id);
@@ -48,7 +51,9 @@ export function SimpleClientCard({ client, onContinue }: { client: Client; onCon
         <button type="button" onClick={() => openAdvanced("client-detail", { clientId: client.id })}>
           פתח כרטיס מלא
         </button>
+        <button type="button" onClick={() => setEditing(true)}>עריכת פרטים</button>
       </div>
+      {editing ? <ClientEditDialog client={client} onClose={() => setEditing(false)} /> : null}
     </article>
   );
 }

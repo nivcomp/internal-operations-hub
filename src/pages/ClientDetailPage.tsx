@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { AccessPanel } from "../components/AccessPanel";
 import { PastProjectsPanel } from "../components/crm/PastProjectsPanel";
+import { ClientEditDialog } from "../components/clients/ClientEditDialog";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData, type NewProjectInput } from "../context/AppDataContext";
@@ -35,6 +36,7 @@ export function ClientDetailPage({
   const { scopes, isPending, getError, getSuccess } = useAppData();
   const [projectForm, setProjectForm] = useState<NewProjectInput>(initialProjectForm);
   const [projectFormError, setProjectFormError] = useState<string | null>(null);
+  const [editingClient, setEditingClient] = useState(false);
   const client = selectedClientId ? getClientById(selectedClientId, clients) : undefined;
 
   if (!client) {
@@ -93,6 +95,7 @@ export function ClientDetailPage({
             <div><dt>Phone</dt><dd>{activeClient.phone ?? "Not set"}</dd></div>
             <div><dt>Status</dt><dd><StatusBadge label={activeClient.status} tone={activeClient.status === "lead" ? "warning" : "success"} /></dd></div>
           </dl>
+          <div className="action-row"><button type="button" onClick={() => setEditingClient(true)}>עריכת פרטי לקוח</button></div>
         </article>
         <article className="card">
           <h2>Notes</h2>
@@ -269,6 +272,7 @@ export function ClientDetailPage({
         )}
       </section>
       <PastProjectsPanel clientId={client.id} />
+      {editingClient ? <ClientEditDialog client={activeClient} onClose={() => setEditingClient(false)} /> : null}
     </>
   );
 }

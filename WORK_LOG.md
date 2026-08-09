@@ -1,5 +1,25 @@
 # Work Log
 
+### 2026-08-09 — Copilot MVP and project-hours context
+
+**Work unit**
+Allow the floating agency Copilot to inspect the saved MVP and answer or prepare project-hour estimates from canonical records.
+
+**Changes**
+- Added role-filtered MVP version, summary, screen, block, action, data-model and automation context to the Copilot.
+- Added canonical project estimate totals and item-level hour ranges.
+- Added recorded discovery meeting hours and agency-only supplier logged/approved hours.
+- On a client detail with up to three projects, the agency Copilot receives each project’s detailed context instead of only project names.
+- If no estimate exists, an explicit owner request can produce a grounded `add_estimate_items` draft from the saved MVP; it cannot silently save or return an unexplained screen-count multiplier.
+- Client and supplier roles remain filtered from internal pricing, margin and unrelated records.
+- Added one shared agency client-details editor to the client list, Simple client card and Advanced client detail. It updates the existing `clients` row and local shared state immediately; no duplicate client model or broader portal permission was introduced.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No database migration or new pricing source was added.
+
+
 ### 2026-08-09 — Durable conversation memory for MVP revisions
 
 **Work unit**

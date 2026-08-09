@@ -10,6 +10,8 @@ Clients can now request an MVP refresh from the shared MVP view. The request reu
 
 Long client conversations now use the existing `ai_project_summaries` table as durable rolling memory. MVP generation combines that memory with the latest 30 messages rather than treating 30 messages as the entire history. The client chat warns when conversation is newer than the shared MVP and links to the controlled refresh-request flow.
 
+The floating Copilot now reads the saved MVP plus canonical estimate items, discovery charges and role-safe logged hours. It can report existing hour ranges or prepare a reviewable itemized estimate proposal when no canonical estimate exists.
+
 ## Recommended next work unit
 
 Add protected prototype media assets, visual review annotations and a downloadable reviewed handoff.

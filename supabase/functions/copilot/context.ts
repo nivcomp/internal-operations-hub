@@ -134,14 +134,65 @@ async function projectLines(admin: any, role: Role, project: any, supplierId: st
   if (!est) {
     lines.push("Estimate: none yet.");
   } else if (role === "agency_admin") {
-    lines.push(`Estimate v${est.version} (${est.status}): client rate ${est.client_calculation_rate ?? "NOT SET"} ${est.currency ?? ""}, target margin ${est.target_margin_percent ?? "not set"}%, internal cost rate ${est.yaniv_internal_hourly_cost ?? "not set"}, client visible: ${est.client_visible ? "yes" : "no"}, fixed price ${est.final_fixed_price ?? "none"}`);
+    lines.push(`Estimate v${est.version} (${est.status}): total estimated effort ${est.estimated_hours_min ?? 0}–${est.estimated_hours_max ?? 0} hours, client rate ${est.client_calculation_rate ?? "NOT SET"} ${est.currency ?? ""}, target margin ${est.target_margin_percent ?? "not set"}%, internal cost rate ${est.yaniv_internal_hourly_cost ?? "not set"}, client visible: ${est.client_visible ? "yes" : "no"}, fixed price ${est.final_fixed_price ?? "none"}`);
     if (!est.client_calculation_rate) lines.push("WARNING: this project has no client calculation rate yet.");
   } else if (role === "client") {
     lines.push(est.client_visible
-      ? `Estimate: a range has been published to you (${est.status}).`
+      ? `Estimate: ${est.estimated_hours_min ?? 0}–${est.estimated_hours_max ?? 0} hours have been published to you (${est.status})${est.final_fixed_price != null && est.approved_by_yaniv ? `; approved fixed price ${est.currency ?? ""} ${est.final_fixed_price}` : ""}.`
       : "Estimate: the agency is still preparing it; no numbers may be shared.");
   } else {
     lines.push("Estimate: only your assigned items and your own rate are visible to you.");
+  }
+
+  if (est) {
+    const { data: estimateItems } = await admin.from("estimate_items")
+      .select("title,client_visible_label,project_phase,estimated_hours_min,estimated_hours_max,client_visible,client_optional,selected_by_client")
+      .eq("estimate_id", est.id).order("sort_order").limit(80);
+    const selected = (estimateItems ?? []).filter((item: any) => !item.client_optional || item.selected_by_client);
+    const min = selected.reduce((sum: number, item: any) => sum + Number(item.estimated_hours_min || 0), 0);
+    const max = selected.reduce((sum: number, item: any) => sum + Number(item.estimated_hours_max || 0), 0);
+    lines.push(`Estimate item total from selected/included work: ${min}–${max} hours across ${selected.length} items.`);
+    for (const item of selected) {
+      if (role === "client" && !item.client_visible) continue;
+      lines.push(`Estimate item [${item.project_phase}]: ${str(role === "client" ? item.client_visible_label || item.title : item.title)} — ${item.estimated_hours_min}–${item.estimated_hours_max} hours${item.client_optional ? " (optional, selected)" : ""}.`);
+    }
+  }
+
+  let prototypeQuery = admin.from("prototype_versions")
+    .select("id,version,status,audience,title,summary,content,created_at,project_prototypes(title,prototype_kind)")
+    .eq("project_id", project.id).order("version", { ascending: false }).limit(1);
+  if (role === "client") prototypeQuery = prototypeQuery.eq("audience", "client").in("status", ["shared", "approved"]);
+  if (role === "supplier") prototypeQuery = prototypeQuery.eq("audience", "supplier").in("status", ["shared", "approved"]);
+  const { data: prototypeVersions } = await prototypeQuery;
+  const prototypeVersion = (prototypeVersions ?? [])[0] as any;
+  if (!prototypeVersion) {
+    lines.push("MVP: no version visible to this role for this project.");
+  } else {
+    const screens = Array.isArray(prototypeVersion.content?.screens) ? prototypeVersion.content.screens : [];
+    const entities = Array.isArray(prototypeVersion.content?.dataModel) ? prototypeVersion.content.dataModel : [];
+    const automations = Array.isArray(prototypeVersion.content?.automations) ? prototypeVersion.content.automations : [];
+    lines.push(`MVP EXISTS: v${prototypeVersion.version} (${prototypeVersion.status}, audience ${prototypeVersion.audience}), type ${(prototypeVersion.project_prototypes as any)?.prototype_kind ?? "unknown"}, title "${str(prototypeVersion.title, 160)}", summary: ${str(prototypeVersion.summary, 1000)}.`);
+    lines.push(`MVP structure: ${screens.length} screens [${screens.map((screen: any) => str(screen.title, 80)).join("; ")}], ${entities.length} data entities, ${automations.length} automations.`);
+    for (const screen of screens.slice(0, 20)) {
+      const blocks = Array.isArray(screen.blocks) ? screen.blocks : [];
+      const actions = Array.isArray(screen.actions) ? screen.actions : [];
+      lines.push(`MVP screen: ${str(screen.title, 120)} — blocks [${blocks.slice(0, 16).map((block: any) => `${str(block.type, 30)}:${str(block.label, 80)}`).join("; ")}], actions [${actions.slice(0, 10).map((action: any) => str(action.label, 80)).join("; ")}].`);
+    }
+  }
+
+  const { data: meetingCharges } = await admin.from("meeting_time_charges")
+    .select("billable_hours,actual_minutes").eq("project_id", project.id).limit(100);
+  const discoveryHours = (meetingCharges ?? []).reduce((sum: number, charge: any) => sum + Number(charge.billable_hours || 0), 0);
+  const discoveryActualHours = (meetingCharges ?? []).reduce((sum: number, charge: any) => sum + Number(charge.actual_minutes || 0), 0) / 60;
+  if (role === "agency_admin") lines.push(`Discovery time recorded so far: ${discoveryHours} billable hours (${Math.round(discoveryActualHours * 100) / 100} actual hours) across ${(meetingCharges ?? []).length} meetings.`);
+
+  if (role === "agency_admin") {
+    const { data: spentEntries } = await admin.from("supplier_time_entries")
+      .select("hours,status").eq("project_id", project.id).limit(500);
+    const spent = (spentEntries ?? []).reduce((sum: number, entry: any) => sum + Number(entry.hours || 0), 0);
+    const approvedSpent = (spentEntries ?? []).filter((entry: any) => entry.status === "approved")
+      .reduce((sum: number, entry: any) => sum + Number(entry.hours || 0), 0);
+    lines.push(`Supplier work logged so far: ${spent} total hours, ${approvedSpent} approved hours.`);
   }
 
   if (role === "agency_admin") {
@@ -193,6 +244,14 @@ export async function buildCopilotContext(
     const { data: projects } = await admin.from("projects")
       .select("id, name, status").eq("client_id", access.client.id).limit(20);
     for (const p of projects ?? []) lines.push(`Client project: ${p.name} (${p.status}) [id ${p.id}]`);
+    if (role === "agency_admin" && !access.project && (projects ?? []).length <= 3) {
+      for (const projectRef of projects ?? []) {
+        const { data: fullProject } = await admin.from("projects").select("*").eq("id", projectRef.id).maybeSingle();
+        if (!fullProject) continue;
+        lines.push(`--- CLIENT PROJECT DETAILS: ${fullProject.name} ---`);
+        lines.push(...await projectLines(admin, role, fullProject, null));
+      }
+    }
   }
 
   if (access.supplier) {

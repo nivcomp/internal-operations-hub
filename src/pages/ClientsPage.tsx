@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import { ClientEditDialog } from "../components/clients/ClientEditDialog";
 import { MutationKeys, useAppData, type NewClientInput } from "../context/AppDataContext";
 import type { Client } from "../types/domain";
 
@@ -22,6 +23,7 @@ const initialForm: NewClientInput = {
 export function ClientsPage({ clients, onClientCreate, onClientSelect }: ClientsPageProps) {
   const [form, setForm] = useState<NewClientInput>(initialForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const { isPending, getError, getSuccess } = useAppData();
   const key = MutationKeys.createClient;
   const saving = isPending(key);
@@ -102,6 +104,7 @@ export function ClientsPage({ clients, onClientCreate, onClientSelect }: Clients
               <th>Company</th>
               <th>Status</th>
               <th>Notes</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -111,11 +114,13 @@ export function ClientsPage({ clients, onClientCreate, onClientSelect }: Clients
                 <td>{client.company}</td>
                 <td><StatusBadge label={client.status} tone={client.status === "lead" ? "warning" : "success"} /></td>
                 <td>{client.notes}</td>
+                <td><button type="button" onClick={(event) => { event.stopPropagation(); setEditingClient(client); }}>Edit</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
+      {editingClient ? <ClientEditDialog client={editingClient} onClose={() => setEditingClient(null)} /> : null}
     </>
   );
 }

@@ -35,6 +35,7 @@ import {
   setProjectSupplierAssignmentRow,
   updateApprovalStatusRow,
   updateChangeRequestStatusRow,
+  updateClientRow,
   updateProjectRow,
   updateTimeEntryRow,
   updateTimeEntryStatusRow,
@@ -136,6 +137,7 @@ export type AppDataValue = {
 
   // Mutations
   createClient: (input: NewClientInput) => Promise<Client>;
+  updateClient: (clientId: string, input: NewClientInput) => Promise<Client>;
   createSupplier: (input: NewSupplierInput) => Promise<Supplier>;
   createProject: (clientId: string, input: NewProjectInput) => Promise<Project>;
   createChangeRequest: (projectId: string, clientId: string, input: NewChangeRequestInput) => Promise<ChangeRequest>;
@@ -163,6 +165,7 @@ export type AppDataValue = {
 // from any component. Format: <domain>:<action>[:<id>].
 export const MutationKeys = {
   createClient: "client:create",
+  updateClient: (clientId: string) => `client:update:${clientId}`,
   createSupplier: "supplier:create",
   createProject: (clientId: string) => `project:create:${clientId}`,
   createChangeRequest: (projectId: string) => `changeRequest:create:${projectId}`,
@@ -350,6 +353,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       });
       setClients((current) => [...current, persisted]);
       await recordActivity("Client created", `${persisted.company} was added as ${persisted.status}.`);
+      return persisted;
+    });
+  }, [runAction, recordActivity]);
+
+  const updateClient = useCallback((clientId: string, input: NewClientInput): Promise<Client> => {
+    return runAction(MutationKeys.updateClient(clientId), "Client details updated.", async () => {
+      const persisted = await updateClientRow(clientId, {
+        ...input,
+        phone: input.phone || undefined,
+      });
+      setClients((current) => current.map((row) => (row.id === clientId ? persisted : row)));
+      await recordActivity("Client updated", `${persisted.company} contact details were updated.`);
       return persisted;
     });
   }, [runAction, recordActivity]);
@@ -690,7 +705,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     approvals, changeRequests, timeEntries, clientPayments, supplierPayments,
     hourBanks, projectMessages, decisionLogs, fileLinks, activityEntries,
     projectSchedules, estimateSummaries,
-    createClient, createSupplier, createProject, createChangeRequest,
+    createClient, updateClient, createSupplier, createProject, createChangeRequest,
     submitClientChangeRequest, createTimeEntry, updateTimeEntry,
     updateApprovalStatus, createProjectMessage,
     createClientPayment, markPaymentReceived, updateProjectSupplierAssignment,
