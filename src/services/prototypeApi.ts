@@ -32,6 +32,20 @@ export async function listProjectPrototypes(projectId: string) {
   };
 }
 
+export async function getPrototypeFreshness(projectId: string) {
+  const [{ data: versions, error: ve }, { data: messages, error: me }] = await Promise.all([
+    db.from("prototype_versions").select("id,created_at,version").eq("project_id", projectId).eq("audience", "client").in("status", ["shared", "approved"]).order("created_at", { ascending: false }).limit(1),
+    db.from("chat_messages").select("id,created_at").eq("project_id", projectId).in("sender_type", ["client", "agency_admin"]).order("created_at", { ascending: false }).limit(1),
+  ]);
+  if (ve) fail(ve, "Load MVP freshness"); if (me) fail(me, "Load conversation freshness");
+  const version = versions?.[0]; const message = messages?.[0];
+  return {
+    hasMvp: Boolean(version),
+    isStale: Boolean(version && message && new Date(message.created_at).getTime() > new Date(version.created_at).getTime()),
+    version: version?.version as number | undefined,
+  };
+}
+
 export async function generatePrototype(input: { projectId: string; prototypeId?: string; kind: PrototypeKind; title?: string; instructions?: string; sourceText?: string }) {
   const { data, error } = await supabase.functions.invoke("project-prototype", { body: { action: "generate", ...input } });
   if (error) fail(error, "Generate prototype"); if (data?.error) fail(data.error, "Generate prototype");

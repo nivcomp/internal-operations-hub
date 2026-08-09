@@ -8,6 +8,8 @@ The saved prototype includes immutable versions, client approval/change requests
 
 Clients can now request an MVP refresh from the shared MVP view. The request reuses `change_requests`; it does not execute AI directly. The next agency-generated revision includes active project requests and is shared through the existing versioned workflow.
 
+Long client conversations now use the existing `ai_project_summaries` table as durable rolling memory. MVP generation combines that memory with the latest 30 messages rather than treating 30 messages as the entire history. The client chat warns when conversation is newer than the shared MVP and links to the controlled refresh-request flow.
+
 ## Recommended next work unit
 
 Add protected prototype media assets, visual review annotations and a downloadable reviewed handoff.

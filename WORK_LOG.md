@@ -1,5 +1,23 @@
 # Work Log
 
+### 2026-08-09 — Durable conversation memory for MVP revisions
+
+**Work unit**
+Preserve long client conversations for first-time and revised MVP generation, and tell clients when conversation occurred after the shared MVP.
+
+**Changes**
+- Reworked the existing `ai_project_summaries` usage into a versioned rolling memory that merges new message batches instead of replacing early history.
+- Legacy/incomplete summaries are rebuilt in batches from the available client conversation before MVP generation.
+- MVP generation now receives durable conversation memory, the latest 30 messages, the approved specification and active change requests.
+- Added a client-safe freshness check comparing the latest shared MVP with the latest human conversation message.
+- When an MVP exists and newer conversation is present, the chat shows “I’m done explaining — request an updated MVP” and routes to the existing controlled request form.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No database migration or new table is required; the existing role-safe `ai_project_summaries` table is reused.
+
+
 ### 2026-08-09 — Client-requested MVP refresh
 
 **Work unit**
