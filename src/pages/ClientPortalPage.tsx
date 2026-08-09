@@ -41,6 +41,10 @@ const portalCopy = {
     requests: "בקשות פתוחות", approvals: "ממתינים לאישור שלך", estimate: "הערכת הפרויקט",
     estimatePending: "האומדן יופיע לאחר שהסוכנות תאשר לשתף אותו.", hours: "שעות", budget: "תקציב משוער",
     fixedPrice: "מחיר קבוע מאושר", next: "מה השלב הבא?", chatTitle: "שיחה על הפרויקט",
+    price: "מחיר", pricePending: "יוצג לאחר אישור מחיר קבוע", overviewTab: "מצב הפרויקט", specTab: "האפיון שלי",
+    mvpTab: "ה־MVP שלי", chatTab: "שיחה ושינויים", fullScreen: "מסך מלא", exitFullScreen: "צא ממסך מלא",
+    approvedSpec: "האפיון המאושר", building: "מה אנחנו בונים", specPending: "האפיון עדיין בבדיקה. הוא יופיע כאן לאחר אישור.",
+    version: "גרסה", acceptance: "איך נדע שזה עובד",
     chatSubtitle: "אפשר לשאול, לבקש דוגמה או סקיצה ולראות כאן את התוצרים המעודכנים מהשיחה.",
     preview: "תצוגת אדמין של מה שהלקוח רשאי לראות. שליחת הודעות בשם הלקוח חסומה.",
     details: "מסמכים, הצעה ופרטים נוספים", stages: ["אפיון", "אישור והצעה", "ביצוע", "מסירה"],
@@ -51,6 +55,10 @@ const portalCopy = {
     requests: "Open requests", approvals: "Waiting for your approval", estimate: "Project estimate",
     estimatePending: "The estimate will appear after the agency approves it for sharing.", hours: "Hours", budget: "Estimated budget",
     fixedPrice: "Approved fixed price", next: "What happens next?", chatTitle: "Project conversation",
+    price: "Price", pricePending: "Shown after a fixed price is approved", overviewTab: "Project status", specTab: "My specification",
+    mvpTab: "My MVP", chatTab: "Conversation & changes", fullScreen: "Full screen", exitFullScreen: "Exit full screen",
+    approvedSpec: "Approved specification", building: "What we are building", specPending: "The specification is under review and will appear after approval.",
+    version: "Version", acceptance: "How we know it works",
     chatSubtitle: "Ask questions, request examples or sketches, and see the latest conversation outputs here.",
     preview: "Agency preview of what this client may see. Sending as the client is disabled.",
     details: "Documents, proposal and more details", stages: ["Discovery", "Approval & proposal", "Delivery", "Handoff"],
@@ -177,12 +185,12 @@ export function ClientPortalPage({
         <button type="button" className={language === "en" ? "primary-button" : "ghost-button"} onClick={() => changeLanguage("en")}>English</button>
       </div>
 
-      <div className="portal-focus-toolbar" role="tablist" aria-label="תצוגת הפרויקט">
-        <button type="button" className={focusMode === "overview" ? "active" : ""} onClick={() => setFocusMode("overview")}>מצב הפרויקט</button>
-        <button type="button" className={focusMode === "spec" ? "active" : ""} onClick={() => setFocusMode("spec")}>האפיון שלי</button>
-        <button type="button" className={focusMode === "mvp" ? "active" : ""} onClick={() => setFocusMode("mvp")}>ה־MVP שלי</button>
-        <button type="button" className={focusMode === "chat" ? "active" : ""} onClick={() => setFocusMode("chat")}>שיחה ושינויים</button>
-        <button type="button" className="portal-fullscreen-toggle" onClick={() => setFullScreen((value) => !value)}>{fullScreen ? "צא ממסך מלא" : "מסך מלא"}</button>
+      <div className="portal-focus-toolbar" role="tablist" aria-label={t.workspace}>
+        <button type="button" className={focusMode === "overview" ? "active" : ""} onClick={() => setFocusMode("overview")}>{t.overviewTab}</button>
+        <button type="button" className={focusMode === "spec" ? "active" : ""} onClick={() => setFocusMode("spec")}>{t.specTab}</button>
+        <button type="button" className={focusMode === "mvp" ? "active" : ""} onClick={() => setFocusMode("mvp")}>{t.mvpTab}</button>
+        <button type="button" className={focusMode === "chat" ? "active" : ""} onClick={() => setFocusMode("chat")}>{t.chatTab}</button>
+        <button type="button" className="portal-fullscreen-toggle" onClick={() => setFullScreen((value) => !value)}>{fullScreen ? t.exitFullScreen : t.fullScreen}</button>
       </div>
 
       {clientProjects.length > 1 ? (
@@ -220,7 +228,7 @@ export function ClientPortalPage({
         {!estimate ? <p className="muted-text">{t.estimatePending}</p> : (
           <div className="portal-estimate-values">
             <div><span>{t.hours}</span><strong>{estimate.estimatedHoursMin}–{estimate.estimatedHoursMax}</strong></div>
-            <div><span>{estimate.finalFixedPrice && estimate.approvedByYaniv ? t.fixedPrice : "מחיר"}</span><strong>{estimate.finalFixedPrice && estimate.approvedByYaniv ? new Intl.NumberFormat(language === "he" ? "he-IL" : "en-GB", { style: "currency", currency: estimate.currency, maximumFractionDigits: 0 }).format(estimate.finalFixedPrice) : "יוצג לאחר אישור מחיר קבוע"}</strong></div>
+            <div><span>{estimate.finalFixedPrice && estimate.approvedByYaniv ? t.fixedPrice : t.price}</span><strong>{estimate.finalFixedPrice && estimate.approvedByYaniv ? new Intl.NumberFormat(language === "he" ? "he-IL" : "en-GB", { style: "currency", currency: estimate.currency, maximumFractionDigits: 0 }).format(estimate.finalFixedPrice) : t.pricePending}</strong></div>
           </div>
         )}
       </section> : null}
@@ -237,14 +245,14 @@ export function ClientPortalPage({
         safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
       /> : null}
 
-      {focusMode === "mvp" ? <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} /> : null}
+      {focusMode === "mvp" ? <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} language={language} /> : null}
 
       {focusMode === "spec" ? <section className="card portal-spec-focus">
-        <p className="eyebrow">האפיון המאושר</p>
-        <h2>מה אנחנו בונים</h2>
-        {approvedScopes.length ? approvedScopes.map((item) => <article key={item.id}><h3>גרסה {item.version}</h3><p>{item.clientFacingSummary}</p></article>) : <p className="muted-text">האפיון עדיין בבדיקה. הוא יופיע כאן לאחר אישור.</p>}
-        {visibleScopeItems.length ? <div className="portal-spec-cards">{visibleScopeItems.map((item) => <article key={item.id}><span>{item.phase}</span><h3>{item.title}</h3><p>{item.description}</p>{item.acceptanceNotes ? <small>איך נדע שזה עובד: {item.acceptanceNotes}</small> : null}</article>)}</div> : null}
-        <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} />
+        <p className="eyebrow">{t.approvedSpec}</p>
+        <h2>{t.building}</h2>
+        {approvedScopes.length ? approvedScopes.map((item) => <article key={item.id}><h3>{t.version} {item.version}</h3><p>{item.clientFacingSummary}</p></article>) : <p className="muted-text">{t.specPending}</p>}
+        {visibleScopeItems.length ? <div className="portal-spec-cards">{visibleScopeItems.map((item) => <article key={item.id}><span>{item.phase}</span><h3>{item.title}</h3><p>{item.description}</p>{item.acceptanceNotes ? <small>{t.acceptance}: {item.acceptanceNotes}</small> : null}</article>)}</div> : null}
+        <BudgetSimulator projectId={project.id} clientId={client.id} readOnly={isPreview} language={language} />
       </section> : null}
 
       {!fullScreen ? <details className="portal-details">

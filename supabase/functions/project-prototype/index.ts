@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
   }
   const { data: latest } = await admin.from("prototype_versions").select("version").eq("prototype_id", prototypeId).order("version", { ascending: false }).limit(1).maybeSingle();
   const { data: version, error } = await admin.from("prototype_versions").insert({
-    prototype_id: prototypeId, project_id: projectId, version: (latest?.version ?? 0) + 1, status: "draft", audience: "client",
+    prototype_id: prototypeId, project_id: projectId, version: (latest?.version ?? 0) + 1, status: "shared", audience: "client",
     title: String(parsed.title || body.title || project.data.name).slice(0, 160), summary: String(parsed.summary || "").slice(0, 1200),
     content, source_notes: String(body.instructions || body.sourceText || "").slice(0, 4000), created_by: userId,
   }).select().single();
