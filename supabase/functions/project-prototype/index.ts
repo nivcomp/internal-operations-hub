@@ -61,6 +61,50 @@ function sanitize(raw: PrototypeContent): PrototypeContent {
   };
 }
 
+async function loadDurableClientConversation(projectId: string) {
+  const { data: conversation } = await admin.from("project_conversations")
+    .select("id").eq("project_id", projectId).eq("kind", "client_agency").maybeSingle();
+  if (!conversation) return { memory: "", recent: [] as any[] };
+  const [{ data: messages }, { data: stored }] = await Promise.all([
+    admin.from("chat_messages").select("sender_type,body,structured_payload,created_at")
+      .eq("conversation_id", conversation.id).in("visibility", ["client_agency", "shared_all"])
+      .order("created_at", { ascending: true }).limit(1000),
+    admin.from("ai_project_summaries").select("id,summary,covered_message_count")
+      .eq("project_id", projectId).eq("conversation_id", conversation.id).eq("audience_role", "client").maybeSingle(),
+  ]);
+  const history = messages ?? [];
+  const recentCount = 30;
+  const targetCovered = Math.max(0, history.length - recentCount);
+  const validStored = String(stored?.summary || "").startsWith("[MEMORY_V2]");
+  let covered = validStored ? Math.min(Number(stored?.covered_message_count || 0), targetCovered) : 0;
+  let memory = validStored ? String(stored?.summary || "") : "[MEMORY_V2]\n";
+  while (covered < targetCovered) {
+    const end = Math.min(covered + 40, targetCovered);
+    const transcript = history.slice(covered, end)
+      .map((message: any) => `${message.sender_type}: ${String(message.body || "").replace(/\s+/g, " ").slice(0, 1200)}`)
+      .join("\n");
+    const merged = await callModel([
+      { role: "system", content: "Maintain a durable, client-safe project memory for future MVP generation. Preserve every requirement, decision, user, screen, workflow, integration, automation, constraint, example, open question and contradiction. Never add facts, internal pricing, supplier data or secrets. Merge the existing memory and new messages. Return concise plain text with stable headings." },
+      { role: "user", content: `EXISTING MEMORY:\n${memory.slice(0, 12000)}\n\nNEW MESSAGES:\n${transcript}` },
+    ], { maxOutputTokens: 2400 });
+    memory = `[MEMORY_V2]\n${merged.slice(0, 12000)}`;
+    covered = end;
+  }
+  if (targetCovered > 0 && (!validStored || covered !== Number(stored?.covered_message_count || 0))) {
+    const row = { project_id: projectId, conversation_id: conversation.id, audience_role: "client", summary: memory, covered_message_count: covered, last_message_at: history[covered - 1]?.created_at ?? null };
+    if (stored?.id) await admin.from("ai_project_summaries").update(row).eq("id", stored.id);
+    else await admin.from("ai_project_summaries").insert(row);
+  }
+  return {
+    memory: targetCovered ? memory : "",
+    recent: history.slice(-recentCount).map((message: any) => ({
+      sender_type: message.sender_type,
+      body: String(message.body || "").slice(0, 700),
+      created_at: message.created_at,
+    })),
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -84,10 +128,10 @@ Deno.serve(async (req) => {
   }
 
   const kind: PrototypeKind = ["app","whatsapp","automation"].includes(String(body.kind)) ? body.kind as PrototypeKind : "app";
-  const [project, sections, messages, sources, changeRequests] = await Promise.all([
+  const [project, sections, conversation, sources, changeRequests] = await Promise.all([
     admin.from("projects").select("id,name,summary,status").eq("id", projectId).maybeSingle(),
     admin.from("specification_sections").select("title,content,status").eq("project_id", projectId).in("status", ["approved","edited"]).limit(40),
-    admin.from("chat_messages").select("sender_type,body,structured_payload,created_at").eq("project_id", projectId).order("created_at", { ascending: false }).limit(30),
+    loadDurableClientConversation(projectId),
     admin.from("meeting_sources").select("title,source_type,transcript,review_status").eq("project_id", projectId).order("captured_at", { ascending: false }).limit(20),
     admin.from("change_requests").select("title,description,status,delivery_impact,created_at").eq("project_id", projectId).neq("status", "declined").order("created_at", { ascending: false }).limit(20),
   ]);
@@ -100,9 +144,9 @@ Deno.serve(async (req) => {
     previous = data;
   }
   const context = JSON.stringify({
-    project: project.data, specification: sections.data ?? [], conversation: (messages.data ?? []).reverse(),
-    meetingSources: sources.data ?? [], suppliedText: String(body.sourceText || "").slice(0, 18000), previous,
+    project: project.data, specification: sections.data ?? [], conversationMemory: conversation.memory,
     activeChangeRequests: (changeRequests.data ?? []).reverse(),
+    recentConversation: conversation.recent, meetingSources: sources.data ?? [], suppliedText: String(body.sourceText || "").slice(0, 18000), previous,
     revisionInstructions: String(body.instructions || "").slice(0, 3000),
   }).slice(0, 30000);
   const raw = await callModel([

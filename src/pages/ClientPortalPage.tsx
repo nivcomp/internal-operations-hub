@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
@@ -8,6 +8,7 @@ import { TargetDateForm } from "../components/project/TargetDateForm";
 import { ProposalPanel } from "../components/proposal/ProposalPanel";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
 import { PrototypeStudio } from "../components/prototype/PrototypeStudio";
+import { getPrototypeFreshness } from "../services/prototypeApi";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -48,6 +49,7 @@ const portalCopy = {
     refreshMvp: "בקש עדכון MVP", refreshMvpHelp: "הסבר מה השתנה משמעותית. הבקשה תעבור לבדיקה ותיכלל בגרסת ה־MVP הבאה.",
     refreshMvpPlaceholder: "לדוגמה: נוספה הרשמה עם קוד SMS ונדרש מסך אישור חדש", sendRefresh: "שלח בקשת עדכון",
     refreshSent: "הבקשה נשמרה. האדמין יבדוק את השעות ויצור גרסת MVP חדשה.",
+    mvpStale: "יש שיחה חדשה מאז גרסת ה־MVP. אם הוספת שינוי משמעותי, בקש גרסה מעודכנת.", finishAndRefresh: "סיימתי להסביר — בקש MVP מעודכן",
     chatSubtitle: "אפשר לשאול, לבקש דוגמה או סקיצה ולראות כאן את התוצרים המעודכנים מהשיחה.",
     preview: "תצוגת אדמין של מה שהלקוח רשאי לראות. שליחת הודעות בשם הלקוח חסומה.",
     details: "מסמכים, הצעה ופרטים נוספים", stages: ["אפיון", "אישור והצעה", "ביצוע", "מסירה"],
@@ -65,6 +67,7 @@ const portalCopy = {
     refreshMvp: "Request an MVP update", refreshMvpHelp: "Describe the significant change. The agency will review it and include it in the next MVP version.",
     refreshMvpPlaceholder: "For example: add SMS sign-in and a new confirmation screen", sendRefresh: "Send update request",
     refreshSent: "The request was saved. The agency will review the hours and create a new MVP version.",
+    mvpStale: "There is new conversation since the MVP version. If you added a significant change, request an update.", finishAndRefresh: "I’m done explaining — request an updated MVP",
     chatSubtitle: "Ask questions, request examples or sketches, and see the latest conversation outputs here.",
     preview: "Agency preview of what this client may see. Sending as the client is disabled.",
     details: "Documents, proposal and more details", stages: ["Discovery", "Approval & proposal", "Delivery", "Handoff"],
@@ -111,8 +114,14 @@ export function ClientPortalPage({
   const [messageBody, setMessageBody] = useState("");
   const [mvpRefreshNotes, setMvpRefreshNotes] = useState("");
   const [mvpRefreshSent, setMvpRefreshSent] = useState(false);
+  const [mvpFreshness, setMvpFreshness] = useState({ hasMvp: false, isStale: false, version: undefined as number | undefined });
   const [focusMode, setFocusMode] = useState<"overview" | "spec" | "mvp" | "chat">("overview");
   const [fullScreen, setFullScreen] = useState(false);
+
+  useEffect(() => {
+    if (!project || (focusMode !== "chat" && focusMode !== "mvp")) return;
+    void getPrototypeFreshness(project.id).then(setMvpFreshness).catch(() => setMvpFreshness({ hasMvp: false, isStale: false, version: undefined }));
+  }, [focusMode, project]);
 
   if (!client) {
     return (
@@ -191,6 +200,7 @@ export function ClientPortalPage({
       });
       setMvpRefreshNotes("");
       setMvpRefreshSent(true);
+      setMvpFreshness((current) => ({ ...current, isStale: true }));
     } catch { /* notes kept for retry */ }
   }
 
@@ -254,7 +264,7 @@ export function ClientPortalPage({
         )}
       </section> : null}
 
-      {focusMode === "chat" ? <ProjectChat
+      {focusMode === "chat" ? <><ProjectChat
         projectId={project.id}
         projectName={project.name}
         agent="project_guide"
@@ -264,7 +274,12 @@ export function ClientPortalPage({
         readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the client is disabled."
         suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Show me the project flow", "Summarise what we agreed so far"]}
         safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
-      /> : null}
+      />
+      {mvpFreshness.hasMvp && mvpFreshness.isStale ? <section className="card portal-mvp-stale" role="status">
+        <strong>{t.mvpStale}</strong>
+        <p>{t.refreshMvpHelp}</p>
+        <button className="primary-button" type="button" disabled={isPreview} onClick={() => setFocusMode("mvp")}>{t.finishAndRefresh}</button>
+      </section> : null}</> : null}
 
       {focusMode === "mvp" ? <>
         <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} language={language} />

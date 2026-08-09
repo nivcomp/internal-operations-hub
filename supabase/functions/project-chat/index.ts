@@ -291,24 +291,40 @@ const round = (n: number) => Math.round(n * 10) / 10;
 async function compressHistory(conversationId: string, projectId: string, audience: string, history: any[]) {
   const RECENT = 12;
   if (history.length <= RECENT) return { recent: history, summary: "" };
-  const older = history.slice(0, history.length - RECENT);
-  const recent = history.slice(-RECENT);
-  const summary = older
-    .map((m: any) => `${m.sender_type}: ${String(m.body ?? "").replace(/\s+/g, " ").slice(0, 220)}`)
-    .slice(-40)
-    .join("\n")
-    .slice(0, 6000);
+  const targetCovered = history.length - RECENT;
+  const { data: existing } = await admin.from("ai_project_summaries")
+    .select("id,summary,covered_message_count").eq("project_id", projectId).eq("conversation_id", conversationId)
+    .eq("audience_role", audience).maybeSingle();
+  const isV2 = String(existing?.summary || "").startsWith("[MEMORY_V2]");
+  let covered = isV2 ? Math.min(Number(existing?.covered_message_count || 0), targetCovered) : 0;
+  let summary = isV2 ? String(existing?.summary || "") : "[MEMORY_V2]\n";
+  const pending = targetCovered - covered;
+
+  // Keep a few unsummarised turns in the live context. Summarise in batches so
+  // long conversations retain early decisions without adding an AI call to every message.
+  if (!isV2 || pending >= 10) {
+    while (covered < targetCovered) {
+      const end = Math.min(covered + 30, targetCovered);
+      const transcript = history.slice(covered, end)
+        .map((m: any) => `${m.sender_type}: ${String(m.body ?? "").replace(/\s+/g, " ").slice(0, 1200)}`)
+        .join("\n");
+      const merged = await callModel(
+        "Maintain a durable, role-safe project conversation memory. Preserve every confirmed requirement, decision, user type, screen, workflow, integration, automation, constraint, example, open question and contradiction. Never add facts or prices. Merge the existing memory with the new messages. Return concise plain text with stable headings, not JSON.",
+        summary.slice(0, 12000), [], transcript, 2200,
+      );
+      summary = `[MEMORY_V2]\n${merged.slice(0, 12000)}`;
+      covered = end;
+    }
+  }
+  const recent = history.slice(covered);
   const row = {
     project_id: projectId,
     conversation_id: conversationId,
     audience_role: audience,
     summary,
-    covered_message_count: older.length,
-    last_message_at: older[older.length - 1]?.created_at ?? null,
+    covered_message_count: covered,
+    last_message_at: covered ? history[covered - 1]?.created_at ?? null : null,
   };
-  const { data: existing } = await admin.from("ai_project_summaries")
-    .select("id").eq("project_id", projectId).eq("conversation_id", conversationId)
-    .eq("audience_role", audience).maybeSingle();
   if (existing) await admin.from("ai_project_summaries").update(row).eq("id", existing.id);
   else await admin.from("ai_project_summaries").insert(row);
   return { recent, summary };
