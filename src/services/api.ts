@@ -385,6 +385,24 @@ export async function createClientRow(input: Omit<Client, "id">): Promise<Client
   return mapClient(data);
 }
 
+export async function updateClientRow(id: string, input: Omit<Client, "id">): Promise<Client> {
+  const { data, error } = await client
+    .from("clients")
+    .update({
+      name: input.name,
+      company: input.company,
+      email: input.email,
+      phone: input.phone ?? null,
+      notes: input.notes ?? "",
+      status: input.status,
+    })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error || !data) fail("updateClient", error);
+  return mapClient(data);
+}
+
 export async function createProjectRow(input: {
   clientId: string;
   name: string;
