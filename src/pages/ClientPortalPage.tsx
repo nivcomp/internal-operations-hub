@@ -45,6 +45,9 @@ const portalCopy = {
     mvpTab: "ה־MVP שלי", chatTab: "שיחה ושינויים", fullScreen: "מסך מלא", exitFullScreen: "צא ממסך מלא",
     approvedSpec: "האפיון המאושר", building: "מה אנחנו בונים", specPending: "האפיון עדיין בבדיקה. הוא יופיע כאן לאחר אישור.",
     version: "גרסה", acceptance: "איך נדע שזה עובד",
+    refreshMvp: "בקש עדכון MVP", refreshMvpHelp: "הסבר מה השתנה משמעותית. הבקשה תעבור לבדיקה ותיכלל בגרסת ה־MVP הבאה.",
+    refreshMvpPlaceholder: "לדוגמה: נוספה הרשמה עם קוד SMS ונדרש מסך אישור חדש", sendRefresh: "שלח בקשת עדכון",
+    refreshSent: "הבקשה נשמרה. האדמין יבדוק את השעות ויצור גרסת MVP חדשה.",
     chatSubtitle: "אפשר לשאול, לבקש דוגמה או סקיצה ולראות כאן את התוצרים המעודכנים מהשיחה.",
     preview: "תצוגת אדמין של מה שהלקוח רשאי לראות. שליחת הודעות בשם הלקוח חסומה.",
     details: "מסמכים, הצעה ופרטים נוספים", stages: ["אפיון", "אישור והצעה", "ביצוע", "מסירה"],
@@ -59,6 +62,9 @@ const portalCopy = {
     mvpTab: "My MVP", chatTab: "Conversation & changes", fullScreen: "Full screen", exitFullScreen: "Exit full screen",
     approvedSpec: "Approved specification", building: "What we are building", specPending: "The specification is under review and will appear after approval.",
     version: "Version", acceptance: "How we know it works",
+    refreshMvp: "Request an MVP update", refreshMvpHelp: "Describe the significant change. The agency will review it and include it in the next MVP version.",
+    refreshMvpPlaceholder: "For example: add SMS sign-in and a new confirmation screen", sendRefresh: "Send update request",
+    refreshSent: "The request was saved. The agency will review the hours and create a new MVP version.",
     chatSubtitle: "Ask questions, request examples or sketches, and see the latest conversation outputs here.",
     preview: "Agency preview of what this client may see. Sending as the client is disabled.",
     details: "Documents, proposal and more details", stages: ["Discovery", "Approval & proposal", "Delivery", "Handoff"],
@@ -103,6 +109,8 @@ export function ClientPortalPage({
 
   const [requestForm, setRequestForm] = useState({ title: "", description: "" });
   const [messageBody, setMessageBody] = useState("");
+  const [mvpRefreshNotes, setMvpRefreshNotes] = useState("");
+  const [mvpRefreshSent, setMvpRefreshSent] = useState(false);
   const [focusMode, setFocusMode] = useState<"overview" | "spec" | "mvp" | "chat">("overview");
   const [fullScreen, setFullScreen] = useState(false);
 
@@ -171,6 +179,19 @@ export function ClientPortalPage({
       await createProjectMessage(project.id, messageBody.trim(), "client_visible", "client");
       setMessageBody("");
     } catch { /* value kept for retry */ }
+  }
+
+  async function handleMvpRefreshRequest(event: FormEvent) {
+    event.preventDefault();
+    if (!mvpRefreshNotes.trim() || isPending(requestKey) || isPreview) return;
+    try {
+      await submitClientChangeRequest(project.id, client!.id, {
+        title: "MVP refresh request",
+        description: mvpRefreshNotes.trim(),
+      });
+      setMvpRefreshNotes("");
+      setMvpRefreshSent(true);
+    } catch { /* notes kept for retry */ }
   }
 
   return (
@@ -245,7 +266,21 @@ export function ClientPortalPage({
         safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
       /> : null}
 
-      {focusMode === "mvp" ? <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} language={language} /> : null}
+      {focusMode === "mvp" ? <>
+        <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} language={language} />
+        <section className="card portal-mvp-refresh">
+          <h2>{t.refreshMvp}</h2>
+          <p className="muted-text">{t.refreshMvpHelp}</p>
+          <form onSubmit={(event) => void handleMvpRefreshRequest(event)}>
+            <textarea rows={3} value={mvpRefreshNotes} disabled={isPreview} placeholder={t.refreshMvpPlaceholder} onChange={(event) => { setMvpRefreshNotes(event.target.value); setMvpRefreshSent(false); }} />
+            <div className="action-row">
+              <button className="primary-button" type="submit" disabled={isPreview || isPending(requestKey) || !mvpRefreshNotes.trim()}>{isPending(requestKey) ? "…" : t.sendRefresh}</button>
+            </div>
+          </form>
+          {mvpRefreshSent ? <p className="form-success">{t.refreshSent}</p> : null}
+          {getError(requestKey) ? <p className="form-error">{getError(requestKey)}</p> : null}
+        </section>
+      </> : null}
 
       {focusMode === "spec" ? <section className="card portal-spec-focus">
         <p className="eyebrow">{t.approvedSpec}</p>
