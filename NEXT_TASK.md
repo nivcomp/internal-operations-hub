@@ -4,7 +4,7 @@
 
 The client portal now has four large focus views: project status, specification, interactive MVP and conversation/change requests. Each can be opened without the advanced agency interface and the whole client view or MVP can run full-screen on desktop and mobile. Clients see estimate hours and the incremental hours of optional requests, but no calculated money, hourly rate, supplier cost or margin; money appears only after an agency-approved fixed price exists.
 
-The saved prototype includes immutable versions, client approval/change requests and a reviewed handoff for both Lovable and Base44. New AI-generated versions describe the approved UI, data model, integrations and automation flows in one bounded payload. The duplicate prototype migration was made safe to re-run, but the migration and updated `project-prototype` Edge Function still require deployment to the connected Supabase project. Authenticated agency/client RLS verification remains required.
+The saved prototype includes immutable versions, client approval/change requests and a reviewed handoff for both Lovable and Base44. New versions are shared atomically by the agency-only Edge Function, while the repair migration shares the latest existing client draft and corrects the client RLS correlation. New AI-generated versions describe the approved UI, data model, integrations and automation flows in one bounded payload. The repair migration and updated `project-prototype` Edge Function require deployment to the connected Supabase project. Authenticated agency/client RLS verification remains required.
 
 ## Recommended next work unit
 

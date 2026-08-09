@@ -1,5 +1,28 @@
 # Work Log
 
+### 2026-08-09 — Reliable automatic MVP sharing and client-safe review
+
+**Work unit**
+Repair existing and future client MVP visibility, remove remaining estimated-money exposure, and complete portal localization.
+
+**Changes**
+- New prototype versions are now created as client-shared atomically by the agency-only Edge Function; sharing no longer depends on browser local storage or a second request.
+- Added a deployment migration that shares only the latest existing client draft per prototype, fixing clients such as Sandra without exposing older draft history.
+- Corrected correlated RLS policy references so clients can read the parent prototype only when their own project has a shared/approved client version.
+- Corrected the immutable-version trigger so unapproved versions can update while approved versions remain protected.
+- Removed estimated monetary ranges from the Simple meeting and from saved client scenarios. Clients see hours until an agency-approved fixed price exists.
+- Localized the focused portal, specification, MVP approval controls and hours simulator in Hebrew and English.
+
+**Tests**
+- `pnpm install --frozen-lockfile` passed.
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Static visibility audit found no rendered estimated budget, hourly rate, internal cost or margin in the focused client review surfaces.
+
+**Deployment**
+- Apply `20260809100000_fix_prototype_sharing_and_version_updates.sql` and deploy `project-prototype` in the Supabase project connected to Lovable.
+
+
 ### 2026-08-08 — Focused client specification and MVP review
 
 **Work unit**

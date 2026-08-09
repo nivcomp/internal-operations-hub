@@ -14,11 +14,39 @@ type Props = {
   clientId: string;
   /** Agency preview: interactions are read-only. */
   readOnly?: boolean;
+  language?: "he" | "en";
 };
 
 const emptyBundle: EstimateBundle = { estimates: [], items: [], allocations: [], reviews: [], adjustments: [], scenarios: [] };
 
-export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props) {
+export function BudgetSimulator({ projectId, clientId, readOnly = false, language = "he" }: Props) {
+  const c = language === "he" ? {
+    title: "בחירת היקף ושעות", loading: "טוען את האומדן…", unavailable: "הסוכנות עדיין לא שיתפה אומדן לפרויקט.",
+    intro: "בחרו מה לכלול. טווח השעות מתעדכן יחד עם הבחירה.", effort: "הערכת עבודה", fixed: "מחיר קבוע מאושר",
+    priceState: "מצב המחיר", pending: "ייקבע לאחר אישור ההיקף", hoursOnly: "עד לאישור מחיר קבוע מוצגת השפעת הבחירות בשעות בלבד.",
+    included: "כלול תמיד", optional: "אפשרויות לבחירה", none: "אין כרגע רכיבים אופציונליים.", include: "להוסיף", feature: "רכיב",
+    addedHours: "תוספת שעות", level: "רמה", quantity: "כמות", complexity: "בחירה מתקדמת מוסיפה מורכבות ומגדילה את טווח השעות.",
+    excluded: "לא כלול", request: "בקש את השינוי", sending: "שולח…", fixedUnchanged: "המחיר הקבוע המאושר אינו משתנה אוטומטית.",
+    scenarios: "התרחישים השמורים שלי", noScenarios: "עדיין לא נשמרו תרחישים.", scenario: "תרחיש", hours: "שעות", saved: "נשמר",
+    compare: "השווה", remove: "מחק", scenarioName: "שם התרחיש", notes: "הערות (לא חובה)", save: "שמור תרחיש", saving: "שומר…",
+    preview: "מצב תצוגה — השמירה חסומה בזמן כניסת אדמין.",
+    approvedSummary: (price: string, delivery?: string | null) => `המחיר הקבוע שאושר הוא ${price}${delivery ? `, עם מסירה ${delivery}` : ""}.`,
+    hoursSummary: (range: string) => `לפי הבחירות הנוכחיות נדרשות בערך ${range}. הסכום הכספי יופיע רק לאחר אישור מחיר קבוע.`,
+    promoted: "נבחר על ידי הסוכנות",
+  } : {
+    title: "Scope and hours", loading: "Loading your estimate…", unavailable: "The agency has not shared an estimate for this project yet.",
+    intro: "Choose what to include. The hour range updates with your selection.", effort: "Estimated effort", fixed: "Approved fixed price",
+    priceState: "Price status", pending: "Set after scope approval", hoursOnly: "Until a fixed price is approved, choices are shown in work hours only.",
+    included: "Always included", optional: "Optional choices", none: "There are no optional features yet.", include: "Include", feature: "Feature",
+    addedHours: "Added hours", level: "Level", quantity: "Quantity", complexity: "Advanced choices add complexity and increase the estimated hour range.",
+    excluded: "Not included", request: "Request this change", sending: "Sending…", fixedUnchanged: "The approved fixed price does not change automatically.",
+    scenarios: "My saved scenarios", noScenarios: "No scenarios saved yet.", scenario: "Scenario", hours: "Hours", saved: "Saved",
+    compare: "Compare", remove: "Delete", scenarioName: "Scenario name", notes: "Notes (optional)", save: "Save this scenario", saving: "Saving…",
+    preview: "Preview mode — saving is disabled while signed in as agency admin.",
+    approvedSummary: (price: string, delivery?: string | null) => `The approved fixed price is ${price}${delivery ? `, with delivery ${delivery}` : ""}.`,
+    hoursSummary: (range: string) => `The current choices require about ${range}. Money is shown only after a fixed price is approved.`,
+    promoted: "selected by agency",
+  };
   const { submitClientChangeRequest } = useAppData();
   const [bundle, setBundle] = useState<EstimateBundle>(emptyBundle);
   const [loading, setLoading] = useState(true);
@@ -59,13 +87,13 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
   useEffect(() => onEstimationChanged(projectId, () => { void reload(); }), [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setSelection(selectionFromItems(items)); }, [items]);
 
-  if (loading) return <section className="card"><h2>Budget simulator</h2><p className="muted-text">Loading your estimate…</p></section>;
-  if (error) return <section className="card"><h2>Budget simulator</h2><p className="form-error" role="alert">{error}</p></section>;
+  if (loading) return <section className="card"><h2>{c.title}</h2><p className="muted-text">{c.loading}</p></section>;
+  if (error) return <section className="card"><h2>{c.title}</h2><p className="form-error" role="alert">{error}</p></section>;
   if (!estimate) {
     return (
       <section className="card">
-        <h2>Budget simulator</h2>
-        <p className="muted-text">The agency has not shared an estimate for this project yet.</p>
+        <h2>{c.title}</h2>
+        <p className="muted-text">{c.unavailable}</p>
       </section>
     );
   }
@@ -158,32 +186,30 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
 
   return (
     <section className="card">
-      <h2>Budget simulator</h2>
-      <p className="muted-text">
-        Choose what you want included. The estimate updates as you change your selection.
-      </p>
+      <h2>{c.title}</h2>
+      <p className="muted-text">{c.intro}</p>
 
       <div className="detail-grid">
         <article className="card subtle">
-          <h3>Estimated effort</h3>
+          <h3>{c.effort}</h3>
           <p className="stat-value">{formatHours(hours.totalMin, hours.totalMax)}</p>
         </article>
         <article className="card subtle">
-          <h3>{priceApproved ? "מחיר קבוע מאושר" : "מצב המחיר"}</h3>
-          <p className="stat-value">{priceApproved ? formatMoney(estimate.final_fixed_price as number, estimate.currency) : "ייקבע לאחר אישור ההיקף"}</p>
-          <p className="muted-text">עד לאישור מחיר קבוע מוצגת ללקוח השפעת הבחירות בשעות עבודה בלבד.</p>
+          <h3>{priceApproved ? c.fixed : c.priceState}</h3>
+          <p className="stat-value">{priceApproved ? formatMoney(estimate.final_fixed_price as number, estimate.currency) : c.pending}</p>
+          <p className="muted-text">{c.hoursOnly}</p>
         </article>
       </div>
 
       <p>
         {priceApproved
-          ? `המחיר הקבוע שאושר הוא ${formatMoney(estimate.final_fixed_price as number, estimate.currency)}${estimate.delivery_range_label ? `, עם מסירה ${estimate.delivery_range_label}` : ""}.`
-          : `לפי הבחירות הנוכחיות נדרשות בערך ${formatHours(hours.totalMin, hours.totalMax)}. הסכום הכספי יופיע רק לאחר אישור מחיר קבוע.`}
+          ? c.approvedSummary(formatMoney(estimate.final_fixed_price as number, estimate.currency), estimate.delivery_range_label)
+          : c.hoursSummary(formatHours(hours.totalMin, hours.totalMax))}
       </p>
 
       {included.length ? (
         <>
-          <h3>Always included</h3>
+          <h3>{c.included}</h3>
           <ul className="link-list">
             {included.map((item) => (
               <li key={item.id}>
@@ -195,12 +221,12 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
         </>
       ) : null}
 
-      <h3>Optional choices</h3>
+      <h3>{c.optional}</h3>
       {optional.length === 0 ? (
-        <p className="muted-text">There are no optional features in this estimate.</p>
+        <p className="muted-text">{c.none}</p>
       ) : (
         <table>
-          <thead><tr><th>להוסיף</th><th>רכיב</th><th>תוספת שעות</th><th>רמה</th><th>כמות</th></tr></thead>
+          <thead><tr><th>{c.include}</th><th>{c.feature}</th><th>{c.addedHours}</th><th>{c.level}</th><th>{c.quantity}</th></tr></thead>
           <tbody>
             {optional.map((item) => {
               const sel = selection.get(item.id) ?? { selected: false, quantity: 1 };
@@ -241,11 +267,11 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
           </tbody>
         </table>
       )}
-      <p className="muted-text">Advanced choices add complexity and increase the estimated hour range.</p>
+      <p className="muted-text">{c.complexity}</p>
 
       {estimate.fixed_price_exclusions ? (
         <>
-          <h3>Not included</h3>
+          <h3>{c.excluded}</h3>
           <p>{estimate.fixed_price_exclusions}</p>
         </>
       ) : null}
@@ -253,29 +279,28 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
       {changedAfterApproval ? (
         <div className="action-row">
           <button className="primary-button" type="button" disabled={busy || readOnly} onClick={() => void handleRequestChange()}>
-            {busy ? "Sending…" : "Request this change"}
+            {busy ? c.sending : c.request}
           </button>
-          <span className="muted-text">The approved fixed price does not change automatically.</span>
+          <span className="muted-text">{c.fixedUnchanged}</span>
         </div>
       ) : null}
 
-      <h3>Your saved scenarios</h3>
+      <h3>{c.scenarios}</h3>
       {scenarios.length === 0 ? (
-        <p className="muted-text">No scenarios saved yet.</p>
+        <p className="muted-text">{c.noScenarios}</p>
       ) : (
         <table>
-          <thead><tr><th>Scenario</th><th>Hours</th><th>Budget</th><th>Saved</th><th /></tr></thead>
+          <thead><tr><th>{c.scenario}</th><th>{c.hours}</th><th>{c.saved}</th><th /></tr></thead>
           <tbody>
             {scenarios.map((scenario) => (
               <tr key={scenario.id}>
                 <td><strong>{scenario.name}</strong>{scenario.client_notes ? <><br /><span className="muted-text">{scenario.client_notes}</span></> : null}</td>
                 <td>{formatHours(scenario.estimated_hours_min, scenario.estimated_hours_max)}</td>
-                <td>{formatMoney(scenario.estimated_budget_min, estimate.currency)} – {formatMoney(scenario.estimated_budget_max, estimate.currency)}</td>
-                <td>{String(scenario.created_at).slice(0, 10)}{scenario.is_promoted ? " · selected by agency" : ""}</td>
+                <td>{String(scenario.created_at).slice(0, 10)}{scenario.is_promoted ? ` · ${c.promoted}` : ""}</td>
                 <td>
                   <div className="action-row compact">
-                    <button type="button" onClick={() => void handleLoadScenario(scenario)}>Compare</button>
-                    <button type="button" disabled={busy || readOnly} onClick={() => void handleRemoveScenario(scenario.id)}>Delete</button>
+                    <button type="button" onClick={() => void handleLoadScenario(scenario)}>{c.compare}</button>
+                    <button type="button" disabled={busy || readOnly} onClick={() => void handleRemoveScenario(scenario.id)}>{c.remove}</button>
                   </div>
                 </td>
               </tr>
@@ -286,21 +311,21 @@ export function BudgetSimulator({ projectId, clientId, readOnly = false }: Props
 
       <form className="form-grid" onSubmit={(e) => { e.preventDefault(); void handleSaveScenario(); }}>
         <label>
-          Scenario name
+          {c.scenarioName}
           <input value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} disabled={readOnly} />
         </label>
         <label>
-          Notes (optional)
+          {c.notes}
           <input value={scenarioNotes} onChange={(e) => setScenarioNotes(e.target.value)} disabled={readOnly} />
         </label>
         <div className="form-actions">
           <button className="primary-button" type="submit" disabled={busy || readOnly || !scenarioName.trim()}>
-            {busy ? "Saving…" : "Save this scenario"}
+            {busy ? c.saving : c.save}
           </button>
         </div>
       </form>
       {notice ? <p className="form-success">{notice}</p> : null}
-      {readOnly ? <p className="muted-text">Preview mode — saving is disabled while signed in as agency admin.</p> : null}
+      {readOnly ? <p className="muted-text">{c.preview}</p> : null}
     </section>
   );
 }

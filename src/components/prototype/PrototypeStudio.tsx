@@ -4,11 +4,11 @@ import {
   type ProjectPrototype, type PrototypeKind, type PrototypeScreen, type PrototypeVersion,
 } from "../../services/prototypeApi";
 
-type Props = { projectId: string; projectName: string; readOnly?: boolean; clientMode?: boolean; simple?: boolean };
+type Props = { projectId: string; projectName: string; readOnly?: boolean; clientMode?: boolean; simple?: boolean; language?: "he" | "en" };
 
 const kindLabels: Record<PrototypeKind, string> = { app: "אפליקציה / אתר", whatsapp: "בוט WhatsApp", automation: "אוטומציה" };
 
-export function PrototypeStudio({ projectId, projectName, readOnly = false, clientMode = false, simple = false }: Props) {
+export function PrototypeStudio({ projectId, projectName, readOnly = false, clientMode = false, simple = false, language = "he" }: Props) {
   const [prototypes, setPrototypes] = useState<ProjectPrototype[]>([]);
   const [approvals, setApprovals] = useState<any[]>([]);
   const [prototypeId, setPrototypeId] = useState("");
@@ -22,8 +22,6 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [studioFullScreen, setStudioFullScreen] = useState(false);
-  const [autoShare, setAutoShare] = useState(() => localStorage.getItem(`prototype-auto-share:${projectId}`) !== "off");
-  useEffect(() => { localStorage.setItem(`prototype-auto-share:${projectId}`, autoShare ? "on" : "off"); }, [autoShare, projectId]);
 
   async function refresh(preferredPrototypeId?: string, preferredVersionId?: string) {
     const result = await listProjectPrototypes(projectId);
@@ -60,14 +58,8 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await generatePrototype({ projectId, prototypeId: prototype?.id, kind: prototype?.prototype_kind ?? kind, title: prototype?.title || `${projectName} MVP`, instructions, sourceText });
-      if (autoShare) {
-        await sharePrototype(projectId, result.version.id);
-        await refresh(result.prototypeId, result.version.id); setInstructions("");
-        setNotice(`נוצרה גרסה ${result.version.version} והיא שותפה אוטומטית עם הלקוח בפורטל שלו.`);
-      } else {
-        await refresh(result.prototypeId, result.version.id); setInstructions("");
-        setNotice(`נוצרה גרסה ${result.version.version}. היא טיוטה עד שתשתף אותה.`);
-      }
+      await refresh(result.prototypeId, result.version.id); setInstructions("");
+      setNotice(`נוצרה גרסה ${result.version.version} והיא שותפה אוטומטית עם הלקוח בפורטל שלו.`);
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   }
@@ -87,28 +79,38 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
   const handoffPayload = useMemo(() => version ? JSON.stringify({ project: projectName, prototypeType: prototype?.prototype_kind, version: version.version, summary: version.summary, ui: version.content, rules: ["Preserve the approved screens and interactions", "Implement authentication and role isolation", "Do not invent pricing or expose internal agency data", "Create the required database schema and integrations from the supplied specification"] }, null, 2) : "", [version, prototype?.prototype_kind, projectName]);
   async function copyExport(platform: "Lovable" | "Base44") { await navigator.clipboard.writeText(`Build an implementation of this reviewed MVP in ${platform}. Treat the JSON as the approved product contract. Include the required database, authentication, permissions, integrations and automation flows. Ask before inventing missing business rules.\n\n${handoffPayload}`); setNotice(`חבילת ה־MVP הועתקה עבור ${platform}. יש לבדוק אותה לפני ההדבקה.`); }
 
-  if (!version && readOnly) return <section className="card prototype-empty"><h2>ה־MVP החזותי</h2><p>עדיין לא שותף אב־טיפוס לפרויקט.</p></section>;
+  const clientCopy = language === "he" ? {
+    title: "ה־MVP החזותי", empty: "עדיין לא שותף אב־טיפוס לפרויקט.", fullscreen: "פתח MVP במסך מלא", exit: "צא ממסך מלא",
+    prototype: "אב־טיפוס", version: "גרסה", approval: "אישור הלקוח לגרסה", approved: "הגרסה אושרה", changes: "התבקשו שינויים",
+    placeholder: "הערה או שינוי מבוקש", approve: "אני מאשר/ת את הגרסה", request: "בקש שינויים",
+  } : {
+    title: "Visual MVP", empty: "No prototype has been shared for this project yet.", fullscreen: "Open MVP full screen", exit: "Exit full screen",
+    prototype: "Prototype", version: "Version", approval: "Client approval for version", approved: "Version approved", changes: "Changes requested",
+    placeholder: "Comment or requested change", approve: "Approve this version", request: "Request changes",
+  };
+
+  if (!version && readOnly) return <section className="card prototype-empty"><h2>{clientCopy.title}</h2><p>{clientCopy.empty}</p></section>;
 
   return <section className={`card prototype-studio${simple ? " prototype-simple" : ""}${studioFullScreen ? " prototype-fullscreen" : ""}`} dir="rtl">
-    <header className="prototype-head"><div><p className="eyebrow">MVP חזותי שמור</p><h2>{prototype?.title || projectName}</h2><p>{version?.summary || "צור אב־טיפוס לחיץ מתוך השיחה, האפיון או קובץ Word."}</p></div><div className="prototype-head-actions">{version ? <span className={`prototype-status ${version.status}`}>v{version.version} · {version.status}</span> : null}<button type="button" onClick={() => setStudioFullScreen((value) => !value)}>{studioFullScreen ? "צא ממסך מלא" : "פתח MVP במסך מלא"}</button></div></header>
+    <header className="prototype-head"><div><p className="eyebrow">{clientMode ? clientCopy.title : "MVP חזותי שמור"}</p><h2>{prototype?.title || projectName}</h2><p>{version?.summary || "צור אב־טיפוס לחיץ מתוך השיחה, האפיון או קובץ Word."}</p></div><div className="prototype-head-actions">{version ? <span className={`prototype-status ${version.status}`}>v{version.version} · {version.status}</span> : null}<button type="button" onClick={() => setStudioFullScreen((value) => !value)}>{studioFullScreen ? clientCopy.exit : clientCopy.fullscreen}</button></div></header>
 
     {!readOnly ? <div className="prototype-authoring">
       {!prototype ? <label>סוג MVP<select value={kind} onChange={(e) => setKind(e.target.value as PrototypeKind)}>{Object.entries(kindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
       <label className="span-2">מה לשנות או להוסיף?<textarea rows={3} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="לדוגמה: הוסף מסך פתיחה, מצב שבו הבוט לא מבין וכפתור מעבר לנציג" /></label>
       <label className="prototype-file">צרף TXT / MD / Word<input type="file" accept=".txt,.md,.json,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => void readSource(e.target.files?.[0])} /></label>
       {sourceText ? <details><summary>טקסט שיצורף ל־AI ({sourceText.length} תווים)</summary><textarea rows={5} value={sourceText} onChange={(e) => setSourceText(e.target.value)} /></details> : null}
-      <label className="prototype-auto-share"><input type="checkbox" checked={autoShare} onChange={(event) => setAutoShare(event.target.checked)} /> שתף אוטומטית כל גרסה חדשה עם הלקוח בפורטל שלו</label>
+      <p className="form-note prototype-auto-share">כל גרסה חדשה משותפת אוטומטית עם הלקוח. גרסאות קודמות נשמרות בהיסטוריה.</p>
       <div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void createRevision()}>{busy ? "יוצר…" : prototype ? "צור גרסה חדשה" : "צור MVP ראשון"}</button>{version?.status === "draft" ? <button disabled={busy} onClick={() => void share()}>שתף עם הלקוח</button> : null}{version ? <><button type="button" onClick={() => void copyExport("Lovable")}>העתק ל־Lovable</button><button type="button" onClick={() => void copyExport("Base44")}>העתק ל־Base44</button></> : null}</div>
     </div> : null}
 
-    {prototypes.length > 1 || (prototype?.versions.length ?? 0) > 1 ? <div className="prototype-selectors"><label>אב־טיפוס<select value={prototype?.id || ""} onChange={(e) => { setPrototypeId(e.target.value); const next = prototypes.find((item) => item.id === e.target.value)?.versions[0]; setVersionId(next?.id || ""); setScreenId(next?.content.startScreenId || ""); }}>{prototypes.map((item) => <option key={item.id} value={item.id}>{item.title} · {kindLabels[item.prototype_kind]}</option>)}</select></label><label>גרסה<select value={version?.id || ""} onChange={(e) => { setVersionId(e.target.value); const next = prototype?.versions.find((item) => item.id === e.target.value); setScreenId(next?.content.startScreenId || ""); }}>{prototype?.versions.map((item) => <option key={item.id} value={item.id}>v{item.version} · {item.status}</option>)}</select></label></div> : null}
+    {prototypes.length > 1 || (prototype?.versions.length ?? 0) > 1 ? <div className="prototype-selectors"><label>{clientMode ? clientCopy.prototype : "אב־טיפוס"}<select value={prototype?.id || ""} onChange={(e) => { setPrototypeId(e.target.value); const next = prototypes.find((item) => item.id === e.target.value)?.versions[0]; setVersionId(next?.id || ""); setScreenId(next?.content.startScreenId || ""); }}>{prototypes.map((item) => <option key={item.id} value={item.id}>{item.title} · {kindLabels[item.prototype_kind]}</option>)}</select></label><label>{clientMode ? clientCopy.version : "גרסה"}<select value={version?.id || ""} onChange={(e) => { setVersionId(e.target.value); const next = prototype?.versions.find((item) => item.id === e.target.value); setScreenId(next?.content.startScreenId || ""); }}>{prototype?.versions.map((item) => <option key={item.id} value={item.id}>v{item.version} · {item.status}</option>)}</select></label></div> : null}
 
     {version && screen ? <div className={`prototype-workbench kind-${prototype.prototype_kind}`} style={{ "--prototype-primary": version.content.theme.primary, "--prototype-accent": version.content.theme.accent } as React.CSSProperties}>
       <nav className="prototype-screen-nav" aria-label="מסכי האב טיפוס">{version.content.screens.map((item, index) => <button key={item.id} className={item.id === screen.id ? "active" : ""} onClick={() => setScreenId(item.id)}><span>{index + 1}</span>{item.title}</button>)}</nav>
       <div className="prototype-device"><div className="prototype-device-bar"><i /><i /><i /><strong>{prototype.prototype_kind === "whatsapp" ? "WhatsApp Demo" : screen.title}</strong></div><div className="prototype-canvas"><h3>{screen.title}</h3>{screen.subtitle ? <p className="prototype-subtitle">{screen.subtitle}</p> : null}<div className="prototype-blocks">{screen.blocks.map((block, index) => <PrototypeBlockView key={`${block.type}-${index}`} block={block} />)}</div><div className="prototype-actions">{screen.actions.map((action) => <button key={action.id} className={`prototype-action ${action.tone || "primary"}`} onClick={() => action.targetScreenId && setScreenId(action.targetScreenId)} disabled={!action.targetScreenId}>{action.label}</button>)}</div></div></div>
     </div> : <div className="prototype-empty"><p>עדיין אין MVP שמור. אפשר ליצור אותו מהשיחה או מחומר שהלקוח שלח.</p></div>}
 
-    {clientMode && version && (version.status === "shared" || version.status === "approved") ? <div className="prototype-approval"><h3>אישור הלקוח לגרסה v{version.version}</h3>{decision ? <p><strong>{decision.decision === "approved" ? "הגרסה אושרה" : "התבקשו שינויים"}</strong>{decision.comment ? ` · ${decision.comment}` : ""}</p> : <><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="הערה או שינוי מבוקש" /><div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void decide("approved")}>אני מאשר/ת את הגרסה</button><button disabled={busy || !comment.trim()} onClick={() => void decide("changes_requested")}>בקש שינויים</button></div></>}</div> : null}
+    {clientMode && version && (version.status === "shared" || version.status === "approved") ? <div className="prototype-approval"><h3>{clientCopy.approval} v{version.version}</h3>{decision ? <p><strong>{decision.decision === "approved" ? clientCopy.approved : clientCopy.changes}</strong>{decision.comment ? ` · ${decision.comment}` : ""}</p> : <><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={clientCopy.placeholder} /><div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void decide("approved")}>{clientCopy.approve}</button><button disabled={busy || !comment.trim()} onClick={() => void decide("changes_requested")}>{clientCopy.request}</button></div></>}</div> : null}
     {error ? <p className="form-error">{error}</p> : null}{notice ? <p className="form-success">{notice}</p> : null}
     {!readOnly && hasShared ? <p className="form-note">גרסה ששותפה נשארת בהיסטוריה. תיקונים תמיד יוצרים גרסה חדשה ואינם מוחקים את מה שהלקוח ראה.</p> : null}
   </section>;

@@ -65,11 +65,11 @@ CREATE POLICY "agency manages prototypes" ON public.project_prototypes FOR ALL T
   USING (private.is_agency_admin()) WITH CHECK (private.is_agency_admin());
 CREATE POLICY "client reads own prototypes" ON public.project_prototypes FOR SELECT TO authenticated
   USING (private.client_owns_project(project_id) AND EXISTS (
-    SELECT 1 FROM public.prototype_versions v WHERE v.prototype_id = id AND v.audience = 'client' AND v.status IN ('shared','approved')
+    SELECT 1 FROM public.prototype_versions v WHERE v.prototype_id = project_prototypes.id AND v.audience = 'client' AND v.status IN ('shared','approved')
   ));
 CREATE POLICY "supplier reads assigned prototypes" ON public.project_prototypes FOR SELECT TO authenticated
   USING (private.supplier_has_project(project_id) AND EXISTS (
-    SELECT 1 FROM public.prototype_versions v WHERE v.prototype_id = id AND v.audience = 'supplier' AND v.status IN ('shared','approved')
+    SELECT 1 FROM public.prototype_versions v WHERE v.prototype_id = project_prototypes.id AND v.audience = 'supplier' AND v.status IN ('shared','approved')
   ));
 
 CREATE POLICY "agency manages prototype versions" ON public.prototype_versions FOR ALL TO authenticated
@@ -89,7 +89,7 @@ CREATE POLICY "client records prototype decision" ON public.prototype_approvals 
     AND private.client_owns_project(project_id)
     AND EXISTS (
       SELECT 1 FROM public.prototype_versions v
-      WHERE v.id = prototype_version_id AND v.project_id = project_id
+      WHERE v.id = prototype_approvals.prototype_version_id AND v.project_id = prototype_approvals.project_id
         AND v.audience = 'client' AND v.status IN ('shared','approved')
     )
   );
@@ -100,7 +100,10 @@ BEGIN
   IF EXISTS (SELECT 1 FROM public.prototype_approvals a WHERE a.prototype_version_id = OLD.id AND a.decision = 'approved') THEN
     RAISE EXCEPTION 'Approved prototype versions are immutable';
   END IF;
-  RETURN OLD;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
 END;
 $$;
 
