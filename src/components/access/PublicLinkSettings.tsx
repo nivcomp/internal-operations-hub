@@ -44,6 +44,11 @@ export function PublicLinkSettings() {
         Optional open links anyone can use to register. Personal invitations stay the default —
         these links are off until you turn them on, and every submission still needs email confirmation and your review.
       </p>
+      <p className="form-note public-link-guidance">
+        The client registration link is only for a brand-new client with no existing project. If a project was already
+        started in a meeting, create “Continue project” from that project’s meeting room so the client keeps the existing
+        conversation, brief and MVP.
+      </p>
       {error ? <p className="form-error">{error}</p> : null}
 
       {settings.map((item) => {
@@ -62,6 +67,10 @@ export function PublicLinkSettings() {
                 {item.enabled ? "Open" : "Closed"}
               </label>
             </div>
+
+            <p className="form-note">
+              {item.role === "client" ? "Starts a completely new project brief." : "Starts a new supplier profile."}
+            </p>
 
             {item.enabled ? (
               <>

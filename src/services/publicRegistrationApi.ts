@@ -143,6 +143,7 @@ export type ContinuationInfo = {
   email?: string;
   company?: string;
   contactName?: string;
+  projectId?: string;
   projectName?: string;
   accountExists?: boolean;
 };
@@ -154,9 +155,9 @@ export function continuationInfo(token: string) {
 
 /** Sets the password for the invited client and signs them in. */
 export async function activateContinuation(token: string, password: string): Promise<{
-  signedIn: boolean; accountExists?: boolean; error?: string;
+  signedIn: boolean; accountExists?: boolean; projectId?: string; error?: string;
 }> {
-  let result: { ok?: boolean; accountExists?: boolean; email?: string };
+  let result: { ok?: boolean; accountExists?: boolean; email?: string; projectId?: string };
   try {
     result = await callPublic({ action: "continueActivate", token, password });
   } catch (cause) {
@@ -169,5 +170,5 @@ export async function activateContinuation(token: string, password: string): Pro
 
   const { error } = await getAuthClient().auth.signInWithPassword({ email: result.email, password });
   if (error) return { signedIn: false, error: "החשבון נוצר, אך ההתחברות נכשלה. נסו להתחבר במסך הכניסה." };
-  return { signedIn: true };
+  return { signedIn: true, projectId: result.projectId };
 }

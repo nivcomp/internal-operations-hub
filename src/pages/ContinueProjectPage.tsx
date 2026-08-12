@@ -36,7 +36,11 @@ export function ContinueProjectPage() {
     setBusy(true);
     const result = await activateContinuation(token, password);
     setBusy(false);
-    if (result.signedIn) { window.location.replace("/"); return; }
+    if (result.signedIn) {
+      const destination = result.projectId ? `/?portalProject=${encodeURIComponent(result.projectId)}` : "/";
+      window.location.replace(destination);
+      return;
+    }
     if (result.accountExists) { setInfo((current) => current ? { ...current, accountExists: true } : current); return; }
     setError(result.error ?? "לא הצלחנו להשלים את הכניסה.");
   }
@@ -59,7 +63,7 @@ export function ContinueProjectPage() {
       <>
         <h1 style={{ fontSize: "1.15rem" }}>הלינק אינו זמין</h1>
         <p className="form-note">{message}</p>
-        <a className="primary-button" href="/">מסך הכניסה</a>
+        <a className="primary-button" href={info.projectId ? `/?portalProject=${encodeURIComponent(info.projectId)}` : "/"}>מסך הכניסה</a>
       </>,
     );
   }
@@ -70,7 +74,7 @@ export function ContinueProjectPage() {
         <h1 style={{ fontSize: "1.15rem" }}>כבר קיים חשבון עם המייל הזה</h1>
         <p className="form-note">התחברו עם הסיסמה הקיימת כדי להמשיך את הפרויקט {info.projectName}.</p>
         <div className="action-row">
-          <a className="primary-button" href="/">התחברות</a>
+          <a className="primary-button" href={info.projectId ? `/?portalProject=${encodeURIComponent(info.projectId)}` : "/"}>התחברות</a>
           <a className="ghost-button" href="/reset-password">שכחתי סיסמה</a>
         </div>
       </>,

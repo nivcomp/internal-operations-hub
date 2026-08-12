@@ -70,9 +70,9 @@ Deno.serve(async (req) => {
     if (!invitation || !invitation.project_id || !invitation.client_id) {
       return json({ valid: false, reason: "invalid" });
     }
-    if (invitation.used_at) return json({ valid: false, reason: "used" });
+    if (invitation.used_at) return json({ valid: false, reason: "used", projectId: invitation.project_id });
     if (invitation.expires_at && new Date(invitation.expires_at).getTime() < Date.now()) {
-      return json({ valid: false, reason: "expired" });
+      return json({ valid: false, reason: "expired", projectId: invitation.project_id });
     }
 
     const email = String(invitation.email ?? "").toLowerCase();
@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
         email,
         company: invitation.company ?? "",
         contactName: invitation.contact_name ?? "",
+        projectId: invitation.project_id,
         projectName: project?.name ?? "",
         accountExists: Boolean(existing),
       });
@@ -159,7 +160,7 @@ Deno.serve(async (req) => {
       detail: { project_id: invitation.project_id },
     });
 
-    return json({ ok: true, email });
+    return json({ ok: true, email, projectId: invitation.project_id });
   }
 
   const role = (body.role === "supplier" ? "supplier" : body.role === "client" ? "client" : null) as Role | null;

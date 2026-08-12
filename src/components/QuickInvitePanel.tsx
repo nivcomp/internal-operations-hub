@@ -68,6 +68,12 @@ export function QuickInvitePanel({ onInvited }: { onInvited?: () => void }) {
       <p className="form-note">
         Enter the minimum. The AI assistant collects the brief, requirements, dates and preferences in conversation.
       </p>
+      {mode === "client" ? (
+        <p className="form-note public-link-guidance">
+          Use this for a new client and a new brief. If you already opened the project together in a meeting, use
+          “Continue project” in that project’s meeting room instead.
+        </p>
+      ) : null}
 
       <div className="table-actions" style={{ marginBottom: "0.75rem" }}>
         <button type="button" className={mode === "client" ? "primary-button" : ""} onClick={() => setMode("client")}>

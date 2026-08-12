@@ -1,5 +1,41 @@
 # Work Log
 
+### 2026-08-12 — Conversation-first new-client entry and link clarity
+
+**Work unit**
+Replace the confusing new-client onboarding document wall with a friendly conversation and make the agency’s client-link purposes explicit without changing the existing project-continuation contract.
+
+**Changes**
+- Rebuilt `AiOnboardingWorkspace` around one dominant, welcoming chat with one-question-at-a-time guidance and a visible composer.
+- Added Hebrew/English onboarding copy selected from the registration language or browser language, with an explicit language switch.
+- Removed empty document rows, draft estimate placeholders and early edit controls from the first impression.
+- Added a compact conversation-to-brief-to-MVP explanation; the live summary now appears only after real content exists and stays collapsed until the client chooses to review it.
+- Moved the classic form to a quiet fallback and made the agency handoff appear only after the AI marks the brief ready.
+- Added responsive desktop/mobile presentation and kept the composer visible on a 390×844 viewport.
+- Clarified in Simple and Advanced access controls that public registration and personal invitation links start a new brief, while an existing meeting/project must use the project-specific continuation link.
+- Audited and hardened the continuation path: `/continue?t=…` is tied to `project_id`, marks onboarding complete, returns that exact project from activation, and redirects both new and existing accounts through `portalProject` so multi-project clients do not land on the wrong project.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- Desktop and 390×844 mobile visual checks passed in the local in-app browser with no console errors.
+- `git diff --check` passed before publication.
+
+**Files**
+- `src/components/onboarding/AiOnboardingWorkspace.tsx`
+- `src/components/simple/ShareLinksCard.tsx`
+- `src/components/access/PublicLinkSettings.tsx`
+- `src/components/QuickInvitePanel.tsx`
+- `src/pages/ContinueProjectPage.tsx`
+- `src/services/publicRegistrationApi.ts`
+- `src/styles.css`
+- `supabase/functions/public-registration/index.ts`
+- `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Next**
+- Deploy the frontend and updated `public-registration` Edge Function, then run one authenticated production smoke test for a new-client link and one multi-project continuation link.
+
+---
+
 ### 2026-08-09 — Copilot MVP and project-hours context
 
 **Work unit**

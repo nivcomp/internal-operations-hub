@@ -87,6 +87,11 @@ export function ShareLinksCard({ refreshToken = 0 }: { refreshToken?: number }) 
               </span>
               <span className="simple-note">{pending} הרשמות ממתינות</span>
             </div>
+            <p className="simple-note simple-link-purpose">
+              {item.role === "client"
+                ? "מיועד ללקוח חדש שעדיין אין לו פרויקט. מכאן מתחילים היכרות ואפיון חדש מאפס. ללקוח שכבר התחיל איתך בפגישה יש להשתמש ב׳לינק להמשך הפרויקט׳ מתוך חדר האפיון."
+                : "מיועד לספק חדש שמתחיל תהליך הצטרפות."}
+            </p>
             <input readOnly value={link} dir="ltr" onFocus={(e) => e.currentTarget.select()} />
             <div className="simple-actions-row">
               <button
