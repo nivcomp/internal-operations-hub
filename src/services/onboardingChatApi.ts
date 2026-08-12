@@ -59,10 +59,18 @@ export type OnboardingAnswers = Record<string, any> & {
   _readyToSubmit?: boolean;
 };
 
+export type OnboardingIdentity = {
+  clientId: string;
+  clientName: string;
+  businessName: string;
+  email: string;
+};
+
 export type OnboardingChatResponse = {
   reply?: string;
   answers: OnboardingAnswers;
   transcript: OnboardingTurn[];
+  identity?: OnboardingIdentity;
   readyToSubmit?: boolean;
   completedAt?: string | null;
 };

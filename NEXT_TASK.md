@@ -6,6 +6,8 @@ Brand-new clients now enter a conversation-first onboarding workspace instead of
 
 The new-client workspace now identifies the signed-in client, business and evolving project name before any answers are submitted. Submission is retry-safe, redirects to the exact created project, and moves the complete onboarding transcript, structured brief, diagram and editable specification drafts into that project's records. The agency-only MVP generator already reads the same project conversation and reviewed specification, so the client cannot accidentally generate an MVP for another project.
 
+The onboarding AI now receives the authoritative client and business identity from the authenticated profile's linked client record. It can answer which business is signed in and no longer asks the client to repeat the stored name; it still asks what the business does because that discovery information is not inferred from the account name.
+
 The client portal now has four large focus views: project status, specification, interactive MVP and conversation/change requests. Each can be opened without the advanced agency interface and the whole client view or MVP can run full-screen on desktop and mobile. Clients see estimate hours and the incremental hours of optional requests, but no calculated money, hourly rate, supplier cost or margin; money appears only after an agency-approved fixed price exists.
 
 The saved prototype includes immutable versions, client approval/change requests and a reviewed handoff for both Lovable and Base44. New versions are shared atomically by the agency-only Edge Function, while the repair migration shares the latest existing client draft and corrects the client RLS correlation. New AI-generated versions describe the approved UI, data model, integrations and automation flows in one bounded payload. The repair migration and updated `project-prototype` Edge Function require deployment to the connected Supabase project. Authenticated agency/client RLS verification remains required.
@@ -20,7 +22,7 @@ The floating Copilot now reads the saved MVP plus canonical estimate items, disc
 
 Deploy and verify the personalized onboarding-to-project binding in the connected environment.
 
-Apply the new database migration and frontend deployment, then run one authenticated production smoke test from a brand-new client link through submission and the exact project portal. Confirm the account identity, project redirect, copied conversation, diagram, specification drafts and agency-only MVP source context against the created project id.
+Apply the new database migration, deploy the updated `onboarding-chat` Edge Function and frontend, then run one authenticated production smoke test from a brand-new client link through submission and the exact project portal. Confirm the displayed identity, the AI's stored-business answer, project redirect, copied conversation, diagram, specification drafts and agency-only MVP source context against the created project id.
 
 ## Constraints
 
@@ -33,6 +35,7 @@ Apply the new database migration and frontend deployment, then run one authentic
 ## Acceptance criteria
 
 - A newly signed-in client sees their own name/email, business and pending or captured project name.
+- When asked for the business name, the onboarding AI answers from that authenticated client's record and never exposes another client.
 - Submitting once or retrying returns one project owned by that client's `client_id` and opens that exact portal project.
 - The project's client conversation contains the onboarding transcript and diagram; specification sections remain `ai_draft` until agency review.
 - Agency MVP generation reads that project's conversation and only reviewed/edited specification sections; the client cannot execute generation.

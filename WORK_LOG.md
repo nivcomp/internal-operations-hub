@@ -1,5 +1,33 @@
 # Work Log
 
+### 2026-08-12 — Authenticated business identity inside onboarding AI
+
+**Work unit**
+Make the onboarding conversation itself know the signed-in client's stored business identity instead of only displaying it in the surrounding page.
+
+**Changes**
+- Resolved the linked `clients` row server-side from the authenticated profile's `client_id`.
+- Added a bounded authoritative identity block to the onboarding AI context so it can answer the client and business names without asking for them again.
+- Kept business activity and project requirements discovery-based; the AI does not infer them from an account name.
+- Returned the same identity with onboarding state and message responses, with the existing role/RLS project boundary unchanged.
+- Personalized the first assistant message with the stored business name so the connection is visible before the first reply.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- The updated Edge Function passed a TypeScript syntax transform check.
+- Edge Function deployment and its authenticated production conversation check remain required.
+
+**Files**
+- `supabase/functions/onboarding-chat/index.ts`
+- `src/services/onboardingChatApi.ts`
+- `src/components/onboarding/AiOnboardingWorkspace.tsx`
+- `ARCHITECTURE.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Next**
+- Deploy the frontend, migration and `onboarding-chat`, then verify the stored business answer and exact project handoff with a new client account.
+
+---
+
 ### 2026-08-12 — Personalized client identity and exact project binding
 
 **Work unit**

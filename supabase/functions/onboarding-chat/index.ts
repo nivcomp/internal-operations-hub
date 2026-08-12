@@ -113,6 +113,11 @@ Deno.serve(async (req) => {
   if (profile.role !== "client" && profile.role !== "supplier") {
     return json({ error: "Onboarding conversations are for invited clients and suppliers." }, 403);
   }
+  const isClient = profile.role === "client";
+
+  const { data: clientAccount } = isClient && profile.client_id
+    ? await admin.from("clients").select("id, name, company, email").eq("id", profile.client_id).maybeSingle()
+    : { data: null };
 
   let body: { action?: string; message?: string; patch?: Record<string, unknown> };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
@@ -131,9 +136,15 @@ Deno.serve(async (req) => {
   const answers = (state.answers ?? {}) as Record<string, any>;
   const transcript: Array<{ role: string; body: string; at: string }> = Array.isArray(answers._transcript)
     ? answers._transcript : [];
+  const identity = isClient ? {
+    clientId: String(clientAccount?.id ?? profile.client_id ?? ""),
+    clientName: String(clientAccount?.name ?? profile.full_name ?? profile.email ?? ""),
+    businessName: String(clientAccount?.company ?? clientAccount?.name ?? profile.full_name ?? ""),
+    email: String(profile.email ?? clientAccount?.email ?? ""),
+  } : undefined;
 
   if (action === "state") {
-    return json({ answers, transcript, completedAt: state.onboarding_completed_at ?? null });
+    return json({ answers, transcript, identity, completedAt: state.onboarding_completed_at ?? null });
   }
 
   if (action === "patch") {
@@ -143,7 +154,7 @@ Deno.serve(async (req) => {
     const { error } = await admin.from("onboarding_state")
       .update({ answers: next }).eq("profile_id", userId);
     if (error) return json({ error: error.message }, 400);
-    return json({ answers: next, transcript });
+    return json({ answers: next, transcript, identity });
   }
 
   if (action !== "send") return json({ error: "Unknown action." }, 400);
@@ -155,16 +166,22 @@ Deno.serve(async (req) => {
     return json({ error: "This onboarding conversation is very long. Please finish and submit it." }, 429);
   }
 
-  const isClient = profile.role === "client";
   const known = JSON.stringify({
+    accountIdentity: identity,
+    projectBinding: isClient
+      ? "No project exists during onboarding. On submit, one project is created for this client account and receives this transcript, brief and flow."
+      : undefined,
     document: answers._document ?? {},
     profile: answers._profile ?? {},
     flow: answers._flow ?? {},
     answers: Object.fromEntries(Object.entries(answers).filter(([k]) => !k.startsWith("_"))),
   }).slice(0, 12000);
+  const identityInstruction = isClient
+    ? "The account identity above comes from the authenticated client record. Treat the client and business names as already known, answer with them when asked, and never ask the client to repeat them. You may still ask what the business does when that activity has not been described."
+    : "Use only the authenticated supplier contact and information the supplier has shared. Never invent identity or profile details.";
 
   const input: ModelMessage[] = [
-    { role: "system", content: `${isClient ? clientSystem() : supplierSystem()}\n\n--- KNOWN SO FAR (authoritative) ---\n${known}\n\nContact: ${profile.full_name ?? profile.email}` },
+    { role: "system", content: `${isClient ? clientSystem() : supplierSystem()}\n\n--- KNOWN SO FAR (authoritative) ---\n${known}\n\n${identityInstruction}\n\nContact: ${profile.full_name ?? profile.email}` },
     ...transcript.slice(-16).map((entry) => ({
       role: entry.role === "assistant" ? "assistant" as const : "user" as const,
       content: String(entry.body).slice(0, 1500),
@@ -223,5 +240,5 @@ Deno.serve(async (req) => {
     latency_ms: Date.now() - started,
   });
 
-  return json({ reply, answers: nextAnswers, transcript: nextTranscript, readyToSubmit: Boolean(parsed?.complete) });
+  return json({ reply, answers: nextAnswers, transcript: nextTranscript, identity, readyToSubmit: Boolean(parsed?.complete) });
 });

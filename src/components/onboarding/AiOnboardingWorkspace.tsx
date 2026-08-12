@@ -10,6 +10,7 @@ import {
   type LiveFlow,
   type LiveSupplierProfile,
   type OnboardingAnswers,
+  type OnboardingIdentity,
   type OnboardingTurn,
 } from "../../services/onboardingChatApi";
 import { LiveFlowDiagram } from "./LiveFlowDiagram";
@@ -196,6 +197,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
 
   const [lang, setLang] = useState<Lang>(() => preferredLanguage(user?.user_metadata?.preferred_language));
   const [answers, setAnswers] = useState<OnboardingAnswers>({});
+  const [accountIdentity, setAccountIdentity] = useState<OnboardingIdentity | undefined>();
   const [turns, setTurns] = useState<OnboardingTurn[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -209,8 +211,8 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
   const isClient = role === "client";
   const t = COPY[lang];
   const client = isClient ? clients.find((item) => item.id === profile?.clientId) : undefined;
-  const clientName = client?.name || profile?.fullName || profile?.email || "";
-  const company = client?.company || clientName;
+  const clientName = accountIdentity?.clientName || client?.name || profile?.fullName || profile?.email || "";
+  const company = accountIdentity?.businessName || client?.company || clientName;
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +221,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
         const state = await loadOnboardingConversation();
         if (cancelled) return;
         setAnswers(state.answers ?? {});
+        setAccountIdentity(state.identity);
         setTurns(state.transcript ?? []);
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Could not open your assistant.");
@@ -243,6 +246,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
     try {
       const result = await sendOnboardingMessage(message);
       setAnswers(result.answers ?? {});
+      setAccountIdentity(result.identity);
       setTurns(result.transcript ?? []);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The assistant could not reply.");
@@ -271,6 +275,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
     try {
       const result = await patchOnboardingAnswers(patch);
       setAnswers(result.answers ?? {});
+      setAccountIdentity(result.identity);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save your edit.");
     }
@@ -374,6 +379,11 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
       ? `בואו נבנה יחד את הפרויקט של ${company}`
       : `Let’s build ${company}'s project together`
     : isClient ? t.clientTitle : t.supplierTitle;
+  const personalisedOpener = isClient && company
+    ? lang === "he"
+      ? `היי, נעים מאוד 👋 אני רואה שנכנסתם מטעם ${company}. כדי שאכיר את הפעילות שלכם, ספרו לי במשפט או שניים מה העסק עושה ומה הייתם רוצים לשפר או לבנות.`
+      : `Hi, great to meet you 👋 I can see you’re joining from ${company}. In a sentence or two, what does the business do and what would you like to improve or build?`
+    : isClient ? t.clientOpener : t.supplierOpener;
 
   return (
     <div className="ai-onboarding" dir={lang === "he" ? "rtl" : "ltr"} lang={lang}>
@@ -420,7 +430,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
           <div className="ai-chat-log" ref={listRef} aria-live="polite">
             <div className="ai-chat-row assistant">
               <span className="ai-mini-avatar" aria-hidden="true">✦</span>
-              <div className="ai-bubble assistant">{isClient ? t.clientOpener : t.supplierOpener}</div>
+              <div className="ai-bubble assistant">{personalisedOpener}</div>
             </div>
             {loading ? <p className="ai-chat-status">{t.opening}</p> : null}
             {turns.map((turn, index) => (
