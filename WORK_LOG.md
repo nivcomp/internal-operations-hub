@@ -1,5 +1,37 @@
 # Work Log
 
+### 2026-08-12 — Personalized client identity and exact project binding
+
+**Work unit**
+Show a new client whose workspace they entered and preserve every onboarding artifact inside the exact project created for their authenticated account.
+
+**Changes**
+- Added a client-safe identity panel to AI onboarding and the project portal with signed-in status, client, business and project names.
+- Personalized the onboarding heading with the client's business and explained what is account-bound before the project exists.
+- Made onboarding submission return and open the exact created project instead of relying on the first visible project.
+- Added a retry-safe replacement for `submit_client_onboarding` that prevents duplicate projects and copies the bounded transcript into the project's `client_agency` conversation.
+- Stored the structured brief, workflow diagram and specification sections as reviewable drafts under the same project.
+- Preserved agency authority: onboarding does not create or publish an MVP; the agency-only generator uses the exact project conversation and reviewed specification.
+
+**Tests**
+- `pnpm run build` passed after the frontend changes (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- The migration and authenticated production smoke test remain deployment work and are recorded in `NEXT_TASK.md`.
+
+**Files**
+- `src/components/client/ClientWorkspaceIdentity.tsx`
+- `src/components/onboarding/AiOnboardingWorkspace.tsx`
+- `src/pages/ClientPortalPage.tsx`
+- `src/App.tsx`
+- `src/styles.css`
+- `supabase/migrations/20260812210000_bind_client_onboarding_to_project.sql`
+- `ARCHITECTURE.md`, `MVP_SCOPE.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Next**
+- Deploy the migration and frontend, then verify one new authenticated client from invitation through the exact project portal and agency MVP source context.
+
+---
+
 ### 2026-08-12 — Conversation-first new-client entry and link clarity
 
 **Work unit**

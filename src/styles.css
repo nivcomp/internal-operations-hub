@@ -2071,6 +2071,25 @@ kbd {
 .ai-onboarding-heading .eyebrow { margin: 0 0 .5rem; color: #567063; font-weight: 800; }
 .ai-onboarding-heading h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 3.15rem); line-height: 1.08; letter-spacing: -.045em; }
 .ai-onboarding-heading > p:last-child { max-width: 720px; margin: .8rem 0 0; color: var(--ink-2); font-size: clamp(.98rem, 1.5vw, 1.08rem); }
+.client-workspace-identity {
+  display: grid;
+  gap: .8rem;
+  padding: .95rem 1.05rem;
+  border: 1px solid #cbdcd2;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(247, 251, 248, .98), rgba(255, 255, 255, .94));
+  box-shadow: 0 14px 35px -30px rgba(15, 42, 29, .75);
+}
+.client-identity-status { display: flex; align-items: center; gap: .45rem; color: #176345; font-size: .78rem; font-weight: 800; }
+.client-identity-status span { width: 9px; height: 9px; border-radius: 50%; background: #2f9b61; box-shadow: 0 0 0 4px rgba(47, 155, 97, .12); }
+.client-identity-status.preview { color: #7c5d1c; }
+.client-identity-status.preview span { background: #d29a29; box-shadow: 0 0 0 4px rgba(210, 154, 41, .14); }
+.client-workspace-identity dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; margin: 0; }
+.client-workspace-identity dl > div { min-width: 0; padding: .65rem .75rem; border: 1px solid var(--line-soft); border-radius: 12px; background: rgba(255, 255, 255, .82); }
+.client-workspace-identity dt { color: #61766a; font-size: .69rem; font-weight: 800; letter-spacing: .045em; text-transform: uppercase; }
+.client-workspace-identity dd { overflow-wrap: anywhere; margin: .22rem 0 0; color: var(--ink); font-weight: 800; }
+.client-workspace-identity small { display: block; overflow: hidden; margin-top: .16rem; color: var(--ink-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.client-workspace-identity > p { margin: 0; color: var(--ink-2); font-size: .83rem; line-height: 1.55; }
 .ai-language-switch {
   display: flex;
   flex: none;
@@ -2200,6 +2219,8 @@ kbd {
   .ai-onboarding-head { display: grid; gap: .8rem; padding-inline: .25rem; }
   .ai-onboarding-heading h1 { font-size: clamp(1.75rem, 10vw, 2.35rem); }
   .ai-language-switch { justify-self: start; }
+  .client-workspace-identity { padding: .8rem; }
+  .client-workspace-identity dl { grid-template-columns: minmax(0, 1fr); }
   .ai-onboarding-chat { border-radius: 18px; }
   .ai-chat-head { padding: .85rem; }
   .ai-chat-log { min-height: 30dvh; max-height: 52dvh; padding: .9rem .75rem; }

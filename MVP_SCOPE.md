@@ -9,6 +9,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - One React application with shared `simple` and `advanced` presentation modes.
 - Supabase-backed authentication, profiles, durable records, storage, RLS and role isolation.
 - Clients, CRM leads, projects, suppliers, invitations and role-specific home/portal screens.
+- A personalized new-client workspace that visibly confirms the signed-in client, business and project context, then preserves the onboarding conversation, structured brief and diagram inside the exact project it creates.
 - Project conversations and server-side AI for client, agency and supplier roles.
 - A shared interactive project room with persistent chat, voice input, visual process/screen artifacts, confirmation-gated estimate proposals and client-safe live estimate visibility.
 - A versioned interactive prototype studio for app, WhatsApp-bot and automation demonstrations, with DOCX/text intake, client sharing, exact-version approval and reviewed Lovable export.

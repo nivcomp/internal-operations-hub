@@ -516,7 +516,11 @@ function OnboardingGate() {
   // Both roles start in the AI onboarding workspace; the classic form stays as a fallback.
   const [useClassicForm, setUseClassicForm] = useState(false);
 
-  async function finishOnboarding() {
+  async function finishOnboarding(projectId?: string) {
+    if (projectId) {
+      const destination = `/?portalProject=${encodeURIComponent(projectId)}`;
+      window.history.replaceState({}, "", destination);
+    }
     await refresh();
     reload();
   }
@@ -545,7 +549,7 @@ function OnboardingGate() {
     return (
       <AiOnboardingWorkspace
         role={profile.role}
-        onDone={() => void finishOnboarding()}
+        onDone={(projectId) => void finishOnboarding(projectId)}
         onUseForm={() => setUseClassicForm(true)}
       />
     );

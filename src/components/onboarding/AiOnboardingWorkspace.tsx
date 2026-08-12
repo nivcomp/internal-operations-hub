@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useOnboarding } from "../../context/OnboardingContext";
+import { useAppData } from "../../context/AppDataContext";
 import { submitClientOnboarding, submitSupplierOnboarding } from "../../services/onboardingApi";
 import {
   loadOnboardingConversation,
@@ -13,8 +13,9 @@ import {
   type OnboardingTurn,
 } from "../../services/onboardingChatApi";
 import { LiveFlowDiagram } from "./LiveFlowDiagram";
+import { ClientWorkspaceIdentity } from "../client/ClientWorkspaceIdentity";
 
-type Props = { role: "client" | "supplier"; onDone: () => void; onUseForm: () => void };
+type Props = { role: "client" | "supplier"; onDone: (projectId?: string) => void; onUseForm: () => void };
 type Lang = "he" | "en";
 
 const COPY = {
@@ -191,7 +192,7 @@ function preferredLanguage(metadataLanguage?: unknown): Lang {
 
 export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
   const { profile, user } = useAuth();
-  const { refresh } = useOnboarding();
+  const { clients } = useAppData();
 
   const [lang, setLang] = useState<Lang>(() => preferredLanguage(user?.user_metadata?.preferred_language));
   const [answers, setAnswers] = useState<OnboardingAnswers>({});
@@ -207,6 +208,9 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
 
   const isClient = role === "client";
   const t = COPY[lang];
+  const client = isClient ? clients.find((item) => item.id === profile?.clientId) : undefined;
+  const clientName = client?.name || profile?.fullName || profile?.email || "";
+  const company = client?.company || clientName;
 
   useEffect(() => {
     let cancelled = false;
@@ -278,7 +282,8 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
     try {
       const flat = Object.fromEntries(Object.entries(answers).filter(([key]) => !key.startsWith("_")));
       if (isClient) {
-        await submitClientOnboarding({
+        const projectId = await submitClientOnboarding({
+          ...answers,
           ...flat,
           project_name: (flat as any).project_name || doc.summary?.slice(0, 60) || "New project",
           goal: (flat as any).goal || doc.businessGoal || doc.desiredOutcome || "",
@@ -288,6 +293,8 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
           capabilities: (flat as any).capabilities || asList(doc.requirements).join(" | "),
           requested_date: (flat as any).requested_date || doc.requestedDate || "",
         });
+        onDone(projectId);
+        return;
       } else {
         await submitSupplierOnboarding({
           ...flat,
@@ -305,7 +312,6 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
           communication: (flat as any).communication || supplierProfile.communication || "",
         });
       }
-      await refresh();
       onDone();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not submit your onboarding.");
@@ -362,13 +368,19 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
       : confidence < 60
         ? t.progressDirection
         : t.progressDetails;
+  const projectName = typeof answers.project_name === "string" ? answers.project_name.trim() : "";
+  const personalisedTitle = isClient && company
+    ? lang === "he"
+      ? `בואו נבנה יחד את הפרויקט של ${company}`
+      : `Let’s build ${company}'s project together`
+    : isClient ? t.clientTitle : t.supplierTitle;
 
   return (
     <div className="ai-onboarding" dir={lang === "he" ? "rtl" : "ltr"} lang={lang}>
       <header className="ai-onboarding-head">
         <div className="ai-onboarding-heading">
           <p className="eyebrow">{isClient ? t.projectGuide : t.supplierGuide}</p>
-          <h1>{isClient ? t.clientTitle : t.supplierTitle}</h1>
+          <h1>{personalisedTitle}</h1>
           <p>{isClient ? t.clientIntro : t.supplierIntro}</p>
         </div>
         <div className="ai-language-switch" aria-label="Language">
@@ -376,6 +388,17 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
           <button type="button" className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>English</button>
         </div>
       </header>
+
+      {isClient ? (
+        <ClientWorkspaceIdentity
+          language={lang}
+          clientName={clientName}
+          company={company}
+          email={profile?.email || ""}
+          projectName={projectName}
+          projectPending
+        />
+      ) : null}
 
       <div className="ai-onboarding-progress" aria-label={t.progressAria}>
         <span>{progressLabel}</span>

@@ -4,6 +4,8 @@ import { ProjectChat } from "../components/ProjectChat";
 import { StatusBadge } from "../components/StatusBadge";
 import { BudgetSimulator } from "../components/estimation/BudgetSimulator";
 import { MutationKeys, useAppData } from "../context/AppDataContext";
+import { useAuth } from "../context/AuthContext";
+import { ClientWorkspaceIdentity } from "../components/client/ClientWorkspaceIdentity";
 import { TargetDateForm } from "../components/project/TargetDateForm";
 import { ProposalPanel } from "../components/proposal/ProposalPanel";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
@@ -84,6 +86,7 @@ function projectStage(status: Project["status"]) {
 export function ClientPortalPage({
   selectedClientId, clients, projects, changeRequests, clientPayments, hourBanks, isPreview, initialProjectId,
 }: ClientPortalPageProps) {
+  const { profile } = useAuth();
   const {
     approvals, estimateSummaries, fileLinks, projectMessages, scopeItems, scopes,
     submitClientChangeRequest, updateApprovalStatus, updateChangeRequestStatus, createProjectMessage,
@@ -209,6 +212,15 @@ export function ClientPortalPage({
       <PageHeader
         title={`${client.company} · ${t.workspace}`}
         subtitle={isPreview ? t.preview : t.subtitle}
+      />
+
+      <ClientWorkspaceIdentity
+        language={language}
+        clientName={client.name || profile?.fullName || client.email}
+        company={client.company}
+        email={isPreview ? client.email : profile?.email || client.email}
+        projectName={project.name}
+        preview={isPreview}
       />
 
       <div className="portal-language-switch" role="group" aria-label="Portal language">
