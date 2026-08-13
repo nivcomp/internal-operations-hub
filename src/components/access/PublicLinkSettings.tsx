@@ -91,6 +91,11 @@ export function PublicLinkSettings() {
                     />
                   </label>
                 </div>
+                {item.role === "client" ? (
+                  <div className="qr-code-row" style={{ marginTop: "1rem" }}>
+                    <QrCode value={link} size={160} label="Scan to register as a new client" />
+                  </div>
+                ) : null}
               </>
             ) : null}
           </div>
