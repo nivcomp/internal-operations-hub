@@ -7,6 +7,7 @@ import { notifyEstimationChanged } from "../lib/estimationEvents";
 import { detectProjectViewIntent, requestProjectView } from "../lib/projectViewEvents";
 import { startRecording, type Recorder } from "../lib/voice";
 import { transcribeAudio } from "../services/copilotApi";
+import { uploadProjectFile } from "../services/projectFilesApi";
 import { supabase } from "../integrations/supabase/client";
 
 type ProjectChatProps = {
@@ -23,7 +24,27 @@ type ProjectChatProps = {
   suggestions?: string[];
   /** Shown above the composer for client and supplier chats. */
   safetyNotice?: string;
+  /** Interface language for the surrounding labels. */
+  language?: "he" | "en";
+  /** Shows one "+" button that attaches a document to the project. */
+  allowAttachments?: boolean;
+  onFileUploaded?: () => void;
 };
+
+const chatCopy = {
+  he: {
+    refresh: "רענן", loading: "טוען את השיחה…", empty: "עוד אין הודעות. אפשר להתחיל לכתוב למטה.",
+    thinking: "חושב…", retry: "נסה שוב", dismiss: "סגור", send: "שלח", sending: "שולח…",
+    placeholder: "כתוב הודעה…", disabled: "שליחה מושבתת בתצוגה מקדימה",
+    attach: "➕ צרף מסמך", uploading: "מעלה…", uploaded: "המסמך נוסף לפרויקט",
+  },
+  en: {
+    refresh: "Refresh", loading: "Loading conversation…", empty: "No messages yet. Start the conversation below.",
+    thinking: "Thinking…", retry: "Retry", dismiss: "Dismiss", send: "Send", sending: "Sending…",
+    placeholder: "Write your message… (Hebrew or English)", disabled: "Sending is disabled in preview mode",
+    attach: "➕ Attach a document", uploading: "Uploading…", uploaded: "Document added to the project",
+  },
+} as const;
 
 const actionLabels: Record<ActionKind, string> = {
   add_estimate_items: "Add work items to the estimate",
