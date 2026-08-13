@@ -9,6 +9,9 @@ import { startRecording, type Recorder } from "../lib/voice";
 import { transcribeAudio } from "../services/copilotApi";
 import { uploadProjectFile } from "../services/projectFilesApi";
 import { supabase } from "../integrations/supabase/client";
+import { buildClientProcessExplanation, type ClientProcessNodeData } from "../lib/clientProcessExplanation";
+import { ProcessNode } from "./client/ProcessNode";
+import { ProcessNodeDetails, type ProcessDetailsSelection } from "./client/ProcessNodeDetails";
 
 type ProjectChatProps = {
   projectId: string;
@@ -29,6 +32,8 @@ type ProjectChatProps = {
   /** Shows one "+" button that attaches a document to the project. */
   allowAttachments?: boolean;
   onFileUploaded?: () => void;
+  /** Applies a final presentation boundary even if an upstream payload contains internal fields. */
+  clientSafe?: boolean;
 };
 
 const chatCopy = {
@@ -37,12 +42,20 @@ const chatCopy = {
     thinking: "חושב…", retry: "נסה שוב", dismiss: "סגור", send: "שלח", sending: "שולח…",
     placeholder: "כתוב הודעה…", disabled: "שליחה מושבתת בתצוגה מקדימה",
     attach: "➕ צרף מסמך", uploading: "מעלה…", uploaded: "המסמך נוסף לפרויקט",
+    senders: { client: "אתם", agency_admin: "הצוות", supplier: "ספק", ai_agent: "עוזר AI", system: "המערכת" },
+    artifact: { flow: "תרשים תהליך", wireframe: "סקיצה", table: "טבלה", checklist: "רשימה", download: "הורד כתמונה", copy: "העתק קישור לפורטל", copied: "הקישור הועתק", email: "פתח טיוטת מייל" },
+    waitingConfirmation: "ממתין לאישור שלך", openQuestions: "שאלות פתוחות", notAllowed: "פעולות שלא ניתן לבצע",
+    usagePaused: "ה־AI מושהה כרגע", usageToday: (used: number, limit: number) => `${used}/${limit} הודעות היום`,
   },
   en: {
     refresh: "Refresh", loading: "Loading conversation…", empty: "No messages yet. Start the conversation below.",
     thinking: "Thinking…", retry: "Retry", dismiss: "Dismiss", send: "Send", sending: "Sending…",
     placeholder: "Write your message… (Hebrew or English)", disabled: "Sending is disabled in preview mode",
     attach: "➕ Attach a document", uploading: "Uploading…", uploaded: "Document added to the project",
+    senders: { client: "You", agency_admin: "Agency", supplier: "Supplier", ai_agent: "AI assistant", system: "System" },
+    artifact: { flow: "Process flow", wireframe: "Wireframe", table: "Table", checklist: "Checklist", download: "Download as image", copy: "Copy portal link", copied: "Link copied", email: "Open email draft" },
+    waitingConfirmation: "Waiting for your confirmation", openQuestions: "Open questions", notAllowed: "Actions that cannot be performed",
+    usagePaused: "AI is paused for now", usageToday: (used: number, limit: number) => `${used}/${limit} messages today`,
   },
 } as const;
 
@@ -72,14 +85,6 @@ const confirmLabels: Record<ActionKind, string> = {
   save_client_scenario: "Save scenario",
   supplier_review_response: "Send to agency",
   create_change_request: "Create change request",
-};
-
-const senderLabels: Record<ChatMessage["sender_type"], string> = {
-  client: "Client",
-  agency_admin: "Agency",
-  supplier: "Supplier",
-  ai_agent: "AI",
-  system: "System",
 };
 
 const visibilityLabels: Record<ChatMessage["visibility"], string> = {
@@ -115,9 +120,21 @@ function downloadArtifactImage(artifact: ChatArtifact, projectName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function ArtifactPanel({ artifact, projectId, projectName }: { artifact: ChatArtifact; projectId: string; projectName: string }) {
+function ArtifactPanel({
+  artifact,
+  projectId,
+  projectName,
+  language,
+}: {
+  artifact: ChatArtifact;
+  projectId: string;
+  projectName: string;
+  language: "he" | "en";
+}) {
   const [copied, setCopied] = useState(false);
-  const kind = artifact.type === "flow" ? "תרשים תהליך" : artifact.type === "wireframe" ? "סקיצה" : artifact.type === "table" ? "טבלה" : "רשימה";
+  const [processSelection, setProcessSelection] = useState<ProcessDetailsSelection | null>(null);
+  const artifactText = chatCopy[language].artifact;
+  const kind = artifactText[artifact.type];
   const portalUrl = `${window.location.origin}/?portalProject=${encodeURIComponent(projectId)}`;
   async function copyPortalLink() {
     try {
@@ -129,12 +146,18 @@ function ArtifactPanel({ artifact, projectId, projectName }: { artifact: ChatArt
     }
   }
   const emailHref = `mailto:?subject=${encodeURIComponent(`${projectName} — ${artifact.title}`)}&body=${encodeURIComponent(`הסקיצה והפרויקט זמינים בפורטל הלקוח:\n${portalUrl}`)}`;
-  return <section className={`chat-artifact artifact-${artifact.type}`} dir="rtl"><header><span>{kind}</span><strong>{artifact.title}</strong></header>{artifact.description ? <p>{artifact.description}</p> : null}
-    {artifact.type === "flow" ? <div className="artifact-flow">{(artifact.nodes ?? []).map((node, index) => <div key={node.id || index} className="artifact-flow-step"><article><span className="artifact-flow-index">{index + 1}</span><div><strong>{node.label}</strong>{node.detail ? <small>{node.detail}</small> : null}</div></article>{index < (artifact.nodes?.length ?? 0) - 1 ? <span className="artifact-flow-arrow" aria-hidden="true">←</span> : null}</div>)}</div> : null}
+  return <section className={`chat-artifact artifact-${artifact.type}`} dir={language === "he" ? "rtl" : "ltr"}><header><span>{kind}</span><strong>{artifact.title}</strong></header>{artifact.description ? <p>{artifact.description}</p> : null}
+    {artifact.type === "flow" ? <div className="artifact-flow">{(artifact.nodes ?? []).map((artifactNode, index) => {
+      const node: ClientProcessNodeData = { id: artifactNode.id || `artifact-step-${index}`, label: artifactNode.label, detail: artifactNode.detail };
+      const explanation = buildClientProcessExplanation(node, language);
+      const active = processSelection?.type === "node" && processSelection.node.id === node.id;
+      return <div key={node.id} className="artifact-flow-step"><ProcessNode node={node} explanation={explanation} language={language} active={active} onOpen={() => setProcessSelection({ type: "node", node, explanation })} onOpenTerm={(term) => setProcessSelection({ type: "term", term })} />{index < (artifact.nodes?.length ?? 0) - 1 ? <span className="artifact-flow-arrow" aria-hidden="true">{language === "he" ? "←" : "→"}</span> : null}</div>;
+    })}</div> : null}
     {artifact.type === "wireframe" ? <div className="artifact-wireframe">{(artifact.nodes ?? []).map((node, index) => <article key={node.id || index}><header><span className="artifact-window-dots" aria-hidden="true"><i /><i /><i /></span><strong>{node.label}</strong></header><div className="artifact-screen-body"><span className="artifact-screen-hero" /><span className="artifact-screen-line wide" /><span className="artifact-screen-line" />{node.detail ? <p>{node.detail}</p> : null}<span className="artifact-screen-action">פעולה</span></div></article>)}</div> : null}
     {artifact.type === "table" && artifact.columns?.length ? <div className="table-scroll"><table><thead><tr>{artifact.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{(artifact.rows ?? []).map((row, rowIndex) => <tr key={rowIndex}>{artifact.columns!.map((_, cellIndex) => <td key={cellIndex}>{row[cellIndex] ?? ""}</td>)}</tr>)}</tbody></table></div> : null}
     {artifact.type === "checklist" ? <ul className="artifact-checklist">{(artifact.items ?? []).map((item, index) => <li key={index}>✓ {item}</li>)}</ul> : null}
-    <footer className="artifact-share-actions"><button type="button" onClick={() => downloadArtifactImage(artifact, projectName)}>הורד כתמונה</button><button type="button" onClick={() => void copyPortalLink()}>{copied ? "הקישור הועתק" : "העתק קישור לפורטל"}</button><a href={emailHref}>פתח טיוטת מייל</a></footer>
+    <footer className="artifact-share-actions"><button type="button" onClick={() => downloadArtifactImage(artifact, projectName)}>{artifactText.download}</button><button type="button" onClick={() => void copyPortalLink()}>{copied ? artifactText.copied : artifactText.copy}</button><a href={emailHref}>{artifactText.email}</a></footer>
+    <ProcessNodeDetails selection={processSelection} language={language} onClose={() => setProcessSelection(null)} />
   </section>;
 }
 
@@ -160,11 +183,12 @@ function DraftPanel({ draft }: { draft: ChatDraft }) {
 }
 
 function ActionCard({
-  action, busy, error, onConfirm, onCancel,
+  action, busy, error, clientSafe, onConfirm, onCancel,
 }: {
   action: PendingAction;
   busy: boolean;
   error: string | null;
+  clientSafe: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -202,10 +226,10 @@ function ActionCard({
         {preview.client_visibility_effect && (
           <div><dt>Client visibility</dt><dd>{preview.client_visibility_effect}</dd></div>
         )}
-        {preview.internal_cost_effect && (
+        {!clientSafe && preview.internal_cost_effect && (
           <div><dt>Internal cost</dt><dd>{preview.internal_cost_effect}</dd></div>
         )}
-        {preview.margin_effect && (
+        {!clientSafe && preview.margin_effect && (
           <div><dt>Margin</dt><dd>{preview.margin_effect}</dd></div>
         )}
       </dl>
@@ -225,7 +249,7 @@ function ActionCard({
 export function ProjectChat({
   projectId, projectName, agent, title, subtitle,
   showVisibility = false, readOnly = false, readOnlyReason, suggestions = [], safetyNotice,
-  language = "en", allowAttachments = false, onFileUploaded,
+  language = "en", allowAttachments = false, onFileUploaded, clientSafe = false,
 }: ProjectChatProps) {
   const text = chatCopy[language];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -438,13 +462,13 @@ export function ProjectChat({
               dir={isRtl(message.body) ? "rtl" : "ltr"}
             >
               <p className="chat-meta">
-                <span>{senderLabels[message.sender_type]}</span>
+                <span>{text.senders[message.sender_type]}</span>
                 <span>{formatTime(message.created_at)}</span>
                 {showVisibility && <span className="chat-visibility">{visibilityLabels[message.visibility]}</span>}
               </p>
               <p className="chat-text">{message.body}</p>
-              {(message.structured_payload?.artifacts ?? []).map((artifact, index) => <ArtifactPanel key={`${message.id}-${index}`} artifact={artifact} projectId={projectId} projectName={projectName} />)}
-              {message.sender_type === "ai_agent" && message.structured_payload?.ai_draft && (
+              {(message.structured_payload?.artifacts ?? []).map((artifact, index) => <ArtifactPanel key={`${message.id}-${index}`} artifact={artifact} projectId={projectId} projectName={projectName} language={language} />)}
+              {!clientSafe && message.sender_type === "ai_agent" && message.structured_payload?.ai_draft && (
                 <p className="chat-draft-flag">AI draft — awaiting agency review</p>
               )}
             </article>
@@ -468,29 +492,30 @@ export function ProjectChat({
         <aside className="chat-side">
           {pendingActions.length > 0 && !readOnly && (
             <div className="chat-side-block">
-              <h3>Waiting for your confirmation</h3>
+              <h3>{text.waitingConfirmation}</h3>
               {pendingActions.map((action) => (
                 <ActionCard
                   key={action.id}
                   action={action}
                   busy={actionBusyId === action.id}
                   error={actionErrors[action.id] || null}
+                  clientSafe={clientSafe}
                   onConfirm={() => void confirmAction(action)}
                   onCancel={() => void dismissAction(action)}
                 />
               ))}
             </div>
           )}
-          {latestDraft && <DraftPanel draft={latestDraft} />}
+          {!clientSafe && latestDraft && <DraftPanel draft={latestDraft} />}
           {openQuestions.length > 0 && (
             <div className="chat-side-block">
-              <h3>Open questions</h3>
+              <h3>{text.openQuestions}</h3>
               <ul>{openQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul>
             </div>
           )}
-          {rejectedActions.length > 0 && (
+          {!clientSafe && rejectedActions.length > 0 && (
             <div className="chat-side-block">
-              <h3>Not allowed</h3>
+              <h3>{text.notAllowed}</h3>
               <ul>
                 {rejectedActions.map((action, i) => (
                   <li key={i}>
@@ -510,8 +535,8 @@ export function ProjectChat({
           <div className="chat-usage-bar">
             <span>
               {usage.paused
-                ? "AI is paused for now"
-                : `${usage.messagesToday}/${usage.dailyMessageLimit} messages today`}
+                ? text.usagePaused
+                : text.usageToday(usage.messagesToday, usage.dailyMessageLimit)}
             </span>
             <span className="chat-usage-track">
               <span
