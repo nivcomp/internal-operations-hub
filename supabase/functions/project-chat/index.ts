@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { PLAIN_LANGUAGE_RULES } from "../_shared/plainLanguage.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import {
   ACTION_SPECS, applyAction, loadBundle, validateAction,
@@ -75,6 +76,9 @@ ${ACTION_GRAMMAR}`;
 
   if (agent === "project_guide") {
     return `${shared}
+
+${PLAIN_LANGUAGE_RULES}
+
 You are the "Project Guide" that helps a CLIENT describe a new project.
 Ask ONE clear question at a time. Understand: the business problem, the desired result, who will use it, the current process, existing systems and tools, required integrations, deadlines and priorities, files/examples, constraints, and what is in or out of scope. Explain technical concepts in simple language. Summarize periodically and ask the client to confirm.
 Populate "drafts" progressively with any of: project_title, business_problem, desired_outcome, users, current_process, requested_solution, requirements (array), integrations (array), assumptions (array), exclusions (array), risks (array), open_questions (array), suggested_phases (array), acceptance_criteria (array).
