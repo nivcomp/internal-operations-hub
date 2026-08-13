@@ -3011,3 +3011,57 @@ html, body, #root { max-width: 100%; }
   .lead-promote-box { align-items: stretch; flex-direction: column; }
   .lead-promote-box label, .lead-promote-box button { width: 100%; }
 }
+
+/* ---- Client project workspace (chat-first) ---- */
+.client-space { max-width: 1180px; }
+.client-space-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: space-between; }
+.client-space-lang { display: flex; gap: 0.35rem; }
+.client-space-stages { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; }
+.client-space-stages li {
+  display: flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.75rem; border-radius: 999px;
+  background: var(--color-surface-alt, #f1f5f9); color: var(--text-muted, #6b7280); font-size: 0.85rem;
+}
+.client-space-stages li span {
+  display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+  background: #fff; font-size: 0.75rem;
+}
+.client-space-stages li.is-done { background: var(--color-accent-soft, #e6eefb); color: inherit; }
+.client-space-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.client-space-chat { display: grid; gap: 1rem; min-width: 0; }
+.client-space-chat .chat-panel { min-height: 62vh; }
+.client-space-side { display: grid; gap: 1rem; min-width: 0; }
+.client-file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.client-file-list li { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; font-size: 0.9rem; }
+
+/* Interactive flow canvas */
+.flow-canvas { display: grid; gap: 0.9rem; }
+.flow-canvas-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
+.flow-canvas-count { font-size: 0.75rem; color: var(--text-muted, #6b7280); }
+.flow-canvas-tree { display: grid; gap: 0.15rem; }
+.flow-canvas-level { display: grid; gap: 0.15rem; justify-items: center; }
+.flow-canvas-link { display: block; width: 2px; height: 14px; background: var(--color-border, #e2e8f0); }
+.flow-canvas-row { display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: center; }
+.flow-canvas-node {
+  display: flex; align-items: center; gap: 0.45rem; padding: 0.5rem 0.7rem; border-radius: 0.7rem;
+  border: 1px solid var(--color-border, #e2e8f0); background: #fff; cursor: pointer; font-size: 0.85rem;
+  max-width: 15rem; text-align: start;
+}
+.flow-canvas-node:hover { border-color: var(--color-accent, #3b82f6); }
+.flow-canvas-node.is-active { border-color: var(--color-accent, #3b82f6); background: var(--color-accent-soft, #e6eefb); }
+.flow-canvas-icon { font-size: 1rem; }
+.flow-canvas-detail {
+  border: 1px solid var(--color-border, #e2e8f0); border-radius: 0.75rem; padding: 0.75rem; display: grid; gap: 0.6rem;
+  background: var(--color-surface-alt, #f8fafc); font-size: 0.9rem;
+}
+.flow-canvas-detail header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.flow-canvas-deliverable { display: grid; gap: 0.5rem; justify-items: start; }
+.flow-crm-preview { display: grid; gap: 0.5rem; }
+.flow-crm-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.flow-crm-column { display: grid; gap: 0.35rem; align-content: start; }
+.flow-crm-column-title { font-size: 0.72rem; padding-bottom: 0.25rem; border-bottom: 2px solid; }
+.flow-crm-card { background: #fff; border: 1px solid var(--color-border, #e2e8f0); border-radius: 0.5rem; padding: 0.35rem 0.45rem; font-size: 0.78rem; }
+
+@media (max-width: 900px) {
+  .client-space-grid { grid-template-columns: 1fr; }
+  .client-space-chat .chat-panel { min-height: 55vh; }
+}
