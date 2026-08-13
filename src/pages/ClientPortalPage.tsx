@@ -103,7 +103,6 @@ export function ClientPortalPage({
     return saved === "en" || saved === "he" ? saved : (navigator.language.toLowerCase().startsWith("he") ? "he" : "en");
   });
   const project = clientProjects.find((item) => item.id === activeProjectId) ?? clientProjects[0];
-  const t = portalCopy[language];
 
   function changeLanguage(next: PortalLanguage) {
     setLanguage(next);
@@ -143,6 +142,7 @@ export function ClientPortalPage({
     mvpStale: `You told us new things since the last version of ${thing.short}.`,
     finishAndRefresh: `I’m done explaining — please update ${thing.short}`,
   };
+  const t = { ...portalCopy[language], ...deliverableCopy };
 
   useEffect(() => {
     if (!project || (focusMode !== "chat" && focusMode !== "mvp")) return;
