@@ -46,6 +46,14 @@ export async function getPrototypeFreshness(projectId: string) {
   };
 }
 
+/** Solution type of the project's deliverable, used for jargon-free client wording. */
+export async function getProjectSolutionKind(projectId: string): Promise<PrototypeKind | null> {
+  const { data } = await db.from("project_prototypes").select("prototype_kind")
+    .eq("project_id", projectId).order("updated_at", { ascending: false }).limit(1);
+  const kind = data?.[0]?.prototype_kind as PrototypeKind | undefined;
+  return kind && ["app", "whatsapp", "automation"].includes(kind) ? kind : null;
+}
+
 export async function generatePrototype(input: { projectId: string; prototypeId?: string; kind: PrototypeKind; title?: string; instructions?: string; sourceText?: string }) {
   const { data, error } = await supabase.functions.invoke("project-prototype", { body: { action: "generate", ...input } });
   if (error) fail(error, "Generate prototype"); if (data?.error) fail(data.error, "Generate prototype");
