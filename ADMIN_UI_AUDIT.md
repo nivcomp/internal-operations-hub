@@ -69,8 +69,10 @@ Classification: `WORKING`, `PARTIALLY_WORKING`, `PLACEHOLDER`, `DEAD / NO EFFECT
 - `WORKING`: Simple primary navigation now contains only Home, CRM, Projects and Suppliers. Lead conversations, tasks and finance remain reachable contextually; the complete operator surface remains behind `מערכת מתקדמת`.
 - `WORKING`: Projects now open a Simple workspace with exactly four areas: `אפיון`, `תמחור והצעה`, `ביצוע וספק`, and `סטטוס`.
 - `WORKING`: The daily pricing form reads and writes the canonical `project_estimates` record, requires explicit final-price approval, and reveals the existing detailed estimate editor only on request.
+- `WORKING`: New pricing defaults to ILS and the daily selector presents ILS, USD and GBP in that order without silently converting amounts.
 - `WORKING`: Proposal creation reuses `ProposalPanel` only after price approval.
 - `WORKING`: Supplier handoff uses only `supplier_brief` documents whose audience is `supplier`, with preview, print, PDF-save and supplier-portal actions.
+- `WORKING`: The Simple handoff selector displays existing suppliers with status labels; pending suppliers can be planned but cannot satisfy execution readiness, while inactive suppliers are visible and disabled.
 - `WORKING`: A dedicated authenticated supplier-brief print route now exists and revalidates document type and audience before rendering.
 - `WORKING`: Project chat has an explicit `לתחילת השיחה` control so a promoted lead's first message is reachable without manual scrolling.
 - `WORKING`: Copilot keeps the current Simple project/area context and opens Simple project records instead of forcing Advanced Mode.

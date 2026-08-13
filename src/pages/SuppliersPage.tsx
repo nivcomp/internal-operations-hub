@@ -17,7 +17,7 @@ const emptyForm = {
   status: "pending_review" as NewSupplierInput["status"],
   mainSkills: "",
   hourlyRate: "",
-  currency: "GBP",
+  currency: "ILS",
   weeklyAvailabilityHours: "",
   notes: "",
 };
@@ -62,7 +62,7 @@ export function SuppliersPage({ onSupplierSelect }: SuppliersPageProps) {
         status: form.status,
         mainSkills: form.mainSkills.split(",").map((s) => s.trim()).filter(Boolean),
         hourlyRate: Number(form.hourlyRate) || 0,
-        currency: form.currency.trim() || "GBP",
+        currency: form.currency.trim() || "ILS",
         weeklyAvailabilityHours: Number(form.weeklyAvailabilityHours) || 0,
         notes: form.notes.trim(),
       });
@@ -169,10 +169,9 @@ export function SuppliersPage({ onSupplierSelect }: SuppliersPageProps) {
               <label>
                 Currency
                 <select value={form.currency} onChange={(e) => set("currency", e.target.value)}>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
                   <option value="ILS">ILS</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
                 </select>
               </label>
               <label>

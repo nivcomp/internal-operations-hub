@@ -1,5 +1,24 @@
 # Work Log
 
+### 2026-08-13 — Simple currency and supplier assignment refinements
+
+**Work unit**
+Make the Simple pricing and supplier handoff controls match the agency's actual daily defaults.
+
+**Changes**
+- Made ILS the application and new-estimate default, with the visible selector ordered ILS, USD and GBP.
+- Kept existing estimate values unchanged; choosing another currency changes the recorded/displayed unit and does not perform a silent exchange conversion.
+- Made all existing suppliers visible in the Simple project handoff selector with approved, pending-review and inactive labels.
+- Allowed a pending-review supplier to be assigned for planning while keeping execution visibly blocked until supplier approval; inactive suppliers remain visible but cannot be assigned.
+- Tightened the Simple ready-to-start summary so it also requires an approved assigned supplier and estimate items assigned to that supplier.
+
+**Verification**
+- `pnpm run build` passed (TypeScript + Vite, 288 modules); the existing large-chunk warning remains.
+- `git diff --check` passed.
+
+**Next**
+- Publish the branch update and verify the ILS/USD/GBP selector plus the real supplier's status in the authenticated production project.
+
 ### 2026-08-13 — Simplified agency-admin daily workflow
 
 **Work unit**

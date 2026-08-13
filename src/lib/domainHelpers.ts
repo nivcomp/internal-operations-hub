@@ -1,15 +1,15 @@
 import type { Client, Project, ProjectPricing, ProjectStatus, Scope, Supplier } from "../types/domain";
 
-export const currency = new Intl.NumberFormat("en-GB", {
+export const currency = new Intl.NumberFormat("he-IL", {
   style: "currency",
-  currency: "GBP",
+  currency: "ILS",
   maximumFractionDigits: 0,
 });
 
 /** Formats a supplier rate in the currency recorded on their profile. */
 export function formatRate(amount: number, code: string) {
   try {
-    return new Intl.NumberFormat("en-GB", { style: "currency", currency: code || "GBP", maximumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat("he-IL", { style: "currency", currency: code || "ILS", maximumFractionDigits: 0 }).format(amount);
   } catch {
     return currency.format(amount);
   }

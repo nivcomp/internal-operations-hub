@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-08-13 — ILS is the operating default and pending suppliers may be planned
+
+**Decision**
+New agency estimates and generic system money displays default to ILS, with USD and GBP offered next in that order. Changing an estimate currency changes its unit and never performs an implicit exchange conversion. Simple supplier handoff shows suppliers of every status; pending-review suppliers may be associated for planning, inactive suppliers may not be assigned, and execution readiness requires an approved assigned supplier.
+
+**Reason**
+The agency operates primarily in shekels, while hiding a real supplier because approval is pending makes the daily workflow look incomplete. Planning association and authorization to begin work are separate decisions.
+
+**Consequences**
+Existing saved amounts and currencies are not rewritten. Supplier status is explicit at selection time, and the Simple readiness indicator cannot imply that a pending supplier is authorized to execute.
+
 ## 2026-08-13 — Simple Mode is the daily agency workflow, not a second system
 
 **Decision**

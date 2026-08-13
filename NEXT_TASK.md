@@ -8,6 +8,8 @@ Simple Mode now has four primary destinations: Home, CRM, Projects and Suppliers
 
 The pricing area reads and writes the canonical `project_estimates` record, makes the hourly calculation rate explicit, shows the budget/cost/recommended price/margin/risk summary, requires explicit fixed-price approval, and reuses the existing proposal panel. The supplier area reuses supplier-audience `supplier_brief` documents, provides an authenticated printable/PDF-save view, and never renders client price or agency margin. The project chat now has an explicit jump to the start of the promoted lead conversation.
 
+New estimates now default to ILS. The Simple pricing selector is ordered ILS, USD and GBP and records the selected unit without silently converting existing numbers. The Simple supplier handoff selector shows every existing supplier and its status. A pending-review supplier can be associated for planning, but the handoff remains blocked until the supplier is approved and estimate items are assigned; inactive suppliers are visible but disabled.
+
 The full control audit is recorded in `ADMIN_UI_AUDIT.md`. TypeScript and the production build pass. The local login boundary loads correctly, but an authenticated real-project browser smoke test could not be completed because no signed-in browser session was available for the matching local code. No production deployment or merge is part of this work unit.
 
 A small UI refinement was also completed: the public client/lead registration link now shows a scannable QR code in both the advanced Access Management page and the Simple Mode “Share links” card. The code updates automatically when the link is rotated and the build passes.
@@ -18,8 +20,8 @@ Review the pull request and run one authenticated preview smoke test on a real b
 
 1. Open the project from Simple Projects and confirm the four areas and plain-language status summary.
 2. Open Discovery and verify the complete promoted lead transcript, including the `לתחילת השיחה` control.
-3. Change the hourly calculation rate, confirm the canonical estimate updates, approve a fixed price and create a proposal draft.
-4. Assign an approved supplier, generate a supplier brief, verify no internal pricing appears, and test preview, Print and browser Save as PDF.
+3. Confirm ILS is the new-estimate default, change the hourly calculation rate, test the ILS/USD/GBP selector, confirm the canonical estimate updates, approve a fixed price and create a proposal draft.
+4. Confirm the real supplier appears with the correct status, assign it, verify a pending supplier does not mark the project ready, generate a supplier brief, verify no internal pricing appears, and test preview, Print and browser Save as PDF.
 5. Open the same project in Advanced Mode and confirm the same estimate/proposal/document records and unchanged commercial/audit history.
 6. Verify a client and supplier account still see only their existing role-safe records.
 

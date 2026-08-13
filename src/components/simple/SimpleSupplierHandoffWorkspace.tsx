@@ -52,14 +52,23 @@ export function SimpleSupplierHandoffWorkspace({
   const supplierHours = assignedItems.reduce((sum, item) => sum + Number(item.estimated_hours_max || 0), 0);
   const schedule = projectSchedules.find((item) => item.projectId === project.id);
   const activeScope = scopes.find((item) => item.projectId === project.id);
-  const ready = canWorkStart(project, scopes);
   const assignedSuppliers = project.assignedSupplierIds
     .map((id) => suppliers.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const selectableSuppliers = [...suppliers].sort((a, b) => {
+    const statusOrder = { approved: 0, pending_review: 1, inactive: 2 };
+    return statusOrder[a.status] - statusOrder[b.status] || a.name.localeCompare(b.name, "he");
+  });
+  const selectedSupplier = suppliers.find((item) => item.id === supplierId);
+  const ready = canWorkStart(project, scopes)
+    && assignedSuppliers.length > 0
+    && assignedSuppliers.every((item) => item.status === "approved")
+    && assignedItems.length > 0;
   const blockers = [
     ...(activeScope?.status === "approved" ? [] : ["היקף העבודה עדיין לא אושר"]),
     ...(project.paymentGateStatus === "blocked" ? ["טרם התקבל תשלום או בנק שעות מתאים"] : []),
     ...(assignedSuppliers.length ? [] : ["טרם שויך ספק"]),
+    ...(assignedSuppliers.some((item) => item.status !== "approved") ? ["הספק המשויך עדיין לא אושר לביצוע"] : []),
     ...(assignedItems.length ? [] : ["סעיפי האומדן עדיין אינם משויכים לספק"]),
   ];
   const selectedDocument = documents.find((item) => item.id === selectedDocumentId);
@@ -117,14 +126,23 @@ export function SimpleSupplierHandoffWorkspace({
         </div>
 
         <div className="simple-supplier-actions">
-          <label>בחירת ספק מאושר
+          <label>בחירת ספק
             <select value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
               <option value="">בחר ספק</option>
-              {suppliers.filter((item) => item.status === "approved").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              {selectableSuppliers.map((item) => (
+                <option key={item.id} value={item.id} disabled={item.status === "inactive"}>
+                  {item.name} · {item.status === "approved" ? "מאושר" : item.status === "pending_review" ? "ממתין לאישור" : "לא פעיל"}
+                </option>
+              ))}
             </select>
           </label>
-          <button type="button" disabled={busy || !supplierId || project.assignedSupplierIds.includes(supplierId)} onClick={() => void assignSupplier()}>שייך ספק</button>
+          <button type="button" disabled={busy || !supplierId || selectedSupplier?.status === "inactive" || project.assignedSupplierIds.includes(supplierId)} onClick={() => void assignSupplier()}>שייך ספק</button>
           <button type="button" className="primary-button" disabled={busy || !assignedSuppliers.length} onClick={() => void generateBrief()}>צור תדריך לספק</button>
+          <p className="simple-note simple-action-note">
+            {selectedSupplier?.status === "pending_review"
+              ? "אפשר לשייך את הספק לתכנון, אך הפרויקט יישאר חסום לביצוע עד שהספק יאושר."
+              : "כל הספקים הקיימים מוצגים כאן; ספק לא פעיל מוצג לצורך זיהוי אך אינו ניתן לשיוך."}
+          </p>
         </div>
 
         {documents.length ? <div className="supplier-brief-picker">

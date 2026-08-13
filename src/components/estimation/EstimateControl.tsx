@@ -80,7 +80,7 @@ export function EstimateControl({ projectId }: { projectId: string }) {
         <p className="muted-text">No estimate exists for this project yet.</p>
         <div className="action-row">
           <button className="primary-button" type="button" disabled={busy}
-            onClick={() => void run(() => createEstimate(projectId, { status: "draft" }, 1), "Estimate created.")}>
+            onClick={() => void run(() => createEstimate(projectId, { status: "draft", currency: "ILS" }, 1), "Estimate created.")}>
             {busy ? "Creating…" : "Create first estimate"}
           </button>
         </div>
@@ -312,7 +312,11 @@ export function EstimateControl({ projectId }: { projectId: string }) {
             onBlur={(e) => patchEstimate({ client_calculation_rate: Number(e.target.value) })} />
         </label>
         <label>Currency
-          <input defaultValue={est.currency} onBlur={(e) => patchEstimate({ currency: e.target.value || "GBP" })} />
+          <select defaultValue={est.currency || "ILS"} onChange={(e) => void patchEstimate({ currency: e.target.value || "ILS" })}>
+            <option value="ILS">ILS · שקל חדש</option>
+            <option value="USD">USD · דולר</option>
+            <option value="GBP">GBP · פאונד</option>
+          </select>
         </label>
         <label>Yaniv internal hourly cost
           <input type="number" min={0} defaultValue={est.yaniv_internal_hourly_cost}

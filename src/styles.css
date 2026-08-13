@@ -2076,6 +2076,8 @@ kbd {
 .simple-pricing-workspace, .simple-supplier-workspace, .simple-project-status { padding: clamp(1rem, 2vw, 1.6rem); }
 .simple-pricing-rate, .simple-fixed-price, .simple-supplier-actions { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; padding: 1rem; background: #f4f7f4; border-radius: 16px; }
 .simple-pricing-rate label, .simple-fixed-price label, .simple-supplier-actions label { display: grid; gap: .35rem; font-weight: 700; min-width: min(100%, 220px); }
+.simple-pricing-rate select, .simple-supplier-actions select { background: #fff; }
+.simple-action-note { flex: 1 0 100%; margin: 0; }
 .money-input { display: grid; grid-template-columns: 1fr auto; align-items: center; background: #fff; border: 1px solid #ccd8d0; border-radius: 12px; overflow: hidden; }
 .money-input input { border: 0; border-radius: 0; min-width: 0; }
 .money-input b { padding: 0 .8rem; color: #496056; }

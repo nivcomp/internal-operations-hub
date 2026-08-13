@@ -14,6 +14,11 @@ import { EstimateControl } from "../estimation/EstimateControl";
 import { ProposalPanel } from "../proposal/ProposalPanel";
 
 const emptyBundle: EstimateBundle = { estimates: [], items: [], allocations: [], reviews: [], adjustments: [], scenarios: [] };
+const currencyOptions = [
+  { value: "ILS", label: "₪ שקל חדש (ברירת מחדל)", mark: "₪" },
+  { value: "USD", label: "$ דולר", mark: "$" },
+  { value: "GBP", label: "£ פאונד", mark: "£" },
+];
 
 export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
   const { refreshCommercials } = useAppData();
@@ -24,9 +29,11 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
   const [notice, setNotice] = useState("");
   const [rate, setRate] = useState(0);
   const [finalPrice, setFinalPrice] = useState(0);
+  const [currency, setCurrency] = useState("ILS");
   const [proposalOpen, setProposalOpen] = useState(false);
   const rateRef = useRef<HTMLInputElement | null>(null);
   const finalPriceRef = useRef<HTMLInputElement | null>(null);
+  const currencyRef = useRef<HTMLSelectElement | null>(null);
 
   async function reload() {
     const next = await fetchProjectEstimation(projectId);
@@ -34,6 +41,7 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
     const current = next.estimates.find((item) => item.status !== "superseded") ?? next.estimates[0];
     setRate(current?.client_calculation_rate ?? 0);
     setFinalPrice(current?.final_fixed_price ?? current?.recommended_fixed_price ?? 0);
+    setCurrency(current?.currency || "ILS");
   }
 
   useEffect(() => {
@@ -50,7 +58,7 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
 
   const calculations = useMemo(() => {
     if (!estimate) return null;
-    const liveEstimate = { ...estimate, client_calculation_rate: Math.max(0, rate) } as ProjectEstimate;
+    const liveEstimate = { ...estimate, currency, client_calculation_rate: Math.max(0, rate) } as ProjectEstimate;
     const hours = computeHours(liveEstimate, items, selectionFromItems(items));
     const budget = computeClientBudget(liveEstimate, hours, adjustments);
     const internal = computeInternalCost(liveEstimate, allocations, hours);
@@ -65,11 +73,12 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
     if (hours.unassignedMax > 0) warnings.push(`${hours.unassignedMax} שעות ביצוע עדיין אינן משויכות לספק.`);
     if (reviews.some((review) => review.status === "waiting_for_supplier")) warnings.push("ממתינים לבדיקת שעות של ספק.");
     return { liveEstimate, hours, budget, internal, recommended, chosen, margin, warnings };
-  }, [estimate, items, allocations, adjustments, reviews, rate, finalPrice]);
+  }, [estimate, items, allocations, adjustments, reviews, rate, finalPrice, currency]);
 
   useCopilotForm(`simple-pricing:${projectId}`, estimate && calculations ? {
     formSection: "Simple project pricing",
     fields: [
+      { name: "currency", label: "מטבע", filled: Boolean(currency), required: true, value: currency },
       { name: "client_calculation_rate", label: "מחיר חישוב לשעה", filled: rate > 0, required: true, value: String(rate) },
       { name: "final_fixed_price", label: "מחיר סופי קבוע", filled: finalPrice > 0, required: true, value: String(finalPrice) },
     ],
@@ -79,8 +88,14 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
 
   useEffect(() => onCopilotFormIntent("*", (intent) => {
     if (intent.kind === "focus") {
+      if (intent.field === "currency") currencyRef.current?.focus();
       if (intent.field === "client_calculation_rate") rateRef.current?.focus();
       if (intent.field === "final_fixed_price") finalPriceRef.current?.focus();
+      return;
+    }
+    if (intent.field === "currency") {
+      const nextCurrency = String(intent.value).toUpperCase();
+      if (currencyOptions.some((option) => option.value === nextCurrency)) setCurrency(nextCurrency);
       return;
     }
     const value = Number(String(intent.value).replace(/[^0-9.]/g, ""));
@@ -117,10 +132,11 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
 
   const { hours, budget, internal, recommended, margin, warnings } = calculations;
   const approved = estimate.approved_by_yaniv && estimate.final_fixed_price != null;
-  const currencyMark = estimate.currency === "ILS" ? "₪" : estimate.currency;
+  const currencyMark = currencyOptions.find((option) => option.value === currency)?.mark ?? currency;
 
   async function saveRate() {
     await run(() => updateEstimate(estimate.id, {
+      currency,
       client_calculation_rate: rate,
       estimated_hours_min: hours.totalMin,
       estimated_hours_max: hours.totalMax,
@@ -136,6 +152,7 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
     await run(async () => {
       await snapshotEstimateVersion(estimate, items, "Fixed price approved in Simple Mode");
       await updateEstimate(estimate.id, {
+        currency,
         final_fixed_price: price,
         approved_by_yaniv: true,
         client_visible: true,
@@ -159,17 +176,23 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
         </header>
 
         <div className="simple-pricing-rate">
+          <label>מטבע
+            <select ref={currencyRef} data-copilot-field="currency" value={currency} onChange={(event) => setCurrency(event.target.value)}>
+              {currencyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
           <label>מחיר חישוב לשעה
             <span className="money-input"><input ref={rateRef} data-copilot-field="client_calculation_rate" type="number" min="0" value={rate} onChange={(event) => setRate(Number(event.target.value))} /><b>{currencyMark}</b></span>
           </label>
           <button type="button" disabled={busy || rate <= 0} onClick={() => void saveRate()}>שמור מחיר לשעה</button>
+          <p className="simple-note simple-action-note">שינוי המטבע משנה את יחידת התמחור בלבד ואינו ממיר אוטומטית את הסכומים.</p>
         </div>
 
         <dl className="simple-pricing-facts">
           <div><dt>שעות מוערכות</dt><dd>{hours.totalMin}–{hours.totalMax}</dd></div>
-          <div><dt>עלות פנימית</dt><dd>{formatMoney(internal.max, estimate.currency)}</dd></div>
-          <div><dt>טווח תקציב</dt><dd>{formatMoney(budget.min, estimate.currency)}–{formatMoney(budget.max, estimate.currency)}</dd></div>
-          <div className="recommended"><dt>מחיר מומלץ</dt><dd>{formatMoney(recommended, estimate.currency)}</dd></div>
+          <div><dt>עלות פנימית</dt><dd>{formatMoney(internal.max, currency)}</dd></div>
+          <div><dt>טווח תקציב</dt><dd>{formatMoney(budget.min, currency)}–{formatMoney(budget.max, currency)}</dd></div>
+          <div className="recommended"><dt>מחיר מומלץ</dt><dd>{formatMoney(recommended, currency)}</dd></div>
           <div><dt>רווח צפוי</dt><dd>{margin}%</dd></div>
         </dl>
 
@@ -185,7 +208,7 @@ export function SimplePricingWorkspace({ projectId }: { projectId: string }) {
           <button type="button" onClick={() => setFinalPrice(recommended)}>קבל את ההמלצה</button>
           <button type="button" className="primary-button" disabled={busy || (finalPrice || recommended) <= 0} onClick={() => void approvePrice()}>אשר מחיר סופי</button>
         </div> : <div className="simple-next-action">
-          <div><strong>המחיר הסופי אושר: {formatMoney(estimate.final_fixed_price ?? recommended, estimate.currency)}</strong><span>השלב הבא הוא יצירת הצעה לחתימת הלקוח.</span></div>
+          <div><strong>המחיר הסופי אושר: {formatMoney(estimate.final_fixed_price ?? recommended, currency)}</strong><span>השלב הבא הוא יצירת הצעה לחתימת הלקוח.</span></div>
           <button type="button" className="primary-button" onClick={() => setProposalOpen(true)}>צור הצעה ללקוח</button>
         </div>}
 
