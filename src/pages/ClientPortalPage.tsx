@@ -117,6 +117,32 @@ export function ClientPortalPage({
   const [mvpFreshness, setMvpFreshness] = useState({ hasMvp: false, isStale: false, version: undefined as number | undefined });
   const [focusMode, setFocusMode] = useState<"overview" | "spec" | "mvp" | "chat">("overview");
   const [fullScreen, setFullScreen] = useState(false);
+  const [solutionKind, setSolutionKind] = useState<SolutionKind | null>(null);
+
+  useEffect(() => {
+    if (!project) { setSolutionKind(null); return; }
+    let active = true;
+    void getProjectSolutionKind(project.id)
+      .then((kind) => { if (active) setSolutionKind(kind); })
+      .catch(() => { if (active) setSolutionKind(null); });
+    return () => { active = false; };
+  }, [project?.id]);
+
+  /** What the client actually gets, in their own words (no jargon). */
+  const thing = deliverable(solutionKind ?? guessSolutionKind(project?.name, project?.summary), language);
+  const deliverableCopy = language === "he" ? {
+    mvpTab: thing.name,
+    refreshMvp: `רוצה שנעדכן את ${thing.short}?`,
+    refreshMvpHelp: "כתוב במילים שלך מה השתנה או מה חסר, ונחזור אליך עם גרסה מעודכנת.",
+    mvpStale: `סיפרת לנו דברים חדשים מאז הגרסה האחרונה של ${thing.short}.`,
+    finishAndRefresh: `סיימתי להסביר — עדכנו את ${thing.short}`,
+  } : {
+    mvpTab: thing.name,
+    refreshMvp: `Want us to update ${thing.short}?`,
+    refreshMvpHelp: "Tell us in your own words what changed or what is missing, and we will send you an updated version.",
+    mvpStale: `You told us new things since the last version of ${thing.short}.`,
+    finishAndRefresh: `I’m done explaining — please update ${thing.short}`,
+  };
 
   useEffect(() => {
     if (!project || (focusMode !== "chat" && focusMode !== "mvp")) return;
