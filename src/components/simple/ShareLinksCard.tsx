@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { copyToClipboard } from "../../services/accessApi";
+import { QrCode } from "../ui/QrCode";
 import {
   listRegistrations, loadRegistrationSettings, publicRegistrationLink, saveRegistrationSettings,
   type PublicRegistration, type RegistrationSettings,
