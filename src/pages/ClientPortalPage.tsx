@@ -10,7 +10,8 @@ import { TargetDateForm } from "../components/project/TargetDateForm";
 import { ProposalPanel } from "../components/proposal/ProposalPanel";
 import { ProjectDocumentsPanel } from "../components/project/ProjectDocumentsPanel";
 import { PrototypeStudio } from "../components/prototype/PrototypeStudio";
-import { getPrototypeFreshness } from "../services/prototypeApi";
+import { getPrototypeFreshness, getProjectSolutionKind } from "../services/prototypeApi";
+import { deliverable, guessSolutionKind, type SolutionKind } from "../lib/clientWording";
 import { canWorkStart, currency, getClientById, statusLabels } from "../lib/domainHelpers";
 import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
 
@@ -44,17 +45,15 @@ const portalCopy = {
     requests: "בקשות פתוחות", approvals: "ממתינים לאישור שלך", estimate: "הערכת הפרויקט",
     estimatePending: "האומדן יופיע לאחר שהסוכנות תאשר לשתף אותו.", hours: "שעות", budget: "תקציב משוער",
     fixedPrice: "מחיר קבוע מאושר", next: "מה השלב הבא?", chatTitle: "שיחה על הפרויקט",
-    price: "מחיר", pricePending: "יוצג לאחר אישור מחיר קבוע", overviewTab: "מצב הפרויקט", specTab: "האפיון שלי",
-    mvpTab: "ה־MVP שלי", chatTab: "שיחה ושינויים", fullScreen: "מסך מלא", exitFullScreen: "צא ממסך מלא",
-    approvedSpec: "האפיון המאושר", building: "מה אנחנו בונים", specPending: "האפיון עדיין בבדיקה. הוא יופיע כאן לאחר אישור.",
+    price: "מחיר", pricePending: "יוצג לאחר אישור מחיר קבוע", overviewTab: "מצב הפרויקט", specTab: "מה ביקשתי",
+    chatTab: "שיחה ושינויים", fullScreen: "מסך מלא", exitFullScreen: "צא ממסך מלא",
+    approvedSpec: "סיכום מאושר", building: "מה אנחנו בונים", specPending: "הסיכום עדיין בבדיקה אצלנו ויופיע כאן ברגע שיאושר.",
     version: "גרסה", acceptance: "איך נדע שזה עובד",
-    refreshMvp: "בקש עדכון MVP", refreshMvpHelp: "הסבר מה השתנה משמעותית. הבקשה תעבור לבדיקה ותיכלל בגרסת ה־MVP הבאה.",
-    refreshMvpPlaceholder: "לדוגמה: נוספה הרשמה עם קוד SMS ונדרש מסך אישור חדש", sendRefresh: "שלח בקשת עדכון",
-    refreshSent: "הבקשה נשמרה. האדמין יבדוק את השעות ויצור גרסת MVP חדשה.",
-    mvpStale: "יש שיחה חדשה מאז גרסת ה־MVP. אם הוספת שינוי משמעותי, בקש גרסה מעודכנת.", finishAndRefresh: "סיימתי להסביר — בקש MVP מעודכן",
+    refreshMvpPlaceholder: "לדוגמה: רוצה שגם יישלח לי מייל אחרי כל פנייה", sendRefresh: "שלח את הבקשה",
+    refreshSent: "הבקשה נשמרה. נעבור עליה ונשלח לך עדכון.",
     chatSubtitle: "אפשר לשאול, לבקש דוגמה או סקיצה ולראות כאן את התוצרים המעודכנים מהשיחה.",
     preview: "תצוגת אדמין של מה שהלקוח רשאי לראות. שליחת הודעות בשם הלקוח חסומה.",
-    details: "מסמכים, הצעה ופרטים נוספים", stages: ["אפיון", "אישור והצעה", "ביצוע", "מסירה"],
+    details: "מסמכים, הצעה ופרטים נוספים", stages: ["מבינים מה צריך", "אישור והצעה", "בנייה", "מסירה"],
   },
   en: {
     workspace: "My portal", subtitle: "Your project, decisions and next step in one place.", project: "Project",
@@ -62,17 +61,15 @@ const portalCopy = {
     requests: "Open requests", approvals: "Waiting for your approval", estimate: "Project estimate",
     estimatePending: "The estimate will appear after the agency approves it for sharing.", hours: "Hours", budget: "Estimated budget",
     fixedPrice: "Approved fixed price", next: "What happens next?", chatTitle: "Project conversation",
-    price: "Price", pricePending: "Shown after a fixed price is approved", overviewTab: "Project status", specTab: "My specification",
-    mvpTab: "My MVP", chatTab: "Conversation & changes", fullScreen: "Full screen", exitFullScreen: "Exit full screen",
-    approvedSpec: "Approved specification", building: "What we are building", specPending: "The specification is under review and will appear after approval.",
+    price: "Price", pricePending: "Shown after a fixed price is approved", overviewTab: "Project status", specTab: "What I asked for",
+    chatTab: "Conversation & changes", fullScreen: "Full screen", exitFullScreen: "Exit full screen",
+    approvedSpec: "Approved summary", building: "What we are building", specPending: "The summary is still being reviewed and will appear here once it is approved.",
     version: "Version", acceptance: "How we know it works",
-    refreshMvp: "Request an MVP update", refreshMvpHelp: "Describe the significant change. The agency will review it and include it in the next MVP version.",
-    refreshMvpPlaceholder: "For example: add SMS sign-in and a new confirmation screen", sendRefresh: "Send update request",
-    refreshSent: "The request was saved. The agency will review the hours and create a new MVP version.",
-    mvpStale: "There is new conversation since the MVP version. If you added a significant change, request an update.", finishAndRefresh: "I’m done explaining — request an updated MVP",
+    refreshMvpPlaceholder: "For example: also send me an email after every enquiry", sendRefresh: "Send my request",
+    refreshSent: "Your request was saved. We will review it and send you an update.",
     chatSubtitle: "Ask questions, request examples or sketches, and see the latest conversation outputs here.",
     preview: "Agency preview of what this client may see. Sending as the client is disabled.",
-    details: "Documents, proposal and more details", stages: ["Discovery", "Approval & proposal", "Delivery", "Handoff"],
+    details: "Documents, proposal and more details", stages: ["Understanding the need", "Approval & proposal", "Building", "Handoff"],
   },
 } as const;
 
