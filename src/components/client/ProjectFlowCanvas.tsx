@@ -1,8 +1,17 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { LiveFlow } from "../../services/onboardingChatApi";
 import { deliverable, type SolutionKind, type WordingLang } from "../../lib/clientWording";
+import {
+  categorizeClientProcessNode,
+  getClientProcessStatus,
+  PROCESS_CATEGORY_META,
+  PROCESS_STATUS_LABELS,
+  type ClientProcessNode,
+} from "../../lib/clientProcess";
+import { ClientGlossaryText } from "./TechnicalTerm";
+import { ProcessNodeDetails } from "./ProcessNodeDetails";
 
-type FlowNode = { id: string; label: string; kind?: string };
+type FlowEdge = { from: string; to: string; label?: string };
 
 type Props = {
   flow: LiveFlow;
@@ -15,62 +24,28 @@ type Props = {
 const copy = {
   he: {
     title: "התהליך שלך",
-    hint: "אפשר ללחוץ על כל שלב כדי לראות מה קורה בו.",
-    empty: "כשנדבר על התהליך שלך, הוא יצויר כאן שלב אחרי שלב.",
-    close: "סגור",
-    open: "פתח תצוגה",
+    hint: "כל שלב לחיץ. פתח שלב כדי להבין מה קורה, למה הוא קיים ומה מגיע אחריו.",
+    empty: "כשנדבר על התהליך שלך, הוא יוצג כאן שלב אחרי שלב.",
     steps: "שלבים",
-    crmTitle: "איך זה ייראה אצלך",
-    crmColumns: ["פנייה חדשה", "בטיפול", "נסגר"],
-    crmRows: ["ישראל ישראלי", "דנה כהן", "עסק חדש"],
-    generic: "בשלב הזה המידע עובר הלאה בלי שתצטרך לעשות משהו ידני.",
-    userStep: "כאן מישהו מבצע פעולה — למשל שולח הודעה או ממלא פרטים.",
-    approvalStep: "כאן מחכים לאישור שלך לפני שממשיכים.",
-    deliverableStep: "כאן נמצא מה שבונים לך. אפשר לפתוח ולראות איך זה נראה.",
+    openStep: "פתח הסבר על השלב",
+    branch: "התהליך מתפצל כאן לכמה מסלולים",
   },
   en: {
     title: "Your process",
-    hint: "Click any step to see what happens there.",
-    empty: "Once we talk about your process, it will be drawn here step by step.",
-    close: "Close",
-    open: "Open the preview",
+    hint: "Every step is clickable. Open a step to see what happens, why it exists and what comes next.",
+    empty: "Once we talk about your process, it will be shown here step by step.",
     steps: "steps",
-    crmTitle: "How it will look for you",
-    crmColumns: ["New enquiry", "In progress", "Closed"],
-    crmRows: ["John Miller", "Dana Cohen", "New business"],
-    generic: "At this step information moves on by itself — nothing manual for you.",
-    userStep: "Here a person does something — sends a message or fills in details.",
-    approvalStep: "Here we wait for your approval before continuing.",
-    deliverableStep: "This is what we are building for you. Open it to see how it looks.",
+    openStep: "Open step explanation",
+    branch: "The process branches into multiple routes here",
   },
 } as const;
-
-const KIND_ICON: Record<string, string> = {
-  user: "👤",
-  system: "⚙️",
-  integration: "🔗",
-  approval: "✅",
-  automation: "⚡",
-};
-
-const CRM_TOOLS: Array<{ match: RegExp; name: string; color: string }> = [
-  { match: /monday|מנדיי|מאנדיי/i, name: "Monday", color: "#ff3d57" },
-  { match: /airtable|איירטייבל/i, name: "Airtable", color: "#2d7ff9" },
-  { match: /hubspot|האבספוט/i, name: "HubSpot", color: "#ff7a59" },
-  { match: /sheets|גיליון|אקסל|excel/i, name: "Google Sheets", color: "#0f9d58" },
-  { match: /crm|לקוחות/i, name: "CRM", color: "#6366f1" },
-];
-
-function detectCrm(label: string) {
-  return CRM_TOOLS.find((tool) => tool.match.test(label)) ?? null;
-}
 
 function isDeliverableNode(label: string, kind?: string) {
   return kind === "automation" || /אפליקצי|app|מסך|screen|בוט|bot|וואטסאפ|whatsapp|אוטומצי|automation/i.test(label);
 }
 
-/** Orders nodes into levels so the flow reads like a small tree, n8n style. */
-function buildLevels(nodes: FlowNode[], edges: Array<{ from: string; to: string }>) {
+/** Orders the existing flow nodes into levels without changing the stored flow or its edges. */
+function buildLevels(nodes: ClientProcessNode[], edges: FlowEdge[]) {
   const byId = new Map(nodes.map((node) => [node.id || node.label, node]));
   const incoming = new Map<string, number>();
   nodes.forEach((node) => incoming.set(node.id || node.label, 0));
@@ -78,17 +53,17 @@ function buildLevels(nodes: FlowNode[], edges: Array<{ from: string; to: string 
     if (incoming.has(edge.to)) incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
   });
 
-  const levels: FlowNode[][] = [];
+  const levels: ClientProcessNode[][] = [];
   const placed = new Set<string>();
   let current = nodes.filter((node) => (incoming.get(node.id || node.label) ?? 0) === 0);
   if (!current.length) current = nodes.slice(0, 1);
 
-  while (current.length && levels.length < 8) {
+  while (current.length && levels.length < Math.max(8, nodes.length)) {
     const row = current.filter((node) => !placed.has(node.id || node.label));
     if (!row.length) break;
     row.forEach((node) => placed.add(node.id || node.label));
     levels.push(row);
-    const next: FlowNode[] = [];
+    const next: ClientProcessNode[] = [];
     row.forEach((node) => {
       edges
         .filter((edge) => edge.from === (node.id || node.label))
@@ -105,22 +80,33 @@ function buildLevels(nodes: FlowNode[], edges: Array<{ from: string; to: string 
   return levels;
 }
 
+function labelsForNode(node: ClientProcessNode, nodes: ClientProcessNode[], edges: FlowEdge[], direction: "previous" | "next") {
+  const id = node.id || node.label;
+  const linkedIds = edges
+    .filter((edge) => direction === "previous" ? edge.to === id : edge.from === id)
+    .map((edge) => direction === "previous" ? edge.from : edge.to);
+  return linkedIds
+    .map((linkedId) => nodes.find((candidate) => (candidate.id || candidate.label) === linkedId)?.label)
+    .filter((label): label is string => Boolean(label));
+}
+
 export function ProjectFlowCanvas({ flow, language, solutionKind, onOpenDeliverable }: Props) {
   const text = copy[language];
   const nodes = useMemo(
-    () => (flow.nodes ?? []).filter((node) => node && node.label).slice(0, 14) as FlowNode[],
+    () => (flow.nodes ?? []).filter((node) => node && node.label) as ClientProcessNode[],
     [flow.nodes],
   );
   const edges = useMemo(
-    () => (flow.edges ?? []).filter((edge) => edge && edge.from && edge.to),
+    () => (flow.edges ?? []).filter((edge) => edge && edge.from && edge.to) as FlowEdge[],
     [flow.edges],
   );
   const levels = useMemo(() => buildLevels(nodes, edges), [nodes, edges]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const nodeRefs = useRef(new Map<string, HTMLButtonElement>());
 
   if (!nodes.length) {
     return (
-      <section className="card flow-canvas">
+      <section className="card client-flow-card" dir={language === "he" ? "rtl" : "ltr"}>
         <h2>{text.title}</h2>
         <p className="form-note">{text.empty}</p>
       </section>
@@ -128,85 +114,98 @@ export function ProjectFlowCanvas({ flow, language, solutionKind, onOpenDelivera
   }
 
   const selected = nodes.find((node) => (node.id || node.label) === selectedId) ?? null;
-  const crm = selected ? detectCrm(selected.label) : null;
-  const deliverableNode = selected ? isDeliverableNode(selected.label, selected.kind) : false;
   const product = deliverable(solutionKind, language);
+  const selectedPrevious = selected ? labelsForNode(selected, nodes, edges, "previous") : [];
+  const selectedNext = selected ? labelsForNode(selected, nodes, edges, "next") : [];
+
+  function openNode(id: string) {
+    setSelectedId(id);
+  }
+
+  function closeNode() {
+    const id = selectedId;
+    setSelectedId(null);
+    if (id) window.requestAnimationFrame(() => nodeRefs.current.get(id)?.focus());
+  }
 
   return (
-    <section className="card flow-canvas" dir={language === "he" ? "rtl" : "ltr"}>
-      <header className="flow-canvas-head">
+    <section className="card client-flow-card" dir={language === "he" ? "rtl" : "ltr"}>
+      <header className="client-flow-head">
         <div>
           <h2>{text.title}</h2>
           <p className="form-note">{text.hint}</p>
         </div>
-        <span className="flow-canvas-count">{nodes.length} {text.steps}</span>
+        <span className="client-flow-count">{nodes.length} {text.steps}</span>
       </header>
 
-      <div className="flow-canvas-tree">
-        {levels.map((row, index) => (
-          <div className="flow-canvas-level" key={index}>
-            {index > 0 && <span className="flow-canvas-link" aria-hidden="true" />}
-            <div className="flow-canvas-row">
-              {row.map((node) => {
-                const id = node.id || node.label;
-                return (
-                  <button
-                    type="button"
-                    key={id}
-                    className={`flow-canvas-node${selectedId === id ? " is-active" : ""}`}
-                    onClick={() => setSelectedId(selectedId === id ? null : id)}
-                  >
-                    <span className="flow-canvas-icon">{KIND_ICON[node.kind ?? "system"] ?? "⚙️"}</span>
-                    <span className="flow-canvas-label">{node.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {selected && (
-        <div className="flow-canvas-detail">
-          <header>
-            <strong>{selected.label}</strong>
-            <button type="button" className="ghost-button" onClick={() => setSelectedId(null)}>{text.close}</button>
-          </header>
-
-          {crm ? (
-            <div className="flow-crm-preview">
-              <p className="form-note">{text.crmTitle} · {crm.name}</p>
-              <div className="flow-crm-board">
-                {text.crmColumns.map((column, columnIndex) => (
-                  <div className="flow-crm-column" key={column}>
-                    <span className="flow-crm-column-title" style={{ borderColor: crm.color }}>{column}</span>
-                    {text.crmRows.slice(0, 3 - columnIndex).map((row) => (
-                      <span className="flow-crm-card" key={row}>{row}</span>
-                    ))}
-                  </div>
-                ))}
+      <div className="client-flow-tree" aria-label={text.title}>
+        {levels.map((row, index) => {
+          const previousRow = index > 0 ? levels[index - 1] : [];
+          const isBranch = row.length > 1 || previousRow.length > 1;
+          return (
+            <div className="client-flow-level" key={index}>
+              {index > 0 ? (
+                <span
+                  className={`client-flow-connector${isBranch ? " is-branch" : ""}`}
+                  aria-label={isBranch ? text.branch : undefined}
+                  title={isBranch ? text.branch : undefined}
+                />
+              ) : null}
+              <div className={`client-flow-row${row.length > 1 ? " has-branches" : ""}`}>
+                {row.map((node) => {
+                  const id = node.id || node.label;
+                  const categoryKey = categorizeClientProcessNode(node);
+                  const category = PROCESS_CATEGORY_META[categoryKey];
+                  const status = getClientProcessStatus(node.status);
+                  return (
+                    <article
+                      key={id}
+                      className={`client-flow-node${selectedId === id ? " is-active" : ""}`}
+                      data-category={categoryKey}
+                    >
+                      <button
+                        type="button"
+                        className="client-flow-node-open"
+                        aria-haspopup="dialog"
+                        aria-label={`${text.openStep}: ${node.label}`}
+                        ref={(element: HTMLButtonElement | null) => {
+                          if (element) nodeRefs.current.set(id, element);
+                          else nodeRefs.current.delete(id);
+                        }}
+                        onClick={() => openNode(id)}
+                      />
+                      <span className="client-flow-node-icon" aria-hidden="true">{category.icon}</span>
+                      <span className="client-flow-node-body">
+                        <span className="client-flow-node-label"><ClientGlossaryText text={node.label} language={language} /></span>
+                        <span className="client-flow-node-meta">
+                          <span className="client-flow-category-badge" data-category={categoryKey}>{category[language]}</span>
+                          {status ? <span className="client-flow-status-badge" data-status={status}>{PROCESS_STATUS_LABELS[status][language]}</span> : null}
+                        </span>
+                      </span>
+                      <span className="client-flow-node-chevron" aria-hidden="true">›</span>
+                    </article>
+                  );
+                })}
               </div>
             </div>
-          ) : deliverableNode ? (
-            <div className="flow-canvas-deliverable">
-              <p>{text.deliverableStep}</p>
-              {onOpenDeliverable && (
-                <button type="button" className="primary-button" onClick={onOpenDeliverable}>
-                  {text.open} · {product.name}
-                </button>
-              )}
-            </div>
-          ) : (
-            <p>
-              {selected.kind === "user"
-                ? text.userStep
-                : selected.kind === "approval"
-                  ? text.approvalStep
-                  : text.generic}
-            </p>
-          )}
-        </div>
-      )}
+          );
+        })}
+      </div>
+
+      {selected ? (
+        <ProcessNodeDetails
+          node={selected}
+          language={language}
+          previousLabels={selectedPrevious}
+          nextLabels={selectedNext}
+          onClose={closeNode}
+          onOpenDeliverable={isDeliverableNode(selected.label, selected.kind) && onOpenDeliverable ? () => {
+            closeNode();
+            onOpenDeliverable();
+          } : undefined}
+          deliverableLabel={product.name}
+        />
+      ) : null}
     </section>
   );
 }
