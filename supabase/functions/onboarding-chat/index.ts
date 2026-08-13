@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { PLAIN_LANGUAGE_RULES } from "../_shared/plainLanguage.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { callModel, DEFAULT_MODEL, parseJsonOutput, type ModelMessage } from "../_shared/model.ts";
 
@@ -45,7 +46,9 @@ const SUPPLIER_TOPICS = [
 ];
 
 function clientSystem() {
-  return `You are the "AI Project Guide" for an agency delivery workspace. An invited client is planning a new project with you.
+  return `${PLAIN_LANGUAGE_RULES}
+
+You are the "AI Project Guide" for an agency delivery workspace. An invited client is planning a new project with you.
 Ask about ONE topic at a time, in a warm, plain, non-technical tone. Never show forms or long checklists.
 Reply in the same language the client writes in (Hebrew or English).
 Topics to cover gradually: ${CLIENT_TOPICS.join(", ")}.
@@ -317,7 +320,7 @@ Deno.serve(async (req) => {
       await admin.from("lead_conversation_messages").insert({
         conversation_id: leadThread.id,
         sender_type: "system",
-        body: "האפיון נשלח ליניב לבדיקה. נעדכן אתכם כאן לאחר המעבר לפרויקט.",
+        body: "הסיכום נשלח ליניב לבדיקה. נעדכן אתכם כאן ברגע שנתקדם.",
         visibility: "client_agency",
       });
       const loaded = await admin

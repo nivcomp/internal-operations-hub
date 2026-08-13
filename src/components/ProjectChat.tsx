@@ -7,6 +7,7 @@ import { notifyEstimationChanged } from "../lib/estimationEvents";
 import { detectProjectViewIntent, requestProjectView } from "../lib/projectViewEvents";
 import { startRecording, type Recorder } from "../lib/voice";
 import { transcribeAudio } from "../services/copilotApi";
+import { uploadProjectFile } from "../services/projectFilesApi";
 import { supabase } from "../integrations/supabase/client";
 
 type ProjectChatProps = {
@@ -23,7 +24,27 @@ type ProjectChatProps = {
   suggestions?: string[];
   /** Shown above the composer for client and supplier chats. */
   safetyNotice?: string;
+  /** Interface language for the surrounding labels. */
+  language?: "he" | "en";
+  /** Shows one "+" button that attaches a document to the project. */
+  allowAttachments?: boolean;
+  onFileUploaded?: () => void;
 };
+
+const chatCopy = {
+  he: {
+    refresh: "רענן", start: "לתחילת השיחה", loading: "טוען את השיחה…", empty: "עוד אין הודעות. אפשר להתחיל לכתוב למטה.",
+    thinking: "חושב…", retry: "נסה שוב", dismiss: "סגור", send: "שלח", sending: "שולח…",
+    placeholder: "כתוב הודעה…", disabled: "שליחה מושבתת בתצוגה מקדימה",
+    attach: "➕ צרף מסמך", uploading: "מעלה…", uploaded: "המסמך נוסף לפרויקט",
+  },
+  en: {
+    refresh: "Refresh", start: "Start of conversation", loading: "Loading conversation…", empty: "No messages yet. Start the conversation below.",
+    thinking: "Thinking…", retry: "Retry", dismiss: "Dismiss", send: "Send", sending: "Sending…",
+    placeholder: "Write your message… (Hebrew or English)", disabled: "Sending is disabled in preview mode",
+    attach: "➕ Attach a document", uploading: "Uploading…", uploaded: "Document added to the project",
+  },
+} as const;
 
 const actionLabels: Record<ActionKind, string> = {
   add_estimate_items: "Add work items to the estimate",
@@ -204,7 +225,9 @@ function ActionCard({
 export function ProjectChat({
   projectId, projectName, agent, title, subtitle,
   showVisibility = false, readOnly = false, readOnlyReason, suggestions = [], safetyNotice,
+  language = "en", allowAttachments = false, onFileUploaded,
 }: ProjectChatProps) {
+  const text = chatCopy[language];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [drafts, setDrafts] = useState<ChatDraft[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
@@ -221,6 +244,9 @@ export function ProjectChat({
   const recorderRef = useRef<Recorder | null>(null);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedName, setUploadedName] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -352,6 +378,22 @@ export function ProjectChat({
     finally { setTranscribing(false); }
   }
 
+  async function handleAttach(file?: File | null) {
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      await uploadProjectFile(projectId, file);
+      setUploadedName(file.name);
+      onFileUploaded?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   const latestDraft = drafts[0];
   const openQuestions = messages
     .slice()
@@ -371,8 +413,8 @@ export function ProjectChat({
           <p className="chat-sub">{subtitle}</p>
         </div>
         <div className="action-row compact">
-          {messages.length ? <button type="button" className="ghost-button" onClick={() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>לתחילת השיחה</button> : null}
-          <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>רענון</button>
+          {messages.length ? <button type="button" className="ghost-button" onClick={() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>{text.start}</button> : null}
+          <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>{text.refresh}</button>
         </div>
       </header>
 
@@ -380,15 +422,15 @@ export function ProjectChat({
 
       <div className="chat-body">
         <div className="chat-messages" ref={listRef}>
-          {loadState === "loading" && <p className="chat-hint">Loading conversation…</p>}
+          {loadState === "loading" && <p className="chat-hint">{text.loading}</p>}
           {loadState === "error" && (
             <div className="chat-error">
               <p>{error}</p>
-              <button type="button" onClick={() => void load()}>Retry</button>
+              <button type="button" onClick={() => void load()}>{text.retry}</button>
             </div>
           )}
           {loadState === "ready" && messages.length === 0 && (
-            <p className="chat-hint">No messages yet. Start the conversation below.</p>
+            <p className="chat-hint">{text.empty}</p>
           )}
           {messages.map((message) => (
             <article
@@ -408,16 +450,16 @@ export function ProjectChat({
               )}
             </article>
           ))}
-          {aiState === "thinking" && <p className="chat-hint chat-thinking">Thinking…</p>}
+          {aiState === "thinking" && <p className="chat-hint chat-thinking">{text.thinking}</p>}
           {aiState === "failed" && (
             <div className="chat-error">
               <p>{error}</p>
               <div className="action-row">
                 {lastFailedText && (
-                  <button type="button" onClick={() => void send(lastFailedText)}>Retry</button>
+                  <button type="button" onClick={() => void send(lastFailedText)}>{text.retry}</button>
                 )}
                 <button type="button" className="ghost-button" onClick={() => { setAiState("idle"); setError(null); }}>
-                  Dismiss
+                  {text.dismiss}
                 </button>
               </div>
             </div>
@@ -495,7 +537,7 @@ export function ProjectChat({
           dir={isRtl(input) ? "rtl" : "ltr"}
           rows={3}
           maxLength={usage?.maximumMessageLength ?? 4000}
-          placeholder={readOnly ? "Sending is disabled in preview mode" : "Write your message… (Hebrew or English)"}
+          placeholder={readOnly ? text.disabled : text.placeholder}
           disabled={readOnly || aiState === "thinking"}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
@@ -506,11 +548,30 @@ export function ProjectChat({
           }}
         />
         <div className="action-row">
+          {allowAttachments && !readOnly && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                onChange={(event) => void handleAttach(event.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={uploading || aiState === "thinking"}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? text.uploading : text.attach}
+              </button>
+            </>
+          )}
           <button type="button" className={recording ? "danger-button" : "ghost-button"} disabled={readOnly || transcribing || aiState === "thinking"} onClick={() => void toggleVoice()}>{recording ? "■ עצור ותמלל" : transcribing ? "מתמלל…" : "🎙️ דבר"}</button>
           <button type="submit" disabled={readOnly || aiState === "thinking" || input.trim().length === 0}>
-            {aiState === "thinking" ? "Sending…" : "Send"}
+            {aiState === "thinking" ? text.sending : text.send}
           </button>
         </div>
+        {uploadedName && <p className="chat-hint">{text.uploaded}: {uploadedName}</p>}
       </form>
     </section>
   );

@@ -16,8 +16,8 @@ const COPY = {
     business: "עסק",
     project: "פרויקט",
     pendingProject: "פרויקט חדש — השם ייקבע מתוך השיחה",
-    draftNote: "כל מה שנכתב כאן נשמר בחשבון הזה. בסיום ייווצר פרויקט אחד, והשיחה, האפיון והתרשים יישמרו בתוכו. ה־MVP יוכן באותו פרויקט לאחר בדיקת הסוכנות.",
-    projectNote: "השיחה, האפיון, התרשימים וה־MVP מחוברים לפרויקט הזה בלבד ולחשבון הלקוח שמופיע כאן.",
+    draftNote: "כל מה שנכתב כאן נשמר בחשבון הזה. בסיום ייפתח פרויקט אחד, והשיחה, הסיכום והתרשים יישמרו בתוכו. אחרי שנעבור על זה, נכין באותו מקום תצוגה ראשונה של מה שבונים לך.",
+    projectNote: "השיחה, הסיכום, התרשימים והתצוגה של מה שבונים מחוברים לפרויקט הזה בלבד ולחשבון שמופיע כאן.",
     previewNote: "זו תצוגה מקדימה של סביבת הלקוח. הנתונים המוצגים שייכים ללקוח ולפרויקט שמופיעים כאן.",
   },
   en: {
@@ -27,8 +27,8 @@ const COPY = {
     business: "Business",
     project: "Project",
     pendingProject: "New project — the name will come from the conversation",
-    draftNote: "Everything written here is saved to this account. When the brief is submitted, one project will be created and the conversation, brief and diagram will stay inside it. The MVP will be prepared in that same project after agency review.",
-    projectNote: "The conversation, specification, diagrams and MVP are connected only to this project and the client account shown here.",
+    draftNote: "Everything written here is saved to this account. When you finish, one project is created and the conversation, summary and diagram stay inside it. After we review it, we prepare a first preview of what we are building for you in the same place.",
+    projectNote: "The conversation, summary, diagrams and the preview of what we are building are connected only to this project and the account shown here.",
     previewNote: "This is a preview of the client workspace. The information shown belongs to the client and project named here.",
   },
 } as const;

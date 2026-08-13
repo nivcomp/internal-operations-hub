@@ -2415,6 +2415,153 @@ export type Database = {
           },
         ]
       }
+      lead_conversation_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_profile_id: string | null
+          sender_type: string
+          source_key: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_profile_id?: string | null
+          sender_type: string
+          source_key?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_profile_id?: string | null
+          sender_type?: string
+          source_key?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "lead_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_conversation_messages_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_conversations: {
+        Row: {
+          client_id: string
+          created_at: string
+          disqualification_reason: string
+          first_opened_at: string | null
+          id: string
+          invitation_id: string | null
+          last_agency_message_at: string | null
+          last_agency_read_at: string | null
+          last_client_message_at: string | null
+          pause_message: string
+          profile_id: string
+          project_id: string | null
+          promoted_at: string | null
+          promoted_by: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          disqualification_reason?: string
+          first_opened_at?: string | null
+          id?: string
+          invitation_id?: string | null
+          last_agency_message_at?: string | null
+          last_agency_read_at?: string | null
+          last_client_message_at?: string | null
+          pause_message?: string
+          profile_id: string
+          project_id?: string | null
+          promoted_at?: string | null
+          promoted_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          disqualification_reason?: string
+          first_opened_at?: string | null
+          id?: string
+          invitation_id?: string | null
+          last_agency_message_at?: string | null
+          last_agency_read_at?: string | null
+          last_client_message_at?: string | null
+          pause_message?: string
+          profile_id?: string
+          project_id?: string | null
+          promoted_at?: string | null
+          promoted_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_conversations_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_conversations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_conversations_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_sources: {
         Row: {
           ai_derived: boolean
@@ -4896,6 +5043,10 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      promote_client_onboarding: {
+        Args: { _profile_id: string; _project_name?: string }
+        Returns: string
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

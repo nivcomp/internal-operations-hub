@@ -10,6 +10,8 @@ The pricing area reads and writes the canonical `project_estimates` record, make
 
 The full control audit is recorded in `ADMIN_UI_AUDIT.md`. TypeScript and the production build pass. The local login boundary loads correctly, but an authenticated real-project browser smoke test could not be completed because no signed-in browser session was available for the matching local code. No production deployment or merge is part of this work unit.
 
+A small UI refinement was also completed: the public client/lead registration link now shows a scannable QR code in both the advanced Access Management page and the Simple Mode “Share links” card. The code updates automatically when the link is rotated and the build passes.
+
 ## Recommended next work unit
 
 Review the pull request and run one authenticated preview smoke test on a real but controlled project before merge:
