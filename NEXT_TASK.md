@@ -2,25 +2,25 @@
 
 ## Current result
 
-The approved pre-project lead workflow is implemented locally as one coherent work unit.
+The agency-controlled pre-project lead workflow is live in production.
 
-A new client invitation or approved public registration now creates a lead conversation, not a project. The client keeps the friendly, account-personalized AI conversation and can submit the evolving brief for review. Submission locks the conversation in an agency-review state and cannot create a project or MVP.
+The production migration `20260813100000_lead_conversation_inbox.sql` was applied successfully. Production now has durable lead conversations and messages, agency-only promotion, server-enforced paused/review/disqualified states, and a client submission path that cannot create a project. One existing no-project onboarding conversation was safely backfilled as one lead with its six existing messages.
 
-Agency admins have a shared “Lead Conversations” inbox in both Simple and Advanced Mode. It shows invited, active, awaiting-review, paused, disqualified and promoted leads; the full client/AI/agency transcript; unread state; the evolving brief and flow; client-visible manager replies; private agency notes; pause/resume/disqualify controls; and an explicit project-promotion action.
+The four matching Edge Functions (`onboarding-chat`, `lead-conversations`, `access-admin`, and `public-registration`) were deployed from source commit `d87e0de`, and the matching frontend was published. Lovable reports the project as published and ready. The public production address redirects to `https://project.stat.ninja/`, reaches the authenticated login boundary, and loads without browser console errors.
 
-Promotion is agency-only, row-locked and retry-safe. It creates one project and transfers the complete lead history, internal notes, structured brief, flow diagram and editable specification drafts. The client onboarding state is completed only after that action, so the client then enters the exact new project portal and can continue toward an MVP. Existing project-continuation links remain bound to their existing projects and are unchanged.
+New invitations and approved public registrations now enter the lead inbox before a project exists. Agency admins can review the complete thread, reply visibly, add private notes, pause, resume, disqualify, or explicitly promote the lead. Only promotion creates the exact client-owned project and transfers the transcript, brief, flow, notes, and specification drafts. Existing project-continuation links remain unchanged.
 
-Frontend TypeScript and the production Vite build pass. The production database migration, updated Edge Functions and frontend are not yet deployed: the production database tool requires a separate explicit approval for the live schema/backfill and behavior change.
+Build, TypeScript, migration verification, function deployment, public production loading, and database invariants pass. The release has not yet received a full authenticated client/admin interaction smoke test because no signed-in production client/admin browser session was available in this run.
 
 ## Recommended next work unit
 
-After explicit production-database approval, publish this exact release in a controlled order:
+Run one controlled authenticated production smoke test across both roles:
 
-1. Apply `20260813100000_lead_conversation_inbox.sql` to the connected production database.
-2. Deploy `onboarding-chat`, `lead-conversations`, `access-admin` and `public-registration`.
-3. Publish the matching frontend source.
-4. Run one authenticated client/admin smoke test: client message, agency-visible inbox, agency reply, private note, pause/resume, submit for review and one promotion.
-5. Verify that a repeated promotion returns the same project, all history is present and the existing continuation link still opens its original project.
+1. Send one client message and confirm it appears in the agency lead inbox without creating a project.
+2. Send one client-visible agency reply and one private note; verify only the reply reaches the client and the reply influences the next AI turn.
+3. Pause and resume the lead, then submit it for review; verify blocked statuses are enforced by the server.
+4. Promote the lead once and repeat the promotion request; verify both calls resolve to the same project.
+5. Confirm the complete transcript, brief, flow, internal notes and specification drafts are attached to that project, and that an existing continuation link still opens its original project.
 
 ## Constraints
 
@@ -34,15 +34,15 @@ After explicit production-database approval, publish this exact release in a con
 
 ## Acceptance criteria
 
-- New invited clients appear in the agency lead inbox before they start talking.
-- Client and AI messages appear in the same agency thread without creating a project.
-- Agency replies are visible to the client and influence the next AI turn; agency-only notes remain private.
-- Paused, submitted and disqualified leads cannot keep messaging through the server.
+- The authenticated client and agency views expose the same lead thread before any project exists.
+- Agency-visible replies reach the client; private notes do not.
+- Paused, submitted and disqualified leads cannot keep messaging through direct API calls.
 - Client submission creates no project.
-- Agency promotion creates exactly one client-owned project and transfers transcript, brief, flow and notes.
-- The promoted client enters that exact project portal; only there can the MVP workflow begin.
-- Existing continuation links still bypass new-client onboarding and retain their project context.
-- Authenticated RLS, retry, TypeScript/build and visual smoke tests pass in production.
+- Repeated agency promotion creates exactly one project and returns that same project.
+- The promoted project contains the complete transcript, brief, flow, notes and specification drafts.
+- The promoted client enters that exact project portal and can begin the project/MVP workflow there.
+- An existing continuation link still opens its original project.
+- No client-facing view exposes agency-only notes or internal commercial data.
 
-**Next**
-- After the lead workflow production smoke test, return to automatic specification documents and the Simple Mode document center.
+**Next after the smoke test**
+- Return to automatic specification documents and the Simple Mode document center.

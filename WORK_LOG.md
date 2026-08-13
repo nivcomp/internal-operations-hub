@@ -1,5 +1,35 @@
 # Work Log
 
+### 2026-08-13 — Production release of agency-controlled lead conversations
+
+**Work unit**
+Apply the approved production database migration and publish the matching lead-to-project release.
+
+**Changes**
+- Applied `20260813100000_lead_conversation_inbox.sql` to the connected production database.
+- Backfilled one existing no-project onboarding conversation as a lead while preserving its six messages.
+- Deployed `onboarding-chat`, `lead-conversations`, `access-admin`, and `public-registration` from source commit `d87e0de` without source changes.
+- Published the matching Lovable frontend to production; the public URL redirects to `https://project.stat.ninja/`.
+
+**Verification**
+- Confirmed both lead tables exist, all four RLS policies are installed, and the agency-only promotion guard is active.
+- Confirmed client submission no longer creates a project.
+- Confirmed Lovable reports the project as published and ready.
+- Confirmed the production login boundary loads without browser console errors.
+- The earlier `npx tsc --noEmit`, `npm run build`, and `git diff --check` checks remain green for the published source.
+- A full authenticated client/admin interaction smoke test remains required because this run did not have both signed-in production roles available.
+
+**Files**
+- `NEXT_TASK.md`
+- `WORK_LOG.md`
+
+**Commit**
+- Production source: `d87e0de Add agency-controlled lead conversations`.
+- This deployment record will be committed separately on the current feature branch.
+
+**Next**
+- Run one authenticated client/admin production smoke test through message visibility, reply/private note isolation, pause/resume, review submission, retry-safe promotion, artifact transfer, and continuation-link preservation.
+
 ### 2026-08-13 — Agency-controlled pre-project lead conversations
 
 **Work unit**
