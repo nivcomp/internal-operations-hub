@@ -10,7 +10,7 @@ The pricing area reads and writes the canonical `project_estimates` record, make
 
 New estimates now default to ILS. The Simple pricing selector is ordered ILS, USD and GBP and records the selected unit without silently converting existing numbers. The Simple supplier handoff selector shows every existing supplier and its status. A pending-review supplier can be associated for planning, but the handoff remains blocked until the supplier is approved and estimate items are assigned; inactive suppliers are visible but disabled.
 
-The full control audit is recorded in `ADMIN_UI_AUDIT.md`. TypeScript and the production build pass. The local login boundary loads correctly, but an authenticated real-project browser smoke test could not be completed because no signed-in browser session was available for the matching local code. No production deployment or merge is part of this work unit.
+The full control audit is recorded in `ADMIN_UI_AUDIT.md`. TypeScript and the production build pass. Source commit `7d10205755690f2903bb1e4a99c6cc773f374370` was published to `https://project.stat.ninja/`, and the live application bundle contains the new currency and supplier-status controls. An authenticated real-project browser smoke test is still required because no signed-in application session was available during the release. The pull request remains unmerged.
 
 A small UI refinement was also completed: the public client/lead registration link now shows a scannable QR code in both the advanced Access Management page and the Simple Mode “Share links” card. The code updates automatically when the link is rotated and the build passes.
 

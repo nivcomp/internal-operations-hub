@@ -15,9 +15,11 @@ Make the Simple pricing and supplier handoff controls match the agency's actual 
 **Verification**
 - `pnpm run build` passed (TypeScript + Vite, 288 modules); the existing large-chunk warning remains.
 - `git diff --check` passed.
+- GitHub branch `codex/simplify-admin-ui` and Lovable preview were verified at source commit `7d10205755690f2903bb1e4a99c6cc773f374370` with a clean working tree.
+- Published the matching frontend to `https://project.stat.ninja/` and confirmed the live `App-CV4mLSjq.js` bundle contains the ILS/USD/GBP options plus the pending-supplier planning labels.
 
 **Next**
-- Publish the branch update and verify the ILS/USD/GBP selector plus the real supplier's status in the authenticated production project.
+- Refresh the authenticated production session and smoke-test the real project's currency selector and supplier assignment without changing unrelated production data.
 
 ### 2026-08-13 — Simplified agency-admin daily workflow
 
