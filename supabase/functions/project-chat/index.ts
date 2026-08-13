@@ -138,12 +138,17 @@ async function assertAccess(agent: AgentType, profile: any, projectId: string) {
 
   if (profile.role === "agency_admin") {
     if (agent === "project_guide" || agent === "agency_control") return { project, supplierId: null } as const;
-    // Supplier mode: admin must be linked to a supplier assigned to the project.
-    if (!profile.supplier_id) return { error: "No supplier profile linked", status: 403 } as const;
-    const { data: link } = await admin.from("project_supplier_assignments")
-      .select("id").eq("project_id", projectId).eq("supplier_id", profile.supplier_id).maybeSingle();
-    if (!link) return { error: "Project is not assigned to you", status: 403 } as const;
-    return { project, supplierId: profile.supplier_id } as const;
+    // Supplier mode: use the admin's linked supplier when present, otherwise
+    // fall back to a supplier assigned to this project (admin preview).
+    if (profile.supplier_id) {
+      const { data: link } = await admin.from("project_supplier_assignments")
+        .select("id").eq("project_id", projectId).eq("supplier_id", profile.supplier_id).maybeSingle();
+      if (link) return { project, supplierId: profile.supplier_id } as const;
+    }
+    const { data: fallback } = await admin.from("project_supplier_assignments")
+      .select("supplier_id").eq("project_id", projectId).limit(1).maybeSingle();
+    if (!fallback?.supplier_id) return { error: "No supplier assigned to this project", status: 403 } as const;
+    return { project, supplierId: fallback.supplier_id as string } as const;
   }
 
   if (profile.role === "client") {
