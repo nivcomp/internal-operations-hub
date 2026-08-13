@@ -225,7 +225,9 @@ function ActionCard({
 export function ProjectChat({
   projectId, projectName, agent, title, subtitle,
   showVisibility = false, readOnly = false, readOnlyReason, suggestions = [], safetyNotice,
+  language = "en", allowAttachments = false, onFileUploaded,
 }: ProjectChatProps) {
+  const text = chatCopy[language];
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [drafts, setDrafts] = useState<ChatDraft[]>([]);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
@@ -242,6 +244,9 @@ export function ProjectChat({
   const recorderRef = useRef<Recorder | null>(null);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedName, setUploadedName] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -371,6 +376,22 @@ export function ProjectChat({
       inputRef.current?.focus();
     } catch (err) { setError(err instanceof Error ? err.message : String(err)); }
     finally { setTranscribing(false); }
+  }
+
+  async function handleAttach(file?: File | null) {
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      await uploadProjectFile(projectId, file);
+      setUploadedName(file.name);
+      onFileUploaded?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   const latestDraft = drafts[0];
