@@ -1,5 +1,43 @@
 # Work Log
 
+### 2026-08-13 — Clickable client process explanations
+
+**Work unit**
+Make every client-facing process node understandable, interactive and responsive while preserving the existing project flow and permissions.
+
+**Changes**
+- Rebuilt `ProjectFlowCanvas` presentation around reusable `ProcessNode` and accessible `ProcessNodeDetails` components; existing LiveFlow nodes and edges remain the source of truth.
+- Made both the project-space diagram and flow artifacts inside project chat clickable.
+- Added a shared Hebrew/English client glossary and deterministic client-safe explanations for human, automation, AI, external-system, decision, message and meeting steps.
+- Added desktop side-drawer and mobile bottom-sheet behavior with Escape/overlay/close handling, body scroll lock and focus restoration.
+- Added clear branch connectors on desktop and a top-to-bottom, single-column mobile flow.
+- Removed the CSS class collision that gave the client flow the internal draggable canvas's fixed height, clipped overflow, grab cursor and disabled touch behavior.
+- Removed the fake CRM board and sample customer names; the only remaining deliverable button opens the real project prototype.
+- Added a `clientSafe` presentation boundary to client project chats and localized adjacent portal/chat labels.
+- Added mobile table containment and 44px tap targets around the adjacent client workspace.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + production Vite build); the existing large-chunk warning remains.
+- Deterministic explanation checks passed for Facebook/marketing leads, old leads, manual call, opening message, meeting, WhatsApp Bot, Make, insurance filtering and Airtable/CRM.
+- In-app browser QA passed at 1440, 1024, 768, 430 and 390 pixels: no horizontal overflow, clipped nodes or out-of-viewport cards; minimum node height was 64px desktop/68px mobile and help targets were 44px.
+- Browser interaction verified Make node details, secondary technical disclosure, Airtable glossary help, mobile bottom-sheet dimensions, desktop side drawer, scroll lock and focus restoration.
+- `git diff --check` passed. No automated test or lint script exists in `package.json`; an authenticated production project smoke test remains the next work unit.
+
+**Files**
+- `src/components/client/ProjectFlowCanvas.tsx`, `ProcessNode.tsx`, `ProcessNodeDetails.tsx`
+- `src/lib/clientGlossary.ts`, `src/lib/clientProcessExplanation.ts`
+- `src/components/ProjectChat.tsx`
+- `src/pages/home/ClientHomePage.tsx`, `src/pages/ClientPortalPage.tsx`, `src/styles.css`
+- Project memory files
+
+**Commit**
+- `61db26b` — `Improve client project flow explanations`
+
+**Next**
+- Deploy the reviewed PR and run the single authenticated real-project client smoke test defined in `NEXT_TASK.md`.
+
+---
+
 ### 2026-08-13 — QR code for public client/lead registration link
 
 **Work unit**

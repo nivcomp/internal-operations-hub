@@ -2,49 +2,34 @@
 
 ## Current result
 
-The approved pre-project lead workflow is implemented locally as one coherent work unit.
+The client-facing project process is now explanatory and responsive without adding a second flow system.
 
-A new client invitation or approved public registration now creates a lead conversation, not a project. The client keeps the friendly, account-personalized AI conversation and can submit the evolving brief for review. Submission locks the conversation in an agency-review state and cannot create a project or MVP.
+`ProjectFlowCanvas` and process artifacts inside project chat render their existing nodes through shared interactive components. Every node opens an accessible side drawer on desktop or bottom sheet on mobile with a simple explanation, business purpose, next step, input, output and performer. Technical information is secondary under `פרטים טכניים`.
 
-Agency admins have a shared “Lead Conversations” inbox in both Simple and Advanced Mode. It shows invited, active, awaiting-review, paused, disqualified and promoted leads; the full client/AI/agency transcript; unread state; the evolving brief and flow; client-visible manager replies; private agency notes; pause/resume/disqualify controls; and an explicit project-promotion action.
+`src/lib/clientGlossary.ts` is the single client-safe glossary for Make, Zapier, Airtable, CRM, WhatsApp Bot, API, Webhook, OAuth, Supabase, Google Sheets, Gmail, Google Drive, Microsoft 365, Green API, OpenAI/AI, database, automation and integration. Registered terms receive a restrained inline help action; unknown terms do not.
 
-Promotion is agency-only, row-locked and retry-safe. It creates one project and transfers the complete lead history, internal notes, structured brief, flow diagram and editable specification drafts. The client onboarding state is completed only after that action, so the client then enters the exact new project portal and can continue toward an MVP. Existing project-continuation links remain bound to their existing projects and are unchanged.
+Human, automation, AI, external-system, decision, message and meeting nodes now have quiet visual categories. Existing graph levels and edges remain the source for ordering and branching. Mobile converts the diagram to a top-to-bottom single column. No fake status or implementation dependency is created.
 
-Frontend TypeScript and the production Vite build pass. The production database migration, updated Edge Functions and frontend are not yet deployed: the production database tool requires a separate explicit approval for the live schema/backfill and behavior change.
+The old client flow CSS collision with the internal draggable `.flow-canvas` was removed by giving the client component its own class namespace. The fake CRM board with sample customer names was removed. Client project chats also use a final `clientSafe` display boundary for internal drafts, rejected-action reasons, cost and margin fields.
 
-A small UI refinement was also completed: the public client/lead registration link now shows a scannable QR code in both the advanced Access Management page and the Simple Mode “Share links” card. The code updates automatically when the link is rotated and the build passes.
+TypeScript and the production Vite build pass. Browser QA passed at 1440, 1024, 768, 430 and 390 pixels with no document/flow horizontal overflow, no clipped node labels, 44px technical-help/close targets, a one-column mobile flow, working Make/Airtable explanations and focus restoration after closing.
 
 ## Recommended next work unit
 
-After explicit production-database approval, publish this exact release in a controlled order:
-
-1. Apply `20260813100000_lead_conversation_inbox.sql` to the connected production database.
-2. Deploy `onboarding-chat`, `lead-conversations`, `access-admin` and `public-registration`.
-3. Publish the matching frontend source.
-4. Run one authenticated client/admin smoke test: client message, agency-visible inbox, agency reply, private note, pause/resume, submit for review and one promotion.
-5. Verify that a repeated promotion returns the same project, all history is present and the existing continuation link still opens its original project.
+After this PR is reviewed and deployed, run one authenticated production smoke test with a real client-owned project whose saved flow contains marketing leads, old leads, WhatsApp Bot, Make, a decision, meeting booking and Airtable/CRM.
 
 ## Constraints
 
-- Keep one application, repository and Supabase project.
-- A pre-project lead is not a project and cannot request an MVP.
-- Only an active agency admin may promote a lead.
-- Enforce paused and disqualified status on the server, not only in the interface.
-- Never expose agency-only notes to a client.
-- Keep promotion retry-safe and preserve the complete lead history.
-- Do not change existing project-continuation links.
+- Keep the existing LiveFlow and sanitized chat artifacts as the only process sources.
+- Do not create or infer workflow status, implementation dependencies or technical architecture in the client UI.
+- Never render internal cost, margin, prompts, private notes or supplier-only information to a client.
+- Keep authentication, RLS, project ownership, pricing and AI behavior unchanged.
 
 ## Acceptance criteria
 
-- New invited clients appear in the agency lead inbox before they start talking.
-- Client and AI messages appear in the same agency thread without creating a project.
-- Agency replies are visible to the client and influence the next AI turn; agency-only notes remain private.
-- Paused, submitted and disqualified leads cannot keep messaging through the server.
-- Client submission creates no project.
-- Agency promotion creates exactly one client-owned project and transfers transcript, brief, flow and notes.
-- The promoted client enters that exact project portal; only there can the MVP workflow begin.
-- Existing continuation links still bypass new-client onboarding and retain their project context.
-- Authenticated RLS, retry, TypeScript/build and visual smoke tests pass in production.
-
-**Next**
-- After the lead workflow production smoke test, return to automatic specification documents and the Simple Mode document center.
+- The authenticated client sees the expected project and every real saved node.
+- Each node and registered term opens the correct explanation and closes back to the same trigger.
+- Make, WhatsApp Bot and Airtable/CRM explanations are understandable and technical details remain collapsed initially.
+- Desktop uses a side drawer; 390/430 mobile uses a readable bottom sheet and vertical flow with no horizontal overflow.
+- Client chat and process details contain no internal draft, cost, margin, prompt, note or supplier data.
+- Existing project continuation, proposal, estimate, files, chat and MVP actions still work for that same project.
