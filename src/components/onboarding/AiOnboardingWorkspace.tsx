@@ -413,7 +413,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
 
   const leadStatusCopy = isClient && conversationStatus && !conversationOpen ? {
     awaiting_review: lang === "he"
-      ? { title: "האפיון אצל יניב לבדיקה", text: "השיחה והסיכום נשמרו. עדיין לא נפתח פרויקט; יניב יבדוק ויעדכן אתכם כאן." }
+      ? { title: "הסיכום אצל יניב לבדיקה", text: "השיחה והסיכום נשמרו. עדיין לא נפתח פרויקט; יניב יבדוק ויעדכן אתכם כאן." }
       : { title: "Your brief is with Yaniv", text: "The conversation and summary are saved. No project exists yet; Yaniv will review it and update you here." },
     paused: lang === "he"
       ? { title: "השיחה הושהתה זמנית", text: statusMessage || "יניב עצר זמנית את השיחה. ההיסטוריה נשמרת כאן." }

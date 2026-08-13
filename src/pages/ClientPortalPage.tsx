@@ -221,7 +221,7 @@ export function ClientPortalPage({
     if (!mvpRefreshNotes.trim() || isPending(requestKey) || isPreview) return;
     try {
       await submitClientChangeRequest(project.id, client!.id, {
-        title: "MVP refresh request",
+        title: language === "he" ? `בקשת עדכון ל${thing.short}` : `Update request for ${thing.short}`,
         description: mvpRefreshNotes.trim(),
       });
       setMvpRefreshNotes("");
