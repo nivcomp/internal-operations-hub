@@ -413,7 +413,7 @@ export function ProjectChat({
           <p className="chat-sub">{subtitle}</p>
         </div>
         <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>
-          Refresh
+          {text.refresh}
         </button>
       </header>
 
@@ -421,15 +421,15 @@ export function ProjectChat({
 
       <div className="chat-body">
         <div className="chat-messages" ref={listRef}>
-          {loadState === "loading" && <p className="chat-hint">Loading conversation…</p>}
+          {loadState === "loading" && <p className="chat-hint">{text.loading}</p>}
           {loadState === "error" && (
             <div className="chat-error">
               <p>{error}</p>
-              <button type="button" onClick={() => void load()}>Retry</button>
+              <button type="button" onClick={() => void load()}>{text.retry}</button>
             </div>
           )}
           {loadState === "ready" && messages.length === 0 && (
-            <p className="chat-hint">No messages yet. Start the conversation below.</p>
+            <p className="chat-hint">{text.empty}</p>
           )}
           {messages.map((message) => (
             <article
@@ -449,16 +449,16 @@ export function ProjectChat({
               )}
             </article>
           ))}
-          {aiState === "thinking" && <p className="chat-hint chat-thinking">Thinking…</p>}
+          {aiState === "thinking" && <p className="chat-hint chat-thinking">{text.thinking}</p>}
           {aiState === "failed" && (
             <div className="chat-error">
               <p>{error}</p>
               <div className="action-row">
                 {lastFailedText && (
-                  <button type="button" onClick={() => void send(lastFailedText)}>Retry</button>
+                  <button type="button" onClick={() => void send(lastFailedText)}>{text.retry}</button>
                 )}
                 <button type="button" className="ghost-button" onClick={() => { setAiState("idle"); setError(null); }}>
-                  Dismiss
+                  {text.dismiss}
                 </button>
               </div>
             </div>
