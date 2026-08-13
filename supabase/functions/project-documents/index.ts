@@ -55,8 +55,11 @@ Deno.serve(async (req) => {
   if (!projectId) return json({ error: "projectId is required." }, 400);
   if (!DOC_TYPES[docType]) return json({ error: "Unknown document type." }, 400);
   const requestedAudience = String(body.audience ?? "");
-  if (requestedAudience && !["agency", "client"].includes(requestedAudience)) {
+  if (requestedAudience && !["agency", "client", "supplier"].includes(requestedAudience)) {
     return json({ error: "Unsupported document audience." }, 400);
+  }
+  if (requestedAudience === "supplier" && docType !== "supplier_brief") {
+    return json({ error: "Supplier documents must use the supplier brief type." }, 400);
   }
 
   const [project, brief, schedule, estimate, requirements, assumptions, questions, conversationSummary, specificationSections] =
