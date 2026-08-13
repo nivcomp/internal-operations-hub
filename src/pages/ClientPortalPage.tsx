@@ -27,16 +27,56 @@ type ClientPortalPageProps = {
   initialProjectId?: string;
 };
 
-const requestStatusLabels: Record<ChangeRequest["status"], string> = {
-  requested: "With the agency",
-  submitted: "With the agency",
-  agency_review: "With the agency",
-  priced: "Priced — your decision",
-  client_approved: "Approved",
-  declined: "Declined",
+type PortalLanguage = "he" | "en";
+
+const requestStatusLabels: Record<PortalLanguage, Record<ChangeRequest["status"], string>> = {
+  he: { requested: "בטיפול הצוות", submitted: "בטיפול הצוות", agency_review: "בבדיקה", priced: "תומחר — ממתין להחלטתך", client_approved: "אושר", declined: "נדחה" },
+  en: { requested: "With the agency", submitted: "With the agency", agency_review: "With the agency", priced: "Priced — your decision", client_approved: "Approved", declined: "Declined" },
 };
 
-type PortalLanguage = "he" | "en";
+const projectStatusHe: Record<Project["status"], string> = {
+  lead_started: "התחלנו להכיר את הצורך", discovery_in_progress: "מגדירים את הצורך", waiting_for_agency_pricing: "בהכנת הצעה",
+  pricing_set: "ההצעה הוכנה", brief_ready: "הסיכום מוכן", scope_ready: "האפיון מוכן", waiting_for_client_approval: "ממתין לאישור שלך",
+  approved_by_client: "אושר על ידך", waiting_for_payment: "ממתין לתשלום", paid_ready_to_start: "מוכן להתחלה",
+  assigned_to_supplier: "העבודה שובצה", in_development: "בבנייה", change_requested: "בקשת שינוי התקבלה",
+  change_priced: "השינוי תומחר", change_approved: "השינוי אושר", completed: "הושלם",
+};
+
+const compactStatusLabels: Record<PortalLanguage, Record<string, string>> = {
+  he: { pending: "ממתין", approved: "אושר", rejected: "נדחה", not_due: "טרם נדרש", requested: "נשלחה בקשה", received: "התקבל", overdue: "עבר מועד התשלום" },
+  en: { pending: "Pending", approved: "Approved", rejected: "Rejected", not_due: "Not due", requested: "Requested", received: "Received", overdue: "Overdue" },
+};
+
+const portalDetailsCopy = {
+  he: {
+    noClientPage: "מרחב הלקוח", noClientSubtitle: "הפרויקטים, האישורים והבקשות שלך במקום אחד.",
+    noClientTitle: "החשבון עדיין לא מחובר ללקוח", noClientText: "פנו לצוות כדי להשלים את החיבור לחשבון הלקוח שלכם.",
+    noProjectTitle: "עדיין אין פרויקט ללקוח הזה", noProjectText: "לאחר שהצוות יפתח את הפרויקט הראשון, הוא יופיע כאן עם האפיון, האישורים והתשלומים.",
+    chatSuggestions: ["מה עוד צריך ממני?", "הצג לי את תהליך הפרויקט", "סכם את מה שסיכמנו עד עכשיו"],
+    safety: "העוזר עונה רק על שאלות שקשורות לפרויקט הזה. השיחה נשמרת וזמינה לצוות שמלווה את הפרויקט.",
+    approvalsTitle: "אישורים", approvalsEmpty: "אין כרגע דבר שממתין לאישור שלך.", scope: "אפיון", status: "מצב", notes: "הערות", approved: "אושר בתאריך", pending: "ממתין", saving: "שומר…", approve: "אישור", decline: "דחייה",
+    approvedScope: "האפיון המאושר", approvedScopeEmpty: "עדיין אין אפיון מאושר.", version: "גרסה", phase: "שלב", item: "פריט", acceptance: "איך נדע שזה עובד",
+    payments: "בקשות תשלום", paymentsEmpty: "לא נשלחה בקשת תשלום לפרויקט הזה.", amount: "סכום", due: "לתשלום עד", notSet: "לא נקבע",
+    paidHours: "בנק שעות", paidHoursEmpty: "אין כרגע יתרת שעות שנרכשה.", purchased: "נרכשו", used: "נוצלו", remaining: "נותרו", expiry: "תוקף", hoursSuffix: "שעות", noExpiry: "ללא הגבלת תוקף",
+    changes: "בקשות שינוי", changesEmpty: "עדיין אין בקשות שינוי. אפשר לבקש שינוי בטופס למטה.", request: "בקשה", price: "מחיר", awaitingPricing: "ממתין לתמחור",
+    changeQuestion: "מה תרצו לשנות?", details: "פרטים", sending: "שולח…", submitChange: "שליחת בקשת שינוי", changeHelp: "הצוות בודק ומתמחר כל בקשה לפני שהיא הופכת לעבודה.",
+    files: "קבצים", filesEmpty: "עדיין לא שותפו איתך קבצים.", messages: "הודעות", messagesEmpty: "עדיין אין הודעות.", you: "אתם", agency: "הצוות", sendAgency: "שליחת הודעה לצוות", sendMessage: "שליחת הודעה",
+  },
+  en: {
+    noClientPage: "Client workspace", noClientSubtitle: "Your projects, approvals and requests in one place.",
+    noClientTitle: "No client workspace available", noClientText: "This account is not linked to a client record yet. Ask the agency to complete your access.",
+    noProjectTitle: "No project exists for this client", noProjectText: "Once the agency creates your first project it will appear here with scope, approvals and payment status.",
+    chatSuggestions: ["What else do you need from me?", "Show me the project flow", "Summarise what we agreed so far"],
+    safety: "This assistant only answers questions about this project. The conversation is recorded and available to the team supporting the project.",
+    approvalsTitle: "Approvals", approvalsEmpty: "Nothing needs your approval right now.", scope: "Scope", status: "Status", notes: "Notes", approved: "Approved", pending: "Pending", saving: "Saving…", approve: "Approve", decline: "Decline",
+    approvedScope: "Approved scope", approvedScopeEmpty: "No scope has been approved yet.", version: "Version", phase: "Phase", item: "Item", acceptance: "Acceptance",
+    payments: "Payment requests", paymentsEmpty: "No payment has been requested for this project.", amount: "Amount", due: "Due", notSet: "Not set",
+    paidHours: "Paid hours", paidHoursEmpty: "You do not have a paid-hour balance.", purchased: "Purchased", used: "Used", remaining: "Remaining", expiry: "Expiry", hoursSuffix: "hrs", noExpiry: "No expiry",
+    changes: "Change requests", changesEmpty: "No change requests yet. Use the form below to ask for a change.", request: "Request", price: "Price", awaitingPricing: "Awaiting pricing",
+    changeQuestion: "What would you like to change?", details: "Details", sending: "Sending…", submitChange: "Submit change request", changeHelp: "The agency reviews and prices every request before it becomes work.",
+    files: "Files", filesEmpty: "No files have been shared with you yet.", messages: "Messages", messagesEmpty: "No messages yet.", you: "You", agency: "Agency", sendAgency: "Send a message to the agency", sendMessage: "Send message",
+  },
+} as const;
 
 const portalCopy = {
   he: {
@@ -143,6 +183,7 @@ export function ClientPortalPage({
     finishAndRefresh: `I’m done explaining — please update ${thing.short}`,
   };
   const t = { ...portalCopy[language], ...deliverableCopy };
+  const d = portalDetailsCopy[language];
 
   useEffect(() => {
     if (!project || (focusMode !== "chat" && focusMode !== "mvp")) return;
@@ -152,10 +193,10 @@ export function ClientPortalPage({
   if (!client) {
     return (
       <>
-        <PageHeader title="Client Workspace" subtitle="Your projects, approvals, payments and requests in one place." />
+        <PageHeader title={d.noClientPage} subtitle={d.noClientSubtitle} />
         <section className="empty-state">
-          <h2>No client workspace available</h2>
-          <p>This account is not linked to a client record yet. Ask the agency to complete your access.</p>
+          <h2>{d.noClientTitle}</h2>
+          <p>{d.noClientText}</p>
         </section>
       </>
     );
@@ -164,10 +205,10 @@ export function ClientPortalPage({
   if (!project) {
     return (
       <>
-        <PageHeader title={`${client.company} workspace`} subtitle="Your projects, approvals, payments and requests in one place." />
+        <PageHeader title={`${client.company} · ${d.noClientPage}`} subtitle={d.noClientSubtitle} />
         <section className="empty-state">
-          <h2>No project exists for this client</h2>
-          <p>Once the agency creates your first project it will appear here with scope, approvals and payment status.</p>
+          <h2>{d.noProjectTitle}</h2>
+          <p>{d.noProjectText}</p>
         </section>
       </>
     );
@@ -282,7 +323,7 @@ export function ClientPortalPage({
           ))}
         </div>
         <dl className="meta-list portal-summary-grid">
-          <div><dt>{t.status}</dt><dd><StatusBadge label={statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></dd></div>
+          <div><dt>{t.status}</dt><dd><StatusBadge label={language === "he" ? projectStatusHe[project.status] : statusLabels[project.status]} tone={canWorkStart(project, scopes) ? "success" : "warning"} /></dd></div>
           <div><dt>{t.next}</dt><dd>{canWorkStart(project, scopes) ? t.ready : t.waiting}</dd></div>
           <div><dt>{t.requests}</dt><dd>{requests.filter((r) => r.status !== "declined" && r.status !== "client_approved").length}</dd></div>
           <div><dt>{t.approvals}</dt><dd>{pendingApprovals.length}</dd></div>
@@ -307,8 +348,10 @@ export function ClientPortalPage({
         subtitle={t.chatSubtitle}
         readOnly={isPreview}
         readOnlyReason="Preview mode — you are still signed in as agency admin, so sending as the client is disabled."
-        suggestions={["Start a new project", "מה חסר כדי להתקדם?", "Show me the project flow", "Summarise what we agreed so far"]}
-        safetyNotice="This assistant only answers questions about this project. Conversations are recorded and monitored by the agency, and fair-use limits apply."
+        suggestions={[...d.chatSuggestions]}
+        safetyNotice={d.safety}
+        language={language}
+        clientSafe
       />
       {mvpFreshness.hasMvp && mvpFreshness.isStale ? <section className="card portal-mvp-stale" role="status">
         <strong>{t.mvpStale}</strong>
@@ -349,13 +392,13 @@ export function ClientPortalPage({
 
       <TargetDateForm project={project} readOnly={isPreview} />
       <section className="card">
-        <h2>Approvals</h2>
+        <h2>{d.approvalsTitle}</h2>
         {approvalsForProject.length === 0 ? (
-          <p className="muted-text">Nothing needs your approval right now.</p>
+          <p className="muted-text">{d.approvalsEmpty}</p>
         ) : (
           <table>
             <thead>
-              <tr><th>Scope</th><th>Status</th><th>Notes</th><th>Approved</th><th /></tr>
+              <tr><th>{d.scope}</th><th>{d.status}</th><th>{d.notes}</th><th>{d.approved}</th><th /></tr>
             </thead>
             <tbody>
               {approvalsForProject.map((approval) => {
@@ -364,18 +407,18 @@ export function ClientPortalPage({
                 const decidable = approval.status === "pending" && approval.approverRole === "client";
                 return (
                   <tr key={approval.id}>
-                    <td>{scope ? `v${scope.version}` : "Scope"}</td>
-                    <td><StatusBadge label={approval.status} tone={approval.status === "approved" ? "success" : approval.status === "rejected" ? "danger" : "warning"} /></td>
+                    <td>{scope ? `v${scope.version}` : d.scope}</td>
+                    <td><StatusBadge label={compactStatusLabels[language][approval.status] ?? approval.status} tone={approval.status === "approved" ? "success" : approval.status === "rejected" ? "danger" : "warning"} /></td>
                     <td>{approval.notes || "—"}</td>
-                    <td>{approval.approvedDate ?? "Pending"}</td>
+                    <td>{approval.approvedDate ?? d.pending}</td>
                     <td>
                       {decidable ? (
                         <div className="action-row compact">
                           <button type="button" disabled={isPending(key)} onClick={() => void updateApprovalStatus(approval.id, "approved")}>
-                            {isPending(key) ? "Saving…" : "Approve"}
+                            {isPending(key) ? d.saving : d.approve}
                           </button>
                           <button type="button" disabled={isPending(key)} onClick={() => void updateApprovalStatus(approval.id, "rejected")}>
-                            Decline
+                            {d.decline}
                           </button>
                           {getError(key) ? <span className="form-error">{getError(key)}</span> : null}
                         </div>
@@ -390,20 +433,20 @@ export function ClientPortalPage({
       </section>
 
       <section className="card">
-        <h2>Approved scope</h2>
+        <h2>{d.approvedScope}</h2>
         {approvedScopes.length === 0 ? (
-          <p className="muted-text">No scope has been approved yet.</p>
+          <p className="muted-text">{d.approvedScopeEmpty}</p>
         ) : (
           approvedScopes.map((scope) => (
             <div key={scope.id} className="scope-block">
-              <h3>Version {scope.version}</h3>
+              <h3>{d.version} {scope.version}</h3>
               <p>{scope.clientFacingSummary}</p>
             </div>
           ))
         )}
         {visibleScopeItems.length ? (
           <table>
-            <thead><tr><th>Phase</th><th>Item</th><th>Acceptance</th></tr></thead>
+            <thead><tr><th>{d.phase}</th><th>{d.item}</th><th>{d.acceptance}</th></tr></thead>
             <tbody>
               {visibleScopeItems.map((item) => (
                 <tr key={item.id}>
@@ -419,18 +462,18 @@ export function ClientPortalPage({
 
       <section className="detail-grid">
         <article className="card">
-          <h2>Payment requests</h2>
+          <h2>{d.payments}</h2>
           {paymentsForProject.length === 0 ? (
-            <p className="muted-text">No payment has been requested for this project.</p>
+            <p className="muted-text">{d.paymentsEmpty}</p>
           ) : (
             <table>
-              <thead><tr><th>Amount</th><th>Status</th><th>Due</th><th>Notes</th></tr></thead>
+              <thead><tr><th>{d.amount}</th><th>{d.status}</th><th>{d.due}</th><th>{d.notes}</th></tr></thead>
               <tbody>
                 {paymentsForProject.map((payment) => (
                   <tr key={payment.id}>
                     <td>{currency.format(payment.amount)}</td>
-                    <td><StatusBadge label={payment.status} tone={payment.status === "received" ? "success" : "warning"} /></td>
-                    <td>{payment.dueDate ?? "Not set"}</td>
+                    <td><StatusBadge label={compactStatusLabels[language][payment.status] ?? payment.status} tone={payment.status === "received" ? "success" : "warning"} /></td>
+                    <td>{payment.dueDate ?? d.notSet}</td>
                     <td>{payment.notes}</td>
                   </tr>
                 ))}
@@ -439,19 +482,19 @@ export function ClientPortalPage({
           )}
         </article>
         <article className="card">
-          <h2>Paid hours</h2>
+          <h2>{d.paidHours}</h2>
           {banks.length === 0 ? (
-            <p className="muted-text">You do not have a paid-hour balance.</p>
+            <p className="muted-text">{d.paidHoursEmpty}</p>
           ) : (
             <table>
-              <thead><tr><th>Purchased</th><th>Used</th><th>Remaining</th><th>Expiry</th></tr></thead>
+              <thead><tr><th>{d.purchased}</th><th>{d.used}</th><th>{d.remaining}</th><th>{d.expiry}</th></tr></thead>
               <tbody>
                 {banks.map((bank) => (
                   <tr key={bank.id}>
-                    <td>{bank.hoursPurchased} hrs</td>
-                    <td>{bank.hoursUsed} hrs</td>
-                    <td>{bank.hoursRemaining} hrs</td>
-                    <td>{bank.expiryDate ?? "No expiry"}</td>
+                    <td>{bank.hoursPurchased} {d.hoursSuffix}</td>
+                    <td>{bank.hoursUsed} {d.hoursSuffix}</td>
+                    <td>{bank.hoursRemaining} {d.hoursSuffix}</td>
+                    <td>{bank.expiryDate ?? d.noExpiry}</td>
                   </tr>
                 ))}
               </tbody>
@@ -461,28 +504,28 @@ export function ClientPortalPage({
       </section>
 
       <section className="card">
-        <h2>Change requests</h2>
+        <h2>{d.changes}</h2>
         {requests.length === 0 ? (
-          <p className="muted-text">No change requests yet. Use the form below to ask for a change.</p>
+          <p className="muted-text">{d.changesEmpty}</p>
         ) : (
           <table>
-            <thead><tr><th>Request</th><th>Status</th><th>Price</th><th /></tr></thead>
+            <thead><tr><th>{d.request}</th><th>{d.status}</th><th>{d.price}</th><th /></tr></thead>
             <tbody>
               {requests.map((request) => {
                 const key = MutationKeys.updateChangeRequestStatus(request.id);
                 return (
                   <tr key={request.id}>
                     <td><strong>{request.title}</strong><br />{request.description}</td>
-                    <td><StatusBadge label={requestStatusLabels[request.status]} tone={request.status === "client_approved" ? "success" : request.status === "declined" ? "danger" : "warning"} /></td>
-                    <td>{request.agencyPrice != null ? currency.format(request.agencyPrice) : "Awaiting pricing"}</td>
+                    <td><StatusBadge label={requestStatusLabels[language][request.status]} tone={request.status === "client_approved" ? "success" : request.status === "declined" ? "danger" : "warning"} /></td>
+                    <td>{request.agencyPrice != null ? currency.format(request.agencyPrice) : d.awaitingPricing}</td>
                     <td>
                       {request.status === "priced" ? (
                         <div className="action-row compact">
                           <button type="button" disabled={isPending(key)} onClick={() => void updateChangeRequestStatus(request.id, "client_approved")}>
-                            {isPending(key) ? "Saving…" : "Approve"}
+                            {isPending(key) ? d.saving : d.approve}
                           </button>
                           <button type="button" disabled={isPending(key)} onClick={() => void updateChangeRequestStatus(request.id, "declined")}>
-                            Decline
+                            {d.decline}
                           </button>
                           {getError(key) ? <span className="form-error">{getError(key)}</span> : null}
                         </div>
@@ -497,28 +540,28 @@ export function ClientPortalPage({
 
         <form className="form-grid" onSubmit={handleRequestSubmit}>
           <label className="span-2">
-            What would you like to change?
+            {d.changeQuestion}
             <input value={requestForm.title} onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })} />
           </label>
           <label className="span-2">
-            Details
+            {d.details}
             <textarea value={requestForm.description} onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })} />
           </label>
           <div className="form-actions">
             <button className="primary-button" type="submit" disabled={isPending(requestKey)}>
-              {isPending(requestKey) ? "Sending…" : "Submit change request"}
+              {isPending(requestKey) ? d.sending : d.submitChange}
             </button>
           </div>
           {getError(requestKey) ? <p className="form-error" role="alert">{getError(requestKey)}</p> : null}
           {getSuccess(requestKey) && !getError(requestKey) ? <p className="form-success">{getSuccess(requestKey)}</p> : null}
         </form>
-        <p className="muted-text">The agency reviews and prices every request before it becomes work.</p>
+        <p className="muted-text">{d.changeHelp}</p>
       </section>
 
       <section className="card">
-        <h2>Files</h2>
+        <h2>{d.files}</h2>
         {files.length === 0 ? (
-          <p className="muted-text">No files have been shared with you yet.</p>
+          <p className="muted-text">{d.filesEmpty}</p>
         ) : (
           <ul className="link-list">
             {files.map((file) => (
@@ -532,14 +575,14 @@ export function ClientPortalPage({
       </section>
 
       <section className="card">
-        <h2>Messages</h2>
+        <h2>{d.messages}</h2>
         {messages.length === 0 ? (
-          <p className="muted-text">No messages yet.</p>
+          <p className="muted-text">{d.messagesEmpty}</p>
         ) : (
           <div className="message-list">
             {messages.map((message) => (
               <div key={message.id} className="message-item">
-                <div><strong>{message.authorRole === "client" ? "You" : "Agency"}</strong><p>{message.body}</p></div>
+                <div><strong>{message.authorRole === "client" ? d.you : d.agency}</strong><p>{message.body}</p></div>
                 <span>{message.createdDate}</span>
               </div>
             ))}
@@ -547,12 +590,12 @@ export function ClientPortalPage({
         )}
         <form className="form-grid" onSubmit={handleMessageSubmit}>
           <label className="span-2">
-            Send a message to the agency
+            {d.sendAgency}
             <textarea value={messageBody} onChange={(e) => setMessageBody(e.target.value)} />
           </label>
           <div className="form-actions">
             <button className="primary-button" type="submit" disabled={isPending(messageKey)}>
-              {isPending(messageKey) ? "Sending…" : "Send message"}
+              {isPending(messageKey) ? d.sending : d.sendMessage}
             </button>
           </div>
           {getError(messageKey) ? <p className="form-error" role="alert">{getError(messageKey)}</p> : null}

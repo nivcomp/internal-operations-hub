@@ -46,7 +46,7 @@ Document generation does not publish a proposal, create a signature or approve a
 The project lifecycle strip in the client portal communicates persisted project status only. Process diagrams and wireframes are rendered from the project conversation artifacts; the portal does not render a second static process specification.
 
 **Consequences**
-Artifact image downloads are generated locally from sanitized chat payloads. Copied/emailed portal links are authenticated deep links and never bypass the existing client ownership and RLS checks. Portal language is a presentation preference stored in the browser and does not create translated duplicate project records.
+Artifact image downloads are generated locally from sanitized chat payloads. Copied/emailed portal links are authenticated deep links and never bypass the existing client ownership and RLS checks. Portal language is a presentation preference stored in the browser and does not create translated duplicate project records. Clickable node explanations, visual categories and glossary help are derived from the same LiveFlow/artifact nodes and may not create a second workflow, status source or technical dependency model.
 
 ### 2026-08-08 — Simple meeting mode is client-safe by design
 

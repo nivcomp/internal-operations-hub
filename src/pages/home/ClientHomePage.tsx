@@ -160,6 +160,7 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
             subtitle={text.chatSub}
             language={language}
             allowAttachments
+            clientSafe
             onFileUploaded={() => void refreshFiles()}
             safetyNotice={text.safety}
             suggestions={[...text.suggestions]}
@@ -192,7 +193,7 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
 
           {showDeliverable && (
             <section className="card">
-              <header className="flow-canvas-head">
+              <header className="client-project-flow-head">
                 <h2>{product.name}</h2>
                 <button type="button" className="ghost-button" onClick={() => setShowDeliverable(false)}>×</button>
               </header>
