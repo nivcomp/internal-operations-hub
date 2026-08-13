@@ -12,7 +12,7 @@ const titles: Record<Kind, string> = {
   suppliers: "ספקים",
 };
 
-export function SimpleRecordsPage({ kind }: { kind: Kind }) {
+export function SimpleRecordsPage({ kind, onProjectOpen }: { kind: Kind; onProjectOpen?: (projectId: string) => void }) {
   const { clients, projects, suppliers } = useAppData();
   const { openAdvanced } = useMode();
   const [query, setQuery] = useState("");
@@ -77,7 +77,7 @@ export function SimpleRecordsPage({ kind }: { kind: Kind }) {
         <SimpleClientCard client={activeClient} onContinue={() => openAdvanced("client-detail", { clientId: activeClient.id })} />
       ) : null}
       {kind === "projects" && activeProject ? (
-        <SimpleProjectCard project={activeProject} onContinue={() => openAdvanced("project-detail", { projectId: activeProject.id })} />
+        <SimpleProjectCard project={activeProject} onContinue={() => onProjectOpen?.(activeProject.id)} />
       ) : null}
       {kind === "suppliers" && activeSupplier ? (
         <SimpleSupplierCard supplier={activeSupplier} onContinue={() => openAdvanced("supplier-detail", { supplierId: activeSupplier.id })} />

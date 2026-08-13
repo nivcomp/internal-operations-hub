@@ -1,5 +1,37 @@
 # Work Log
 
+### 2026-08-13 — Simplified agency-admin daily workflow
+
+**Work unit**
+Audit and simplify the agency-admin experience without changing backend, authentication, RLS, role isolation, signed proposals, estimate rules or audit history.
+
+**Changes**
+- Audited visible Simple and Advanced controls in `ADMIN_UI_AUDIT.md`, including working, partial, dead and advanced-only classifications.
+- Reduced Simple primary navigation to Home, CRM, Projects and Suppliers, with pre-project lead conversations available contextually and the complete product behind `מערכת מתקדמת`.
+- Added a four-area Simple project workspace: Discovery, Pricing & Proposal, Execution & Supplier, and Status.
+- Added a canonical `project_estimates` pricing workspace with explicit hourly rate, hours, cost, budget, recommended price, margin, risk summary, human fixed-price approval and existing proposal publication flow.
+- Added supplier assignment and supplier-safe `supplier_brief` generation, preview, print/PDF-save view and contextual supplier portal access.
+- Added a plain-language project status summary and a direct control to return to the beginning of the original client conversation.
+- Kept one persistent contextual Copilot and repaired the previously ignored Advanced project-tab deep-link context.
+- Removed duplicate Simple project actions and reduced the Home quick-action grid to one primary and three secondary actions.
+
+**Verification**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; the existing large-chunk warning remains.
+- The Vite application and unauthenticated login boundary loaded successfully in the local in-app browser.
+- No lint or automated test script exists in `package.json`.
+- An authenticated real-project smoke test remains required because the matching local build had no signed-in browser session. No production data was changed and no release was published.
+
+**Files**
+- `ADMIN_UI_AUDIT.md`
+- Simple layout, Home, CRM, record cards and project workspace components
+- Canonical pricing, supplier handoff, status and supplier-print components
+- `App.tsx`, project chat/deep-link routing and responsive/print styles
+- Project memory documents
+
+**Next**
+- Review the pull request and run the single authenticated preview smoke test described in `NEXT_TASK.md`; do not merge until it passes.
+
 ### 2026-08-13 — Production release of agency-controlled lead conversations
 
 **Work unit**

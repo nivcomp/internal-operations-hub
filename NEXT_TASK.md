@@ -2,47 +2,39 @@
 
 ## Current result
 
-The agency-controlled pre-project lead workflow is live in production.
+The agency-admin simplification is implemented on branch `codex/simplify-admin-ui` without changing the backend, authentication, RLS, client/supplier isolation, signed proposals, estimate rules or audit history.
 
-The production migration `20260813100000_lead_conversation_inbox.sql` was applied successfully. Production now has durable lead conversations and messages, agency-only promotion, server-enforced paused/review/disqualified states, and a client submission path that cannot create a project. One existing no-project onboarding conversation was safely backfilled as one lead with its six existing messages.
+Simple Mode now has four primary destinations: Home, CRM, Projects and Suppliers. A selected project opens exactly four daily areas: `אפיון`, `תמחור והצעה`, `ביצוע וספק`, and `סטטוס`. Lead conversations, tasks and finance are contextual; the complete existing product remains available behind `מערכת מתקדמת`.
 
-The four matching Edge Functions (`onboarding-chat`, `lead-conversations`, `access-admin`, and `public-registration`) were deployed from source commit `d87e0de`, and the matching frontend was published. Lovable reports the project as published and ready. The public production address redirects to `https://project.stat.ninja/`, reaches the authenticated login boundary, and loads without browser console errors.
+The pricing area reads and writes the canonical `project_estimates` record, makes the hourly calculation rate explicit, shows the budget/cost/recommended price/margin/risk summary, requires explicit fixed-price approval, and reuses the existing proposal panel. The supplier area reuses supplier-audience `supplier_brief` documents, provides an authenticated printable/PDF-save view, and never renders client price or agency margin. The project chat now has an explicit jump to the start of the promoted lead conversation.
 
-New invitations and approved public registrations now enter the lead inbox before a project exists. Agency admins can review the complete thread, reply visibly, add private notes, pause, resume, disqualify, or explicitly promote the lead. Only promotion creates the exact client-owned project and transfers the transcript, brief, flow, notes, and specification drafts. Existing project-continuation links remain unchanged.
-
-Build, TypeScript, migration verification, function deployment, public production loading, and database invariants pass. The release has not yet received a full authenticated client/admin interaction smoke test because no signed-in production client/admin browser session was available in this run.
+The full control audit is recorded in `ADMIN_UI_AUDIT.md`. TypeScript and the production build pass. The local login boundary loads correctly, but an authenticated real-project browser smoke test could not be completed because no signed-in browser session was available for the matching local code. No production deployment or merge is part of this work unit.
 
 ## Recommended next work unit
 
-Run one controlled authenticated production smoke test across both roles:
+Review the pull request and run one authenticated preview smoke test on a real but controlled project before merge:
 
-1. Send one client message and confirm it appears in the agency lead inbox without creating a project.
-2. Send one client-visible agency reply and one private note; verify only the reply reaches the client and the reply influences the next AI turn.
-3. Pause and resume the lead, then submit it for review; verify blocked statuses are enforced by the server.
-4. Promote the lead once and repeat the promotion request; verify both calls resolve to the same project.
-5. Confirm the complete transcript, brief, flow, internal notes and specification drafts are attached to that project, and that an existing continuation link still opens its original project.
+1. Open the project from Simple Projects and confirm the four areas and plain-language status summary.
+2. Open Discovery and verify the complete promoted lead transcript, including the `לתחילת השיחה` control.
+3. Change the hourly calculation rate, confirm the canonical estimate updates, approve a fixed price and create a proposal draft.
+4. Assign an approved supplier, generate a supplier brief, verify no internal pricing appears, and test preview, Print and browser Save as PDF.
+5. Open the same project in Advanced Mode and confirm the same estimate/proposal/document records and unchanged commercial/audit history.
+6. Verify a client and supplier account still see only their existing role-safe records.
 
 ## Constraints
 
 - Keep one application, repository and Supabase project.
-- A pre-project lead is not a project and cannot request an MVP.
-- Only an active agency admin may promote a lead.
-- Enforce paused and disqualified status on the server, not only in the interface.
-- Never expose agency-only notes to a client.
-- Keep promotion retry-safe and preserve the complete lead history.
-- Do not change existing project-continuation links.
+- Do not merge the pull request until the authenticated smoke test passes.
+- Do not create a second estimate, document, project or pricing model.
+- Keep the meeting/discovery surface client-safe.
+- Never expose client price, calculation rate, internal cost, agency margin or internal notes to suppliers.
+- Keep final price, proposal, supplier assignment, payment and work-start decisions human-controlled.
 
 ## Acceptance criteria
 
-- The authenticated client and agency views expose the same lead thread before any project exists.
-- Agency-visible replies reach the client; private notes do not.
-- Paused, submitted and disqualified leads cannot keep messaging through direct API calls.
-- Client submission creates no project.
-- Repeated agency promotion creates exactly one project and returns that same project.
-- The promoted project contains the complete transcript, brief, flow, notes and specification drafts.
-- The promoted client enters that exact project portal and can begin the project/MVP workflow there.
-- An existing continuation link still opens its original project.
-- No client-facing view exposes agency-only notes or internal commercial data.
-
-**Next after the smoke test**
-- Return to automatic specification documents and the Simple Mode document center.
+- The daily Simple flow works from Discovery through Pricing/Proposal to Supplier handoff without requiring Advanced Mode.
+- Simple and Advanced show the same canonical records after every mutation.
+- The supplier brief is readable, printable and saveable as PDF and contains no agency-only commercial information.
+- Status answers only where the project is, what is missing, who is waiting and the next action.
+- Existing authentication, RLS, role isolation, proposal immutability, estimate rules and audit history remain unchanged.
+- The pull request remains unmerged until review and smoke verification are complete.

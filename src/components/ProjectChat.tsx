@@ -370,9 +370,10 @@ export function ProjectChat({
           <h2>{title}</h2>
           <p className="chat-sub">{subtitle}</p>
         </div>
-        <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>
-          Refresh
-        </button>
+        <div className="action-row compact">
+          {messages.length ? <button type="button" className="ghost-button" onClick={() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>לתחילת השיחה</button> : null}
+          <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>רענון</button>
+        </div>
       </header>
 
       {readOnly && <p className="chat-readonly">{readOnlyReason ?? "Preview mode — sending is disabled."}</p>}

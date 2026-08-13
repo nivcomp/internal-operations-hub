@@ -3,13 +3,9 @@ import { useMode, type SimpleView } from "../../context/ModeContext";
 
 const navItems: { key: SimpleView; label: string }[] = [
   { key: "home", label: "בית" },
-  { key: "crm", label: "לידים" },
-  { key: "lead-conversations", label: "שיחות לידים" },
-  { key: "clients", label: "לקוחות" },
+  { key: "crm", label: "CRM" },
   { key: "projects", label: "פרויקטים" },
   { key: "suppliers", label: "ספקים" },
-  { key: "tasks", label: "משימות" },
-  { key: "finance", label: "כספים" },
 ];
 
 type Props = {
@@ -47,7 +43,7 @@ export function SimpleLayout({ accountLabel, onSignOut, children }: Props) {
         </nav>
         <div className="simple-topbar-actions">
           <button type="button" className="ghost-button" onClick={() => setMode("advanced")}>
-            מערכת מלאה
+            מערכת מתקדמת
           </button>
           <button type="button" className="ghost-button" onClick={() => setMenuOpen((open) => !open)} aria-label="חשבון">
             ⋯

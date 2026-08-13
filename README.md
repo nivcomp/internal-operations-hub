@@ -21,6 +21,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 
 - Client, CRM lead, project, supplier and invitation management.
 - Simple and advanced dashboards over the same `AppDataProvider` state.
+- Daily Simple navigation limited to Home, CRM, Projects and Suppliers, with one four-area project workspace and the complete operator system behind `מערכת מתקדמת`.
 - Client and supplier portals with strict visibility rules.
 - Project chat, onboarding chat, persistent Copilot and voice Copilot.
 - Client and supplier project chats retain usage quotas; agency-admin project chats are unmetered in both Simple and Advanced Mode while still retaining input safety controls and usage logging.
@@ -29,6 +30,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - The Advanced project workspace uses six primary sections with secondary operator tools behind progressive disclosure. Its pricing summary explicitly separates the published client view from internal rate, cost and margin data.
 - A saved interactive prototype studio turns reviewed chat, specification content, pasted text or DOCX source material into versioned app, WhatsApp-bot or automation MVP screens. Agency operators create and share drafts; clients can navigate and approve the exact shared version in their portal.
 - Shared project document center in Simple, Advanced and the client portal, using approved specification sections and existing `project_documents` records.
+- Supplier-safe handoff from the Simple project workspace using existing supplier-audience `supplier_brief` documents and an authenticated printable/PDF-save view.
 - Meetings, source uploads/transcripts and structured specification records.
 - Live meeting timing with start/end/duration, plus an agency-only idempotent charge ledger that can deduct confirmed discovery hours from the existing client/project hour bank.
 - Simple Mode meeting launcher for existing/new clients and projects, with a resumable live discovery room that stays inside the compact application.

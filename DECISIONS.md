@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-08-13 — Simple Mode is the daily agency workflow, not a second system
+
+**Decision**
+The agency-admin Simple Mode has four primary destinations (Home, CRM, Projects and Suppliers). A Simple project has exactly four daily areas: Discovery, Pricing & Proposal, Execution & Supplier, and Status. Specialist controls remain available through contextual disclosure or `מערכת מתקדמת`.
+
+**Reason**
+The existing complete navigation and technical project tabs exposed too many equal choices for daily work. The agency needs an obvious next action without losing existing capabilities.
+
+**Consequences**
+Simple and Advanced continue to share the same authentication, RLS, projects, `project_estimates`, proposals and documents. The Simple pricing workspace may show agency-only commercial values, but the embedded meeting/discovery surface remains client-safe. Supplier handoff renders only supplier-audience `supplier_brief` records. No duplicate pricing, document or project model is introduced.
+
 ## 2026-08-08 — Prototypes are bounded data, not executable AI code
 
 **Decision**

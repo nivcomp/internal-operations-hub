@@ -9,7 +9,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - One React application with shared `simple` and `advanced` presentation modes.
 - Supabase-backed authentication, profiles, durable records, storage, RLS and role isolation.
 - Clients, CRM leads, projects, suppliers, invitations and role-specific home/portal screens.
-- A personalized new-client workspace that visibly confirms the signed-in client, business and project context, then preserves the onboarding conversation, structured brief and diagram inside the exact project it creates.
+- A personalized new-client workspace that visibly confirms the signed-in client and business context, preserves the pre-project conversation for agency review, and creates the exact project only when an agency admin promotes the lead.
 - Project conversations and server-side AI for client, agency and supplier roles.
 - A shared interactive project room with persistent chat, voice input, visual process/screen artifacts, confirmation-gated estimate proposals and client-safe live estimate visibility.
 - A versioned interactive prototype studio for app, WhatsApp-bot and automation demonstrations, with DOCX/text intake, client sharing, exact-version approval and reviewed Lovable export.
@@ -18,6 +18,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - A complete Hebrew-first Simple Mode meeting flow: existing/new client, existing/new project, resumable live workspace, chat, reviewed voice transcripts, source uploads, specification and canonical pricing.
 - Live discovery timing, explicit quarter-hour billable adjustment and a retry-safe deduction from an eligible existing hour bank when the agency finishes a meeting.
 - The Simple meeting is a shared client-safe presentation surface; internal calculation rate, supplier cost and margin remain restricted to Advanced Mode.
+- A daily agency Simple project workspace with exactly four areas: discovery, canonical pricing/proposal, supplier-safe execution handoff, and plain-language status. Internal commercial values appear only in the admin pricing area, not in the client-safe meeting surface or external portals.
 - Structured requirements, assumptions, questions and specification sections/versions.
 - Canonical project estimation with structured items, roles, buffers, internal cost, budget ranges, supplier reviews, scenarios and snapshots.
 - Proposal versions, immutable digital signatures, stored project documents, change requests and draft execution packages.
