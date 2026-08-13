@@ -171,7 +171,8 @@ async function ensureConversation(agent: AgentType, projectId: string, supplierI
   const cfg = AGENT_CONFIG[agent];
   let query = admin.from("project_conversations").select("*").eq("project_id", projectId).eq("kind", cfg.kind);
   query = supplierId ? query.eq("supplier_id", supplierId) : query.is("supplier_id", null);
-  const { data: existing } = await query.maybeSingle();
+  const { data: existingRows } = await query.order("created_at", { ascending: true }).limit(1);
+  const existing = existingRows?.[0];
   if (existing) return existing;
 
   const titles: Record<AgentType, string> = {
@@ -179,10 +180,17 @@ async function ensureConversation(agent: AgentType, projectId: string, supplierI
     agency_control: "Agency Control",
     work_assistant: "Work Assistant",
   };
-  const { data, error } = await admin.from("project_conversations")
+  let { data, error } = await admin.from("project_conversations")
     .insert({ project_id: projectId, kind: cfg.kind, supplier_id: supplierId, title: titles[agent] })
     .select("*").single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Another concurrent request created it first — re-read.
+    let retry = admin.from("project_conversations").select("*").eq("project_id", projectId).eq("kind", cfg.kind);
+    retry = supplierId ? retry.eq("supplier_id", supplierId) : retry.is("supplier_id", null);
+    const { data: rows } = await retry.order("created_at", { ascending: true }).limit(1);
+    if (!rows?.[0]) throw new Error(error.message);
+    data = rows[0];
+  }
   await admin.from("conversation_participants").upsert(
     [
       { conversation_id: data.id, profile_id: profileId, participant_role: cfg.role },
