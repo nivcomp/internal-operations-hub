@@ -536,7 +536,7 @@ export function ProjectChat({
           dir={isRtl(input) ? "rtl" : "ltr"}
           rows={3}
           maxLength={usage?.maximumMessageLength ?? 4000}
-          placeholder={readOnly ? "Sending is disabled in preview mode" : "Write your message… (Hebrew or English)"}
+          placeholder={readOnly ? text.disabled : text.placeholder}
           disabled={readOnly || aiState === "thinking"}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
@@ -547,11 +547,30 @@ export function ProjectChat({
           }}
         />
         <div className="action-row">
+          {allowAttachments && !readOnly && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                onChange={(event) => void handleAttach(event.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={uploading || aiState === "thinking"}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? text.uploading : text.attach}
+              </button>
+            </>
+          )}
           <button type="button" className={recording ? "danger-button" : "ghost-button"} disabled={readOnly || transcribing || aiState === "thinking"} onClick={() => void toggleVoice()}>{recording ? "■ עצור ותמלל" : transcribing ? "מתמלל…" : "🎙️ דבר"}</button>
           <button type="submit" disabled={readOnly || aiState === "thinking" || input.trim().length === 0}>
-            {aiState === "thinking" ? "Sending…" : "Send"}
+            {aiState === "thinking" ? text.sending : text.send}
           </button>
         </div>
+        {uploadedName && <p className="chat-hint">{text.uploaded}: {uploadedName}</p>}
       </form>
     </section>
   );
