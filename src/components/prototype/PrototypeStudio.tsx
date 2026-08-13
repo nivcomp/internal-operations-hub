@@ -1,3 +1,4 @@
+import { deliverable } from "../../lib/clientWording";
 import { useEffect, useMemo, useState } from "react";
 import {
   generatePrototype, listProjectPrototypes, recordPrototypeDecision, sharePrototype,
@@ -82,14 +83,17 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
   const handoffPayload = useMemo(() => version ? JSON.stringify({ project: projectName, prototypeType: prototype?.prototype_kind, version: version.version, summary: version.summary, ui: version.content, rules: ["Preserve the approved screens and interactions", "Implement authentication and role isolation", "Do not invent pricing or expose internal agency data", "Create the required database schema and integrations from the supplied specification"] }, null, 2) : "", [version, prototype?.prototype_kind, projectName]);
   async function copyExport(platform: "Lovable" | "Base44") { await navigator.clipboard.writeText(`Build an implementation of this reviewed MVP in ${platform}. Treat the JSON as the approved product contract. Include the required database, authentication, permissions, integrations and automation flows. Ask before inventing missing business rules.\n\n${handoffPayload}`); setNotice(`חבילת ה־MVP הועתקה עבור ${platform}. יש לבדוק אותה לפני ההדבקה.`); }
 
+  const thing = deliverable(prototype?.prototype_kind ?? null, language);
   const clientCopy = language === "he" ? {
-    title: "ה־MVP החזותי", empty: "עדיין לא שותף אב־טיפוס לפרויקט.", fullscreen: "פתח MVP במסך מלא", exit: "צא ממסך מלא",
-    prototype: "אב־טיפוס", version: "גרסה", approval: "אישור הלקוח לגרסה", approved: "הגרסה אושרה", changes: "התבקשו שינויים",
-    placeholder: "הערה או שינוי מבוקש", approve: "אני מאשר/ת את הגרסה", request: "בקש שינויים",
+    title: thing.name, empty: `עדיין לא שיתפנו איתך תצוגה של ${thing.short}. נעדכן אותך ברגע שתהיה מוכנה.`,
+    fullscreen: "פתח במסך מלא", exit: "צא ממסך מלא",
+    prototype: "מה שבונים", version: "גרסה", approval: "האישור שלך לגרסה", approved: "אישרת את הגרסה", changes: "ביקשת שינויים",
+    placeholder: "הערה או שינוי שתרצה", approve: "זה מתאים לי", request: "יש לי הערות",
   } : {
-    title: "Visual MVP", empty: "No prototype has been shared for this project yet.", fullscreen: "Open MVP full screen", exit: "Exit full screen",
-    prototype: "Prototype", version: "Version", approval: "Client approval for version", approved: "Version approved", changes: "Changes requested",
-    placeholder: "Comment or requested change", approve: "Approve this version", request: "Request changes",
+    title: thing.name, empty: `We have not shared a preview of ${thing.short} with you yet. We will let you know once it is ready.`,
+    fullscreen: "Open full screen", exit: "Exit full screen",
+    prototype: "What we are building", version: "Version", approval: "Your approval for version", approved: "You approved this version", changes: "You asked for changes",
+    placeholder: "A comment or change you would like", approve: "This works for me", request: "I have comments",
   };
 
   if (!version && readOnly) return <section className="card prototype-empty"><h2>{clientCopy.title}</h2><p>{clientCopy.empty}</p></section>;
