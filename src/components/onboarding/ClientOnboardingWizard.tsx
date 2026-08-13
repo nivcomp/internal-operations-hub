@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { WizardShell, type WizardStep } from "./WizardShell";
 import { useOnboarding } from "../../context/OnboardingContext";
-import { submitClientOnboarding } from "../../services/onboardingApi";
+import { submitOnboardingForReview } from "../../services/onboardingChatApi";
 
 type Answers = Record<string, string>;
 
@@ -209,17 +209,17 @@ export function ClientOnboardingWizard({ onDone }: { onDone: () => void }) {
   };
 
   const finish = () => void guard(async () => {
-    await submitClientOnboarding({ ...answers });
-    onDone();
+    await submitOnboardingForReview({ ...answers });
+    setExited(true);
   });
 
   if (exited) {
     return (
       <div className="wizard-screen">
         <div className="card wizard-card">
-          <h1 className="wizard-title">Saved</h1>
-          <p className="wizard-helper">Your answers are saved. You can pick up exactly where you stopped.</p>
-          <button type="button" className="primary-button" onClick={() => setExited(false)}>Continue now</button>
+          <h1 className="wizard-title">Sent for review</h1>
+          <p className="wizard-helper">Yaniv received your brief. No project has been opened yet; you will see the update here after his review.</p>
+          <button type="button" className="primary-button" onClick={onDone}>Return to the conversation</button>
         </div>
       </div>
     );

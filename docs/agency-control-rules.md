@@ -11,6 +11,7 @@ The agency must stay in control of scope, price, supplier assignment, and client
 - Yaniv controls what clients see.
 - Yaniv controls what suppliers see.
 - Yaniv decides when work is ready to start.
+- Yaniv decides whether a new-client conversation becomes a project at all.
 
 ## Start Work Rules
 
@@ -58,3 +59,5 @@ Only Yaniv can see:
 ## AI Control Rule
 
 AI can draft, summarize, classify, and suggest. AI should not approve scope, set final prices, assign suppliers, or send final commitments without Yaniv.
+
+The onboarding AI also cannot create a project. It may prepare a lead brief and diagram; project creation requires Yaniv's explicit promotion action.

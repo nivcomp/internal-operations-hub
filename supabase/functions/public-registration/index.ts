@@ -252,6 +252,15 @@ Deno.serve(async (req) => {
     });
     if (profileError) return json({ error: profileError.message }, 400);
 
+    if (registration.role === "client" && clientId) {
+      const { error: threadError } = await admin.from("lead_conversations").upsert({
+        profile_id: userId,
+        client_id: clientId,
+        status: "invited",
+      }, { onConflict: "profile_id", ignoreDuplicates: true });
+      if (threadError) return json({ error: threadError.message }, 400);
+    }
+
     const now = new Date().toISOString();
     await admin.from("public_registrations").update({
       status: "converted",

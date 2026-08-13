@@ -1,5 +1,35 @@
 # Work Log
 
+### 2026-08-13 — Agency-controlled pre-project lead conversations
+
+**Work unit**
+Implement the approved lead-to-project workflow so Yaniv can see and guide the full new-client conversation before deciding whether a project should exist.
+
+**Changes**
+- Added durable pre-project lead conversations and messages with separate client-visible and agency-only visibility.
+- Added invited, active, awaiting-review, paused, disqualified and promoted states plus unread tracking.
+- Added the “Lead Conversations” inbox to both Simple and Advanced Mode with the full transcript, evolving brief/flow, manager replies, private notes and status controls.
+- Changed AI and classic client onboarding completion into “send for review”; it no longer creates a project.
+- Enforced pause, review and disqualification server-side in `onboarding-chat`.
+- Added agency-only, retry-safe promotion that creates one project and migrates the transcript, internal notes, brief, diagram and specification drafts.
+- Created lead threads at quick invitation and public-registration claim while preserving existing project-continuation behavior.
+
+**Tests**
+- `npx tsc --noEmit` passed.
+- `npm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed before the final documentation update and is rerun before commit.
+- The production database was inspected and confirmed to still have the old auto-project submission function. Applying the new production schema/backfill was blocked pending a separate explicit approval for production data mutation, so no partial production release was attempted.
+
+**Files**
+- `supabase/migrations/20260813100000_lead_conversation_inbox.sql`
+- `supabase/functions/onboarding-chat/index.ts`, `supabase/functions/lead-conversations/index.ts`
+- `supabase/functions/access-admin/index.ts`, `supabase/functions/public-registration/index.ts`
+- `src/pages/LeadConversationsPage.tsx`, `src/services/leadConversationsApi.ts`
+- Onboarding UI, navigation, styles and project memory files
+
+**Next**
+- Obtain explicit approval for the production database migration, deploy database/functions/frontend as one release, then run the authenticated client/admin smoke test.
+
 ### 2026-08-13 — Production release of client identity and project binding
 
 **Work unit**

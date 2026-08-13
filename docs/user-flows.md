@@ -2,13 +2,15 @@
 
 ## New Client Lead to Project
 
-1. Yaniv creates or receives a client lead.
-2. Client details and initial notes are stored.
-3. Discovery questions are captured.
-4. Yaniv creates a project record.
-5. AI can help summarize the need into a draft brief.
-6. Yaniv reviews and edits the brief.
-7. The project moves toward pricing and scope.
+1. Yaniv sends a new-client invitation, or a client enters through the approved public registration link.
+2. The client account and business identity are stored as a lead; no project exists yet.
+3. The client speaks with the AI Project Guide. The complete transcript, evolving brief and flow diagram remain attached to the lead conversation.
+4. Yaniv sees the lead conversation in the agency inbox and can send a client-visible message, add an agency-only note, pause it, resume it or close it as not qualified.
+5. The client can submit the brief for review, but cannot create a project or request an MVP at this stage.
+6. Yaniv explicitly promotes a qualified lead. That single retry-safe action creates one project and transfers the conversation, brief, diagram and private notes.
+7. The client enters the project portal. Only then can the project move toward reviewed specification, pricing and MVP work.
+
+An existing-project continuation link is a different flow. It remains bound to its existing project and never creates or enters a pre-project lead conversation.
 
 ## Discovery to Scope
 

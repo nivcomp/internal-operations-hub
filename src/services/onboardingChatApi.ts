@@ -1,6 +1,13 @@
 import { supabase } from "../integrations/supabase/client";
 
-export type OnboardingTurn = { role: "user" | "assistant"; body: string; at: string };
+export type OnboardingTurn = { role: "user" | "assistant" | "agency"; body: string; at: string };
+export type LeadConversationStatus =
+  | "invited"
+  | "active"
+  | "awaiting_review"
+  | "paused"
+  | "disqualified"
+  | "promoted";
 
 export type LiveDocument = {
   summary?: string;
@@ -73,6 +80,9 @@ export type OnboardingChatResponse = {
   identity?: OnboardingIdentity;
   readyToSubmit?: boolean;
   completedAt?: string | null;
+  conversationStatus?: LeadConversationStatus | null;
+  statusMessage?: string;
+  projectId?: string | null;
 };
 
 async function call(payload: Record<string, unknown>): Promise<OnboardingChatResponse> {
@@ -98,3 +108,5 @@ async function call(payload: Record<string, unknown>): Promise<OnboardingChatRes
 export const loadOnboardingConversation = () => call({ action: "state" });
 export const sendOnboardingMessage = (message: string) => call({ action: "send", message });
 export const patchOnboardingAnswers = (patch: Record<string, unknown>) => call({ action: "patch", patch });
+export const submitOnboardingForReview = (answers?: Record<string, unknown>) =>
+  call({ action: "submitForReview", answers });

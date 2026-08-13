@@ -29,6 +29,8 @@ Client users should only see their own client-facing information.
 Can:
 
 - Submit intake information.
+- Continue an open pre-project lead conversation and read agency messages in it.
+- Submit a pre-project brief for agency review.
 - View project status.
 - View client-facing brief and scope.
 - Approve or reject scope.
@@ -39,6 +41,8 @@ Can:
 
 Cannot:
 
+- Create a project or request an MVP while still a lead.
+- Resume a paused or closed lead conversation.
 - See supplier cost.
 - See agency margin.
 - See supplier payment details.
@@ -71,3 +75,5 @@ Cannot:
 ## Permission Rule
 
 When in doubt, show less. Yaniv can expose more manually later.
+
+Pre-project lead conversations follow the same rule: client-visible messages and agency-only notes are stored separately, and only an active agency admin can promote the lead into a project.

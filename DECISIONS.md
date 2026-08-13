@@ -192,3 +192,17 @@ Opening Project Detail automatically in Advanced Mode or creating a separate lig
 
 **Consequences**
 The active Simple Mode project id may be remembered locally for navigation recovery, but Supabase remains the durable source. Refreshing never creates records, and `startMeeting` remains the idempotent entry point that prevents duplicate active meetings.
+
+### 2026-08-13 — Agency-controlled lead promotion
+
+**Decision**
+New-client onboarding is a durable pre-project lead conversation. A client may talk, edit the draft and submit it for review, but only an active agency admin may promote it into a project.
+
+**Reason**
+The agency needs to see and guide the entire conversation, stop unqualified leads and decide when a real delivery workspace should exist. Automatically creating a project from every intake obscures the pipeline and gives the client control over an agency commitment.
+
+**Alternatives considered**
+Creating a project on the client's first message, creating it on client submission, or storing the pre-project thread inside project chat tables with a placeholder project.
+
+**Consequences**
+Lead conversations and messages have their own pre-project tables. Client-visible messages and agency-only notes are separated. Pause and disqualification are enforced server-side. Promotion is agency-only, retry-safe and migrates the transcript, brief, flow and internal notes into one canonical project. Existing project-continuation links remain unchanged.

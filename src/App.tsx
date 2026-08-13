@@ -48,12 +48,13 @@ import { SupplierDetailPage } from "./pages/SupplierDetailPage";
 import { SupplierPortalPage } from "./pages/SupplierPortalPage";
 import { SupplierTimePage } from "./pages/SupplierTimePage";
 import { SuppliersPage } from "./pages/SuppliersPage";
+import { LeadConversationsPage } from "./pages/LeadConversationsPage";
 import type { UserRole } from "./types/domain";
 import type { ViewKey } from "./views";
 
 const roleViews: Record<UserRole, ViewKey[]> = {
   agency_admin: [
-    "home", "dashboard", "action-queue", "clients", "client-detail", "client-portal",
+    "home", "dashboard", "action-queue", "lead-conversations", "clients", "client-detail", "client-portal",
     "projects", "project-detail", "change-requests",
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
     "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
@@ -343,6 +344,7 @@ function AppShell() {
       />
     ),
     crm: <CrmWorkspace onClientSelect={openClientDetail} onCreateProject={openClientDetail} />,
+    "lead-conversations": <LeadConversationsPage onProjectOpen={openProjectDetail} />,
     suppliers: <SuppliersPage onSupplierSelect={openSupplierDetail} />,
     "supplier-detail": (
       <SupplierDetailPage
@@ -399,6 +401,7 @@ function AppShell() {
         onCreateProject={(clientId) => openAdvanced("client-detail", { clientId })}
       />
     ),
+    "lead-conversations": <LeadConversationsPage onProjectOpen={(projectId) => openAdvanced("project-detail", { projectId })} />,
     clients: <SimpleRecordsPage kind="clients" />,
     projects: <SimpleRecordsPage kind="projects" />,
     suppliers: <SimpleRecordsPage kind="suppliers" />,
@@ -543,7 +546,7 @@ function OnboardingGate() {
   if (needsOnboarding && !hasExistingProject && (profile?.role === "client" || profile?.role === "supplier")) {
     if (useClassicForm) {
       return profile.role === "client"
-        ? <ClientOnboardingWizard onDone={() => void finishOnboarding()} />
+        ? <ClientOnboardingWizard onDone={() => setUseClassicForm(false)} />
         : <SupplierOnboardingWizard onDone={() => void finishOnboarding()} />;
     }
     return (

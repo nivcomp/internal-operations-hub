@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useAppData } from "../../context/AppDataContext";
-import { submitClientOnboarding, submitSupplierOnboarding } from "../../services/onboardingApi";
+import { submitSupplierOnboarding } from "../../services/onboardingApi";
 import {
   loadOnboardingConversation,
   patchOnboardingAnswers,
   sendOnboardingMessage,
+  submitOnboardingForReview,
   type LiveDocument,
   type LiveFlow,
   type LiveSupplierProfile,
+  type LeadConversationStatus,
   type OnboardingAnswers,
   type OnboardingIdentity,
   type OnboardingTurn,
@@ -57,7 +59,7 @@ const COPY = {
     flowTitle: "זרימת העבודה שזיהינו",
     readyTitle: "יש לנו מספיק כדי להתחיל",
     readyText: "עברו על הסיכום אם תרצו, ואז שלחו אותו לסוכנות. תמיד אפשר לדייק אותו יחד בהמשך.",
-    submitClient: "שליחת האפיון והמשך ל־MVP",
+    submitClient: "שליחה ליניב לבדיקה",
     submitSupplier: "שליחת הפרופיל",
     submitting: "שולח…",
     classicPrefix: "מעדיפים למלא שאלון מסודר?",
@@ -133,7 +135,7 @@ const COPY = {
     flowTitle: "The workflow we identified",
     readyTitle: "We have enough to get started",
     readyText: "Review the summary if you like, then send it to the agency. We can always refine it together later.",
-    submitClient: "Send the brief and continue to MVP",
+    submitClient: "Send to Yaniv for review",
     submitSupplier: "Send my profile",
     submitting: "Sending…",
     classicPrefix: "Would you rather complete a structured questionnaire?",
@@ -199,6 +201,8 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
   const [answers, setAnswers] = useState<OnboardingAnswers>({});
   const [accountIdentity, setAccountIdentity] = useState<OnboardingIdentity | undefined>();
   const [turns, setTurns] = useState<OnboardingTurn[]>([]);
+  const [conversationStatus, setConversationStatus] = useState<LeadConversationStatus | null>(null);
+  const [statusMessage, setStatusMessage] = useState("");
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -207,6 +211,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
+  const promotedProjectRef = useRef<string | null>(null);
 
   const isClient = role === "client";
   const t = COPY[lang];
@@ -216,20 +221,35 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    let timer: number | undefined;
+    const load = async (initial = false) => {
       try {
         const state = await loadOnboardingConversation();
         if (cancelled) return;
         setAnswers(state.answers ?? {});
         setAccountIdentity(state.identity);
         setTurns(state.transcript ?? []);
+        setConversationStatus(state.conversationStatus ?? null);
+        setStatusMessage(state.statusMessage ?? "");
+        if (state.conversationStatus === "promoted" && state.projectId && promotedProjectRef.current !== state.projectId) {
+          promotedProjectRef.current = state.projectId;
+          onDone(state.projectId);
+        }
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Could not open your assistant.");
+        if (!cancelled && initial) setError(cause instanceof Error ? cause.message : "Could not open your assistant.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && initial) setLoading(false);
       }
-    })();
-    return () => { cancelled = true; };
+    };
+    void load(true);
+    if (isClient) timer = window.setInterval(() => void load(false), 8000);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+    };
+    // The onboarding gate owns navigation; polling follows the account-bound
+    // lead until the agency promotes it into a project.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -248,6 +268,8 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
       setAnswers(result.answers ?? {});
       setAccountIdentity(result.identity);
       setTurns(result.transcript ?? []);
+      setConversationStatus(result.conversationStatus ?? null);
+      setStatusMessage(result.statusMessage ?? "");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The assistant could not reply.");
     } finally {
@@ -260,6 +282,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
   const flow = (answers._flow ?? {}) as LiveFlow;
   const confidence = Math.max(0, Math.min(100, Number(answers._confidence ?? 0)));
   const ready = Boolean(answers._readyToSubmit);
+  const conversationOpen = !isClient || conversationStatus === null || conversationStatus === "active" || conversationStatus === "invited";
 
   async function saveEdit(path: string) {
     const value = editValue;
@@ -287,7 +310,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
     try {
       const flat = Object.fromEntries(Object.entries(answers).filter(([key]) => !key.startsWith("_")));
       if (isClient) {
-        const projectId = await submitClientOnboarding({
+        const result = await submitOnboardingForReview({
           ...answers,
           ...flat,
           project_name: (flat as any).project_name || doc.summary?.slice(0, 60) || "New project",
@@ -298,7 +321,10 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
           capabilities: (flat as any).capabilities || asList(doc.requirements).join(" | "),
           requested_date: (flat as any).requested_date || doc.requestedDate || "",
         });
-        onDone(projectId);
+        setAnswers(result.answers ?? answers);
+        setTurns(result.transcript ?? turns);
+        setConversationStatus(result.conversationStatus ?? "awaiting_review");
+        setStatusMessage(result.statusMessage ?? "");
         return;
       } else {
         await submitSupplierOnboarding({
@@ -385,6 +411,23 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
       : `Hi, great to meet you 👋 I can see you’re joining from ${company}. In a sentence or two, what does the business do and what would you like to improve or build?`
     : isClient ? t.clientOpener : t.supplierOpener;
 
+  const leadStatusCopy = isClient && conversationStatus && !conversationOpen ? {
+    awaiting_review: lang === "he"
+      ? { title: "האפיון אצל יניב לבדיקה", text: "השיחה והסיכום נשמרו. עדיין לא נפתח פרויקט; יניב יבדוק ויעדכן אתכם כאן." }
+      : { title: "Your brief is with Yaniv", text: "The conversation and summary are saved. No project exists yet; Yaniv will review it and update you here." },
+    paused: lang === "he"
+      ? { title: "השיחה הושהתה זמנית", text: statusMessage || "יניב עצר זמנית את השיחה. ההיסטוריה נשמרת כאן." }
+      : { title: "Conversation temporarily paused", text: statusMessage || "Yaniv has paused the conversation. Your history remains saved here." },
+    disqualified: lang === "he"
+      ? { title: "התהליך נסגר בשלב זה", text: "השיחה נשמרה, אך לא נפתח ממנה פרויקט." }
+      : { title: "This process is closed", text: "The conversation remains saved, but no project was created from it." },
+    promoted: lang === "he"
+      ? { title: "הפרויקט נפתח", text: "מעבירים אתכם עכשיו למרחב הפרויקט האישי שלכם." }
+      : { title: "Your project is ready", text: "We are taking you to your personal project workspace now." },
+    invited: null,
+    active: null,
+  }[conversationStatus] : null;
+
   return (
     <div className="ai-onboarding" dir={lang === "he" ? "rtl" : "ltr"} lang={lang}>
       <header className="ai-onboarding-head">
@@ -417,6 +460,13 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
 
       {error ? <p className="form-error ai-onboarding-error">{error}</p> : null}
 
+      {leadStatusCopy ? (
+        <section className={`ai-lead-status ${conversationStatus}`} role="status">
+          <strong>{leadStatusCopy.title}</strong>
+          <p>{leadStatusCopy.text}</p>
+        </section>
+      ) : null}
+
       <main className="ai-onboarding-main">
         <section className="ai-onboarding-chat" aria-label={t.chatTitle}>
           <div className="ai-chat-head">
@@ -436,6 +486,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
             {turns.map((turn, index) => (
               <div key={`${turn.at}-${index}`} className={`ai-chat-row ${turn.role}`}>
                 {turn.role === "assistant" ? <span className="ai-mini-avatar" aria-hidden="true">✦</span> : null}
+                {turn.role === "agency" ? <span className="ai-mini-avatar agency" aria-hidden="true">י</span> : null}
                 <div className={`ai-bubble ${turn.role}`}>{turn.body}</div>
               </div>
             ))}
@@ -453,12 +504,12 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
               onChange={(event) => setDraft(event.target.value)}
               placeholder={t.placeholder}
               rows={3}
-              disabled={loading}
+              disabled={loading || !conversationOpen}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(); }
               }}
             />
-            <button type="submit" className="primary-button ai-send-button" disabled={loading || sending || !draft.trim()} aria-label={t.sendAria}>
+            <button type="submit" className="primary-button ai-send-button" disabled={loading || sending || !conversationOpen || !draft.trim()} aria-label={t.sendAria}>
               <span>{t.send}</span>
               <span aria-hidden="true">{lang === "he" ? "←" : "→"}</span>
             </button>
@@ -541,7 +592,7 @@ export function AiOnboardingWorkspace({ role, onDone, onUseForm }: Props) {
         </details>
       ) : null}
 
-      {ready ? (
+      {ready && conversationOpen ? (
         <section className="ai-onboarding-ready">
           <div>
             <h2>{t.readyTitle}</h2>

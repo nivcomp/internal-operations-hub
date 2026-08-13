@@ -19,6 +19,19 @@ const admin = createClient(
 const MAX_MESSAGE = 2000;
 const MAX_TURNS = 120;
 
+type LeadStatus = "invited" | "active" | "awaiting_review" | "paused" | "disqualified" | "promoted";
+type LeadTurn = { role: "user" | "assistant" | "agency"; body: string; at: string };
+
+function mapLeadMessages(rows: Array<Record<string, any>>): LeadTurn[] {
+  return rows
+    .filter((row) => row.visibility === "client_agency")
+    .map((row) => ({
+      role: row.sender_type === "client" ? "user" : row.sender_type === "agency_admin" ? "agency" : "assistant",
+      body: String(row.body ?? ""),
+      at: String(row.created_at ?? new Date().toISOString()),
+    }));
+}
+
 const CLIENT_TOPICS = [
   "business description", "desired outcome", "current workflow", "existing software",
   "integrations", "users", "priorities", "desired completion date", "budget preference",
@@ -119,7 +132,12 @@ Deno.serve(async (req) => {
     ? await admin.from("clients").select("id, name, company, email").eq("id", profile.client_id).maybeSingle()
     : { data: null };
 
-  let body: { action?: string; message?: string; patch?: Record<string, unknown> };
+  let body: {
+    action?: string;
+    message?: string;
+    patch?: Record<string, unknown>;
+    answers?: Record<string, unknown>;
+  };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
   const action = body.action ?? "send";
 
@@ -143,26 +161,200 @@ Deno.serve(async (req) => {
     email: String(profile.email ?? clientAccount?.email ?? ""),
   } : undefined;
 
+  let leadThread: Record<string, any> | null = null;
+  let clientTranscript: LeadTurn[] = transcript.map((turn) => ({
+    role: turn.role === "assistant" ? "assistant" : "user",
+    body: turn.body,
+    at: turn.at,
+  }));
+
+  if (isClient && profile.client_id) {
+    const { data: existingThread } = await admin
+      .from("lead_conversations")
+      .select("*")
+      .eq("profile_id", userId)
+      .maybeSingle();
+
+    if (existingThread) {
+      leadThread = existingThread;
+    } else {
+      const { data: invitation } = await admin
+        .from("onboarding_invitations")
+        .select("id")
+        .eq("invited_profile_id", userId)
+        .is("project_id", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const { data: insertedThread, error: threadError } = await admin
+        .from("lead_conversations")
+        .insert({
+          profile_id: userId,
+          client_id: profile.client_id,
+          invitation_id: invitation?.id ?? null,
+          status: "active",
+          first_opened_at: new Date().toISOString(),
+        })
+        .select("*")
+        .maybeSingle();
+      if (threadError || !insertedThread) {
+        return json({ error: threadError?.message ?? "Could not prepare the lead conversation." }, 400);
+      }
+      leadThread = insertedThread;
+    }
+
+    if (leadThread.status === "invited") {
+      const { data: openedThread } = await admin
+        .from("lead_conversations")
+        .update({ status: "active", first_opened_at: leadThread.first_opened_at ?? new Date().toISOString() })
+        .eq("id", leadThread.id)
+        .select("*")
+        .maybeSingle();
+      leadThread = openedThread ?? leadThread;
+    }
+
+    let { data: leadMessages } = await admin
+      .from("lead_conversation_messages")
+      .select("sender_type, body, visibility, created_at")
+      .eq("conversation_id", leadThread.id)
+      .order("created_at", { ascending: true })
+      .limit(300);
+
+    // Lazy compatibility for a conversation that existed before the inbox
+    // migration but was first opened while deployments were rolling out.
+    if (!(leadMessages?.length) && transcript.length) {
+      await admin.from("lead_conversation_messages").insert(transcript.map((turn, index) => ({
+        conversation_id: leadThread!.id,
+        sender_type: turn.role === "assistant" ? "ai_agent" : "client",
+        sender_profile_id: turn.role === "assistant" ? null : userId,
+        body: String(turn.body).slice(0, 10000),
+        visibility: "client_agency",
+        source_key: `legacy:${index + 1}`,
+        created_at: turn.at || new Date().toISOString(),
+      })));
+      const loaded = await admin
+        .from("lead_conversation_messages")
+        .select("sender_type, body, visibility, created_at")
+        .eq("conversation_id", leadThread.id)
+        .order("created_at", { ascending: true })
+        .limit(300);
+      leadMessages = loaded.data;
+    }
+    clientTranscript = mapLeadMessages(leadMessages ?? []);
+  }
+
+  const clientState = () => ({
+    conversationStatus: (leadThread?.status ?? null) as LeadStatus | null,
+    statusMessage: String(leadThread?.pause_message ?? ""),
+    projectId: leadThread?.project_id ? String(leadThread.project_id) : null,
+  });
+
   if (action === "state") {
-    return json({ answers, transcript, identity, completedAt: state.onboarding_completed_at ?? null });
+    return json({
+      answers,
+      transcript: isClient ? clientTranscript : transcript,
+      identity,
+      completedAt: state.onboarding_completed_at ?? null,
+      ...(isClient ? clientState() : {}),
+    });
   }
 
   if (action === "patch") {
+    if (isClient && leadThread?.status !== "active") {
+      return json({ error: "This conversation is not open for editing right now." }, 409);
+    }
     // Manual edits made by the client / supplier in the live document panel.
     const patch = body.patch && typeof body.patch === "object" ? body.patch : {};
     const next = { ...answers, ...patch, _editedAt: new Date().toISOString() };
     const { error } = await admin.from("onboarding_state")
       .update({ answers: next }).eq("profile_id", userId);
     if (error) return json({ error: error.message }, 400);
-    return json({ answers: next, transcript, identity });
+    return json({
+      answers: next,
+      transcript: isClient ? clientTranscript : transcript,
+      identity,
+      ...(isClient ? clientState() : {}),
+    });
+  }
+
+  if (action === "submitForReview") {
+    if (!isClient || !leadThread) return json({ error: "Only a client lead can submit for review." }, 403);
+    if (leadThread.status === "paused" || leadThread.status === "disqualified") {
+      return json({ error: "This conversation is not open for submission." }, 409);
+    }
+    if (leadThread.status === "promoted") {
+      return json({
+        answers,
+        transcript: clientTranscript,
+        identity,
+        completedAt: state.onboarding_completed_at ?? null,
+        ...clientState(),
+      });
+    }
+
+    const submittedAnswers = body.answers && typeof body.answers === "object"
+      ? { ...answers, ...body.answers }
+      : answers;
+    const now = new Date().toISOString();
+    const wasAwaiting = leadThread.status === "awaiting_review";
+    const { data: submittedThread, error: submitError } = await admin
+      .from("lead_conversations")
+      .update({ status: "awaiting_review", submitted_at: leadThread.submitted_at ?? now })
+      .eq("id", leadThread.id)
+      .select("*")
+      .maybeSingle();
+    if (submitError || !submittedThread) {
+      return json({ error: submitError?.message ?? "Could not submit the conversation." }, 400);
+    }
+    leadThread = submittedThread;
+
+    const { error: stateError } = await admin.from("onboarding_state")
+      .update({ answers: submittedAnswers, completion_percentage: 95 })
+      .eq("profile_id", userId);
+    if (stateError) return json({ error: stateError.message }, 400);
+
+    if (!wasAwaiting) {
+      await admin.from("lead_conversation_messages").insert({
+        conversation_id: leadThread.id,
+        sender_type: "system",
+        body: "האפיון נשלח ליניב לבדיקה. נעדכן אתכם כאן לאחר המעבר לפרויקט.",
+        visibility: "client_agency",
+      });
+      const loaded = await admin
+        .from("lead_conversation_messages")
+        .select("sender_type, body, visibility, created_at")
+        .eq("conversation_id", leadThread.id)
+        .order("created_at", { ascending: true })
+        .limit(300);
+      clientTranscript = mapLeadMessages(loaded.data ?? []);
+    }
+
+    return json({
+      answers: submittedAnswers,
+      transcript: clientTranscript,
+      identity,
+      readyToSubmit: true,
+      ...clientState(),
+    });
   }
 
   if (action !== "send") return json({ error: "Unknown action." }, 400);
 
+  if (isClient && leadThread?.status !== "active") {
+    const messageByStatus: Record<string, string> = {
+      awaiting_review: "The onboarding has been sent to the agency for review.",
+      paused: leadThread?.pause_message || "The agency has paused this conversation.",
+      disqualified: "This conversation has been closed by the agency.",
+      promoted: "This lead is now connected to a project.",
+    };
+    return json({ error: messageByStatus[String(leadThread?.status)] ?? "This conversation is not open." }, 409);
+  }
+
   const message = String(body.message ?? "").trim();
   if (!message) return json({ error: "Please write a message." }, 400);
   if (message.length > MAX_MESSAGE) return json({ error: `Please keep messages under ${MAX_MESSAGE} characters.` }, 400);
-  if (transcript.length > MAX_TURNS) {
+  const activeTranscript = isClient ? clientTranscript : transcript;
+  if (activeTranscript.length > MAX_TURNS) {
     return json({ error: "This onboarding conversation is very long. Please finish and submit it." }, 429);
   }
 
@@ -182,9 +374,9 @@ Deno.serve(async (req) => {
 
   const input: ModelMessage[] = [
     { role: "system", content: `${isClient ? clientSystem() : supplierSystem()}\n\n--- KNOWN SO FAR (authoritative) ---\n${known}\n\n${identityInstruction}\n\nContact: ${profile.full_name ?? profile.email}` },
-    ...transcript.slice(-16).map((entry) => ({
-      role: entry.role === "assistant" ? "assistant" as const : "user" as const,
-      content: String(entry.body).slice(0, 1500),
+    ...activeTranscript.slice(-16).map((entry) => ({
+      role: entry.role === "user" ? "user" as const : "assistant" as const,
+      content: `${entry.role === "agency" ? "[Agency project manager] " : ""}${String(entry.body).slice(0, 1500)}`,
     })),
     { role: "user", content: message },
   ];
@@ -234,11 +426,49 @@ Deno.serve(async (req) => {
     .update({ answers: nextAnswers, completion_percentage: completion }).eq("profile_id", userId);
   if (saveError) return json({ error: saveError.message }, 400);
 
+  if (isClient && leadThread) {
+    const userAt = nextTranscript[nextTranscript.length - 2]?.at ?? new Date().toISOString();
+    const assistantAt = nextTranscript[nextTranscript.length - 1]?.at ?? new Date().toISOString();
+    const { error: messageError } = await admin.from("lead_conversation_messages").insert([
+      {
+        conversation_id: leadThread.id,
+        sender_type: "client",
+        sender_profile_id: userId,
+        body: message,
+        visibility: "client_agency",
+        created_at: userAt,
+      },
+      {
+        conversation_id: leadThread.id,
+        sender_type: "ai_agent",
+        body: reply,
+        visibility: "client_agency",
+        created_at: assistantAt,
+      },
+    ]);
+    if (messageError) return json({ error: messageError.message }, 400);
+    await admin.from("lead_conversations")
+      .update({ last_client_message_at: userAt })
+      .eq("id", leadThread.id);
+    clientTranscript = [
+      ...clientTranscript,
+      { role: "user", body: message, at: userAt },
+      { role: "assistant", body: reply, at: assistantAt },
+    ];
+  }
+
   await admin.from("ai_runs").insert({
     project_id: null, agent_type: isClient ? "project_guide" : "work_assistant",
     requested_by_profile_id: userId, model: DEFAULT_MODEL, status: "success", error: "",
     latency_ms: Date.now() - started,
   });
 
-  return json({ reply, answers: nextAnswers, transcript: nextTranscript, identity, readyToSubmit: Boolean(parsed?.complete) });
+  return json({
+    reply,
+    answers: nextAnswers,
+    transcript: isClient ? clientTranscript : nextTranscript,
+    identity,
+    readyToSubmit: Boolean(parsed?.complete),
+    ...(isClient ? clientState() : {}),
+  });
 });

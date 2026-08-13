@@ -71,13 +71,6 @@ export async function saveOnboardingState(
   return map(data);
 }
 
-/** Creates the client's project, brief and requested delivery date from the wizard answers. */
-export async function submitClientOnboarding(answers: Record<string, unknown>): Promise<string> {
-  const { data, error } = await db.rpc("submit_client_onboarding", { _answers: answers });
-  if (error) throw new Error(error.message);
-  return data as string;
-}
-
 /** Saves the supplier profile and sends it to the agency for approval. */
 export async function submitSupplierOnboarding(answers: Record<string, unknown>): Promise<string> {
   const { data, error } = await db.rpc("submit_supplier_onboarding", { _answers: answers });

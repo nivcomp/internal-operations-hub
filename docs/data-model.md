@@ -31,6 +31,30 @@ This is the practical planning model for the first build. Names can become datab
 - notes
 - status
 
+### Lead Conversation
+
+- id
+- profile id
+- client id
+- invitation id
+- status: invited, active, awaiting review, paused, disqualified, promoted
+- promoted project id
+- first opened, submitted and promoted dates
+- last client message, last agency message and last agency read dates
+- client-visible pause message
+- agency-only disqualification reason
+
+### Lead Conversation Message
+
+- lead conversation id
+- sender type: client, agency admin, AI agent or system
+- sender profile id
+- body
+- visibility: client and agency, or agency only
+- created date
+
+Lead conversations are the durable pre-project record. On agency promotion, their messages and onboarding artifacts are copied into the new project's canonical conversation, brief and specification records.
+
 ### Project
 
 - id

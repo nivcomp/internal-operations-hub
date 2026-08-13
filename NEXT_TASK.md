@@ -2,43 +2,47 @@
 
 ## Current result
 
-Brand-new clients now enter a conversation-first onboarding workspace instead of seeing an internal-looking live document with empty rows. The workspace uses the registration language, keeps the composer visible on desktop and mobile, explains the path from conversation to brief to MVP, reveals only captured summary content, and shows the agency handoff only when the brief is ready. Agency link controls now distinguish a brand-new client/new brief from the existing project-continuation link. The continuation flow itself remains project-specific and bypasses new-client onboarding so the existing conversation, specification and MVP stay attached to the same project.
+The approved pre-project lead workflow is implemented locally as one coherent work unit.
 
-The new-client workspace now identifies the signed-in client, business and evolving project name before any answers are submitted. Submission is retry-safe, redirects to the exact created project, and moves the complete onboarding transcript, structured brief, diagram and editable specification drafts into that project's records. The agency-only MVP generator already reads the same project conversation and reviewed specification, so the client cannot accidentally generate an MVP for another project.
+A new client invitation or approved public registration now creates a lead conversation, not a project. The client keeps the friendly, account-personalized AI conversation and can submit the evolving brief for review. Submission locks the conversation in an agency-review state and cannot create a project or MVP.
 
-The onboarding AI now receives the authoritative client and business identity from the authenticated profile's linked client record. It can answer which business is signed in and no longer asks the client to repeat the stored name; it still asks what the business does because that discovery information is not inferred from the account name.
+Agency admins have a shared “Lead Conversations” inbox in both Simple and Advanced Mode. It shows invited, active, awaiting-review, paused, disqualified and promoted leads; the full client/AI/agency transcript; unread state; the evolving brief and flow; client-visible manager replies; private agency notes; pause/resume/disqualify controls; and an explicit project-promotion action.
 
-The frontend, retry-safe onboarding migration and updated `onboarding-chat` Edge Function were deployed to production on 2026-08-13. Lovable production is running the matching `main` source, and the production database function was checked for conversation copying, duplicate-project protection and specification-draft creation.
+Promotion is agency-only, row-locked and retry-safe. It creates one project and transfers the complete lead history, internal notes, structured brief, flow diagram and editable specification drafts. The client onboarding state is completed only after that action, so the client then enters the exact new project portal and can continue toward an MVP. Existing project-continuation links remain bound to their existing projects and are unchanged.
 
-The client portal now has four large focus views: project status, specification, interactive MVP and conversation/change requests. Each can be opened without the advanced agency interface and the whole client view or MVP can run full-screen on desktop and mobile. Clients see estimate hours and the incremental hours of optional requests, but no calculated money, hourly rate, supplier cost or margin; money appears only after an agency-approved fixed price exists.
-
-The saved prototype includes immutable versions, client approval/change requests and a reviewed handoff for both Lovable and Base44. New versions are shared atomically by the agency-only Edge Function, while the repair migration shares the latest existing client draft and corrects the client RLS correlation. New AI-generated versions describe the approved UI, data model, integrations and automation flows in one bounded payload. The repair migration and updated `project-prototype` Edge Function require deployment to the connected Supabase project. Authenticated agency/client RLS verification remains required.
-
-Clients can now request an MVP refresh from the shared MVP view. The request reuses `change_requests`; it does not execute AI directly. The next agency-generated revision includes active project requests and is shared through the existing versioned workflow.
-
-Long client conversations now use the existing `ai_project_summaries` table as durable rolling memory. MVP generation combines that memory with the latest 30 messages rather than treating 30 messages as the entire history. The client chat warns when conversation is newer than the shared MVP and links to the controlled refresh-request flow.
-
-The floating Copilot now reads the saved MVP plus canonical estimate items, discovery charges and role-safe logged hours. It can report existing hour ranges or prepare a reviewable itemized estimate proposal when no canonical estimate exists.
+Frontend TypeScript and the production Vite build pass. The production database migration, updated Edge Functions and frontend are not yet deployed: the production database tool requires a separate explicit approval for the live schema/backfill and behavior change.
 
 ## Recommended next work unit
 
-Run one authenticated end-to-end new-client smoke test in production.
+After explicit production-database approval, publish this exact release in a controlled order:
 
-Open a brand-new client invitation, confirm the displayed identity and the AI's stored-business answer, complete onboarding once, and compare the resulting portal project id with the created conversation, diagram and specification drafts. Then verify the agency MVP source context uses that project only.
+1. Apply `20260813100000_lead_conversation_inbox.sql` to the connected production database.
+2. Deploy `onboarding-chat`, `lead-conversations`, `access-admin` and `public-registration`.
+3. Publish the matching frontend source.
+4. Run one authenticated client/admin smoke test: client message, agency-visible inbox, agency reply, private note, pause/resume, submit for review and one promotion.
+5. Verify that a repeated promotion returns the same project, all history is present and the existing continuation link still opens its original project.
 
 ## Constraints
 
 - Keep one application, repository and Supabase project.
-- Reuse the existing authenticated profile, client, project, conversation and specification records.
-- Never expose a different client's or project's identity or data.
-- Keep onboarding submission retry-safe so a repeated request returns the same project.
-- Keep MVP creation agency-only and based on the exact project's client-safe context.
+- A pre-project lead is not a project and cannot request an MVP.
+- Only an active agency admin may promote a lead.
+- Enforce paused and disqualified status on the server, not only in the interface.
+- Never expose agency-only notes to a client.
+- Keep promotion retry-safe and preserve the complete lead history.
+- Do not change existing project-continuation links.
 
 ## Acceptance criteria
 
-- A newly signed-in client sees their own name/email, business and pending or captured project name.
-- When asked for the business name, the onboarding AI answers from that authenticated client's record and never exposes another client.
-- Submitting once or retrying returns one project owned by that client's `client_id` and opens that exact portal project.
-- The project's client conversation contains the onboarding transcript and diagram; specification sections remain `ai_draft` until agency review.
-- Agency MVP generation reads that project's conversation and only reviewed/edited specification sections; the client cannot execute generation.
-- Authenticated RLS smoke tests, TypeScript/build and `git diff --check` pass.
+- New invited clients appear in the agency lead inbox before they start talking.
+- Client and AI messages appear in the same agency thread without creating a project.
+- Agency replies are visible to the client and influence the next AI turn; agency-only notes remain private.
+- Paused, submitted and disqualified leads cannot keep messaging through the server.
+- Client submission creates no project.
+- Agency promotion creates exactly one client-owned project and transfers transcript, brief, flow and notes.
+- The promoted client enters that exact project portal; only there can the MVP workflow begin.
+- Existing continuation links still bypass new-client onboarding and retain their project context.
+- Authenticated RLS, retry, TypeScript/build and visual smoke tests pass in production.
+
+**Next**
+- After the lead workflow production smoke test, return to automatic specification documents and the Simple Mode document center.

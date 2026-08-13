@@ -133,6 +133,36 @@ Deno.serve(async (req) => {
     return data.properties.action_link as string;
   }
 
+  async function ensureClientLeadThread(profileId: string, clientId: string, invitationId?: string | null) {
+    const { count: projectCount } = await admin.from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", clientId);
+    if ((projectCount ?? 0) > 0) return null;
+
+    const { data: currentThread } = await admin.from("lead_conversations")
+      .select("id, status")
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (!currentThread) {
+      const { error } = await admin.from("lead_conversations").insert({
+        profile_id: profileId,
+        client_id: clientId,
+        invitation_id: invitationId ?? null,
+        status: "invited",
+      });
+      return error?.message ?? null;
+    }
+    if (currentThread.status === "promoted") return null;
+    const { error } = await admin.from("lead_conversations").update({
+      client_id: clientId,
+      invitation_id: invitationId ?? null,
+      status: "invited",
+      pause_message: "",
+      disqualification_reason: "",
+    }).eq("id", currentThread.id);
+    return error?.message ?? null;
+  }
+
   // ---- actions -------------------------------------------------------------
   const action = body.action ?? "list";
 
@@ -324,6 +354,10 @@ Deno.serve(async (req) => {
       client_id: clientId, supplier_id: supplierId, is_active: true,
     });
     if (profileError) return json({ error: profileError.message }, 400);
+    if (role === "client" && clientId) {
+      const threadError = await ensureClientLeadThread(userId, clientId);
+      if (threadError) return json({ error: threadError }, 400);
+    }
 
     let link: string | null = null;
     try { link = await actionLinkFor(email); } catch { link = null; }
@@ -427,6 +461,11 @@ Deno.serve(async (req) => {
     }).select("*").maybeSingle();
     if (invitationError) return json({ error: invitationError.message }, 400);
 
+    if (isClient && clientId && invitation) {
+      const threadError = await ensureClientLeadThread(userId, clientId, invitation.id);
+      if (threadError) return json({ error: threadError }, 400);
+    }
+
     return json({
       ok: true, userId, clientId, supplierId, link,
       emailed: Boolean(invited?.user), invitation,
@@ -495,6 +534,10 @@ Deno.serve(async (req) => {
       is_active: true,
     });
     if (profileError) return json({ error: profileError.message }, 400);
+    if (role === "client" && clientId) {
+      const threadError = await ensureClientLeadThread(userId, clientId);
+      if (threadError) return json({ error: threadError }, 400);
+    }
 
     let link: string | null = null;
     try { link = await actionLinkFor(email); } catch { link = null; }
