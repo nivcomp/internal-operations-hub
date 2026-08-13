@@ -12,6 +12,8 @@ Promotion is agency-only, row-locked and retry-safe. It creates one project and 
 
 Frontend TypeScript and the production Vite build pass. The production database migration, updated Edge Functions and frontend are not yet deployed: the production database tool requires a separate explicit approval for the live schema/backfill and behavior change.
 
+A small UI refinement was also completed: the public client/lead registration link now shows a scannable QR code in both the advanced Access Management page and the Simple Mode “Share links” card. The code updates automatically when the link is rotated and the build passes.
+
 ## Recommended next work unit
 
 After explicit production-database approval, publish this exact release in a controlled order:

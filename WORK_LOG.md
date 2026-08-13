@@ -1,5 +1,30 @@
 # Work Log
 
+### 2026-08-13 — QR code for public client/lead registration link
+
+**Work unit**
+Add a scannable QR code next to the public client registration link so leads can open it on a phone without typing the URL.
+
+**Changes**
+- Installed `qrcode` and `@types/qrcode`.
+- Created reusable `src/components/ui/QrCode.tsx` that renders the link as a data-URI PNG.
+- Added the QR code to the advanced Access Management page (`src/components/access/PublicLinkSettings.tsx`) below the client registration link.
+- Added the QR code to the Simple Mode “Share links” card (`src/components/simple/ShareLinksCard.tsx`) for the client link.
+- The QR code updates automatically when the link is rotated.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- Playwright smoke test confirmed the QR code renders on the Access Management page and its `src` is a valid data-URI PNG.
+
+**Files**
+- `src/components/ui/QrCode.tsx`
+- `src/components/access/PublicLinkSettings.tsx`
+- `src/components/simple/ShareLinksCard.tsx`
+- `package.json`, `bun.lock`, `pnpm-lock.yaml`
+
+**Next**
+- Continue with the already planned production release of the lead-conversation inbox.
+
 ### 2026-08-13 — Agency-controlled pre-project lead conversations
 
 **Work unit**
