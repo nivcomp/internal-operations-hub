@@ -1,5 +1,27 @@
 # Work Log
 
+### 2026-08-13 — Production release of client identity and project binding
+
+**Work unit**
+Publish the personalized onboarding, exact-project handoff and authenticated business context as one production release.
+
+**Changes**
+- Fast-forwarded production `main` to the reviewed onboarding release.
+- Applied the retry-safe `submit_client_onboarding` replacement to the connected production database.
+- Deployed the updated `onboarding-chat` Edge Function without source changes.
+- Published the matching Lovable project to its production URL.
+
+**Verification**
+- Lovable reports the production project as published and ready on the matching source revision.
+- The production database function was checked for conversation copying, `_projectId` retry protection and specification-draft creation.
+- The public production route loads successfully and reaches the existing authenticated login boundary.
+- An authenticated new-client conversation/submission smoke test still requires a signed-in client session and remains the single recommended next work unit.
+
+**Next**
+- Run one authenticated new-client flow through business-name recall, submission and the exact project portal.
+
+---
+
 ### 2026-08-12 — Authenticated business identity inside onboarding AI
 
 **Work unit**
