@@ -106,6 +106,11 @@ export function ShareLinksCard({ refreshToken = 0 }: { refreshToken?: number }) 
                 {item.enabled ? "כבה לינק" : "הפעל לינק"}
               </button>
             </div>
+            {item.role === "client" ? (
+              <div className="simple-qr-row" style={{ marginTop: "1rem", textAlign: "center" }}>
+                <QrCode value={link} size={160} label="סרוק כדי להתחיל היכרות" />
+              </div>
+            ) : null}
             {invitation ? (
               <div className="simple-subrow">
                 <span>
