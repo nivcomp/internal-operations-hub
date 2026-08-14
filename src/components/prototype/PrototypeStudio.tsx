@@ -5,11 +5,11 @@ import {
   type ProjectPrototype, type PrototypeKind, type PrototypeScreen, type PrototypeVersion,
 } from "../../services/prototypeApi";
 
-type Props = { projectId: string; projectName: string; readOnly?: boolean; clientMode?: boolean; simple?: boolean; language?: "he" | "en" };
+type Props = { projectId: string; projectName: string; readOnly?: boolean; clientMode?: boolean; simple?: boolean; language?: "he" | "en"; refreshToken?: number };
 
 const kindLabels: Record<PrototypeKind, string> = { app: "אפליקציה / אתר", whatsapp: "בוט WhatsApp", automation: "אוטומציה" };
 
-export function PrototypeStudio({ projectId, projectName, readOnly = false, clientMode = false, simple = false, language = "he" }: Props) {
+export function PrototypeStudio({ projectId, projectName, readOnly = false, clientMode = false, simple = false, language = "he", refreshToken }: Props) {
   const [prototypes, setPrototypes] = useState<ProjectPrototype[]>([]);
   const [approvals, setApprovals] = useState<any[]>([]);
   const [prototypeId, setPrototypeId] = useState("");
@@ -26,13 +26,18 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
 
   async function refresh(preferredPrototypeId?: string, preferredVersionId?: string) {
     const result = await listProjectPrototypes(projectId);
-    setPrototypes(result.prototypes); setApprovals(result.approvals);
-    const selectedPrototype = result.prototypes.find((item) => item.id === (preferredPrototypeId || prototypeId)) ?? result.prototypes[0];
+    const visiblePrototypes = clientMode
+      ? result.prototypes
+          .map((item) => ({ ...item, versions: item.versions.filter((version) => version.audience === "client" && (version.status === "shared" || version.status === "approved")) }))
+          .filter((item) => item.versions.length > 0)
+      : result.prototypes;
+    setPrototypes(visiblePrototypes); setApprovals(result.approvals);
+    const selectedPrototype = visiblePrototypes.find((item) => item.id === (preferredPrototypeId || prototypeId)) ?? visiblePrototypes[0];
     const selectedVersion = selectedPrototype?.versions.find((item) => item.id === (preferredVersionId || versionId)) ?? selectedPrototype?.versions[0];
     setPrototypeId(selectedPrototype?.id ?? ""); setVersionId(selectedVersion?.id ?? "");
     setScreenId((current) => selectedVersion?.content.screens.some((screen) => screen.id === current) ? current : selectedVersion?.content.startScreenId ?? "");
   }
-  useEffect(() => { void refresh().catch((e) => setError(e.message)); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void refresh().catch((e) => setError(e.message)); }, [projectId, refreshToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const prototype = prototypes.find((item) => item.id === prototypeId) ?? prototypes[0];
   const version = prototype?.versions.find((item) => item.id === versionId) ?? prototype?.versions[0];
@@ -98,8 +103,8 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
 
   if (!version && readOnly) return <section className="card prototype-empty"><h2>{clientCopy.title}</h2><p>{clientCopy.empty}</p></section>;
 
-  return <section className={`card prototype-studio${simple ? " prototype-simple" : ""}${studioFullScreen ? " prototype-fullscreen" : ""}`} dir="rtl">
-    <header className="prototype-head"><div><p className="eyebrow">{clientMode ? clientCopy.title : "MVP חזותי שמור"}</p><h2>{prototype?.title || projectName}</h2><p>{version?.summary || (clientMode ? clientCopy.empty : "צור אב־טיפוס לחיץ מתוך השיחה, האפיון או קובץ Word.")}</p></div><div className="prototype-head-actions">{version ? <span className={`prototype-status ${version.status}`}>v{version.version} · {version.status}</span> : null}<button type="button" onClick={() => setStudioFullScreen((value) => !value)}>{studioFullScreen ? clientCopy.exit : clientCopy.fullscreen}</button></div></header>
+  return <section className={`card prototype-studio${simple ? " prototype-simple" : ""}${studioFullScreen ? " prototype-fullscreen" : ""}`} dir={language === "he" ? "rtl" : "ltr"}>
+    <header className="prototype-head"><div><p className="eyebrow">{clientMode ? clientCopy.title : "MVP חזותי שמור"}</p><h2>{prototype?.title || projectName}</h2><p>{version?.summary || (clientMode ? clientCopy.empty : "צור אב־טיפוס לחיץ מתוך השיחה, האפיון או קובץ Word.")}</p></div><div className="prototype-head-actions">{version ? <span className={`prototype-status ${version.status}`}>{clientMode ? `${clientCopy.version} ${version.version}` : `v${version.version} · ${version.status}`}</span> : null}<button type="button" onClick={() => setStudioFullScreen((value) => !value)}>{studioFullScreen ? clientCopy.exit : clientCopy.fullscreen}</button></div></header>
 
     {!readOnly ? <div className="prototype-authoring">
       {!prototype ? <label>סוג MVP<select value={kind} onChange={(e) => setKind(e.target.value as PrototypeKind)}>{Object.entries(kindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
