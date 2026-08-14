@@ -14,6 +14,8 @@ SET search_path = public
 AS $$
 DECLARE
   v_project_id uuid;
+  v_existing_project_id uuid;
+  v_client_id uuid;
   v_paid boolean;
 BEGIN
   IF NOT private.is_agency_admin() THEN
@@ -22,6 +24,24 @@ BEGIN
 
   IF _payment_decision NOT IN ('paid', 'override_unpaid') THEN
     RAISE EXCEPTION 'An explicit payment decision is required';
+  END IF;
+
+  -- Preserve the retry-safe contract of the original promotion function. If a
+  -- response was lost after a successful promotion, a retry must return the
+  -- same project without changing its payment decision or duplicating logs.
+  SELECT thread.client_id, thread.project_id
+  INTO v_client_id, v_existing_project_id
+  FROM public.lead_conversations thread
+  WHERE thread.profile_id = _profile_id
+  FOR UPDATE;
+
+  IF v_existing_project_id IS NOT NULL AND EXISTS (
+    SELECT 1
+    FROM public.projects project
+    WHERE project.id = v_existing_project_id
+      AND project.client_id = v_client_id
+  ) THEN
+    RETURN v_existing_project_id;
   END IF;
 
   v_project_id := public.promote_client_onboarding(_profile_id, _project_name);

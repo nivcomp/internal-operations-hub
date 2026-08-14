@@ -228,3 +228,17 @@ Creating a project on the client's first message, creating it on client submissi
 
 **Consequences**
 Lead conversations and messages have their own pre-project tables. Client-visible messages and agency-only notes are separated. Pause and disqualification are enforced server-side. Promotion is agency-only, retry-safe and migrates the transcript, brief, flow and internal notes into one canonical project. Existing project-continuation links remain unchanged.
+
+### 2026-08-14 — Explicit payment choice before project creation
+
+**Decision**
+Every agency UI path that creates a project must stop for an explicit payment decision. The agency admin either confirms that payment was received or records a deliberate unpaid override. Lead promotion also enforces the choice in the Edge Function and database RPC.
+
+**Reason**
+Creating a delivery project is a commercial commitment. It must not happen accidentally before payment, while still allowing Yaniv to open an exceptional project intentionally when business circumstances require it.
+
+**Alternatives considered**
+Creating projects immediately and checking payment later, or blocking every unpaid project without an override.
+
+**Consequences**
+A paid choice opens the project with a paid payment gate. An unpaid override opens the project with a blocked payment gate, records the choice in the activity history (and in decision history for lead promotion), and does not make supplier work ready to start. The client remains in the simple client workspace; the override does not expose Advanced Mode.
