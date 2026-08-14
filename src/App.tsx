@@ -278,8 +278,12 @@ function AppShell() {
     openClientDetail(persisted.id);
     return persisted;
   }
-  async function handleCreateProject(clientId: string, input: Parameters<typeof createProject>[1]) {
-    const persisted = await createProject(clientId, input);
+  async function handleCreateProject(
+    clientId: string,
+    input: Parameters<typeof createProject>[1],
+    paymentDecision: Parameters<typeof createProject>[2],
+  ) {
+    const persisted = await createProject(clientId, input, paymentDecision);
     openProjectDetail(persisted.id);
     return persisted;
   }
