@@ -3149,3 +3149,143 @@ html, body, #root { max-width: 100%; }
   .client-space-grid { grid-template-columns: 1fr; }
   .client-space-chat .chat-panel { min-height: 55vh; }
 }
+
+
+/* ---- Approved client workspace: one conversation + one visible project preview ---- */
+.client-current-stage {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 1rem 1.2rem;
+  border-inline-start: 5px solid var(--brand-accent);
+  background: linear-gradient(135deg, #fffdf8, var(--surface));
+}
+.client-current-stage-number {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.client-current-stage h2,
+.client-current-stage p { margin-block: .15rem; }
+.client-space-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(420px, 1fr);
+}
+.client-space-preview {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  position: sticky;
+  top: 1rem;
+}
+.client-preview-intro {
+  margin: 0;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(145deg, #eef6f1, #fff);
+}
+.client-preview-intro h2,
+.client-preview-intro p { margin-block: .2rem; }
+.client-space-preview .prototype-studio { margin: 0; }
+.client-space-preview .prototype-head { align-items: center; }
+.client-space-preview .prototype-workbench {
+  flex-direction: column;
+  min-height: 0;
+}
+.client-space-preview .prototype-screen-nav {
+  flex: 0 0 auto;
+  flex-direction: row;
+  max-height: none;
+  overflow-x: auto;
+  padding-bottom: .25rem;
+}
+.client-space-preview .prototype-screen-nav button {
+  flex: 0 0 auto;
+  min-width: 150px;
+}
+.client-space-preview .prototype-device { width: 100%; }
+.client-space-preview .prototype-status {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+/* ---- Explicit payment decision before project creation ---- */
+.payment-gate-backdrop {
+  align-items: center;
+  background: rgba(7, 20, 14, .62);
+  backdrop-filter: blur(3px);
+}
+.dialog-card {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 28px 80px -24px rgba(7, 20, 14, .48);
+}
+.dialog-card h2 { margin: .2rem 0 .5rem; }
+.dialog-card > p:not(.eyebrow) { color: var(--ink-3); }
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .75rem;
+  margin-top: 1rem;
+}
+.payment-gate-options {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1.25rem;
+}
+.payment-gate-option {
+  display: grid;
+  gap: .25rem;
+  width: 100%;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface-alt);
+  text-align: start;
+}
+.payment-gate-option strong { font-size: 1rem; }
+.payment-gate-option span { color: var(--ink-3); font-size: .88rem; font-weight: 500; }
+.payment-gate-option.paid {
+  border-color: var(--success-line);
+  background: var(--success-bg);
+  color: var(--success);
+}
+.payment-gate-option.override {
+  border-color: var(--warning-line);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.payment-gate-option:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.payment-gate-option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+@media (max-width: 900px) {
+  .client-space-grid { grid-template-columns: 1fr; }
+  .client-space-preview { position: static; order: -1; }
+}
+
+@media (max-width: 600px) {
+  .client-current-stage { grid-template-columns: 1fr; }
+  .client-current-stage-number { width: 2.35rem; height: 2.35rem; }
+  .client-space-preview .prototype-head { align-items: stretch; flex-direction: column; }
+  .client-space-preview .prototype-head-actions { justify-content: flex-start; }
+  .dialog-actions { align-items: stretch; flex-direction: column-reverse; }
+  .dialog-actions button { width: 100%; }
+}
