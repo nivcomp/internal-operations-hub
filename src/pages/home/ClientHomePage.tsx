@@ -1,45 +1,66 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { Disclosure } from "../../components/ui/Disclosure";
 import { ProjectChat } from "../../components/ProjectChat";
-import { SaveShortcutCard } from "../../components/SaveShortcutCard";
-import { ProjectFlowCanvas } from "../../components/client/ProjectFlowCanvas";
 import { PrototypeStudio } from "../../components/prototype/PrototypeStudio";
 import { useAppData } from "../../context/AppDataContext";
-import { useAuth } from "../../context/AuthContext";
-import { fetchOnboardingState } from "../../services/onboardingApi";
 import { getProjectSolutionKind } from "../../services/prototypeApi";
 import { getProjectFileLink, listProjectFiles, type ProjectFile } from "../../services/projectFilesApi";
-import type { LiveFlow } from "../../services/onboardingChatApi";
 import { deliverable, guessSolutionKind, type SolutionKind, type WordingLang } from "../../lib/clientWording";
-import type { ViewKey } from "../../views";
 
-type Props = { clientId?: string; onNavigate: (view: ViewKey) => void; onRestartWizard: () => void };
+type Props = { clientId?: string; onRestartWizard: () => void };
 
 const copy = {
   he: {
-    workspace: "המרחב שלך", intro: "כאן מדברים על הפרויקט, מעלים מסמכים ורואים איך התהליך נראה.",
-    chatTitle: "השיחה על הפרויקט", chatSub: "ספר לנו מה צריך — אפשר גם לצרף מסמך או לדבר.",
+    workspace: "המרחב שלך",
+    intro: "כאן ממשיכים את השיחה ורואים מיד את מה שאנחנו בונים עבורך.",
+    chatTitle: "השיחה על הפרויקט",
+    chatSub: "אפשר לשאול, לדייק ולצרף מסמך. כל מה שנכתב נשמר בפרויקט שלך.",
     stages: ["מבינים מה צריך", "מאשרים את ההצעה", "בונים", "מוסרים לך"],
-    files: "המסמכים שהעלית", noFiles: "עוד לא העלית מסמכים. אפשר לצרף מהשיחה עם הכפתור ➕.",
-    open: "פתח", details: "פרטים נוספים", detailsHint: "הצעה, תשלומים ובקשות שינוי.",
-    openFull: "פתח את הפרויקט המלא", noProject: "עוד אין פרויקט",
-    noProjectText: "נתחיל יחד. זה לוקח כמה דקות ואף דבר לא סופי עד שתאשר.",
-    startCta: "בוא נגדיר מה אתה צריך", langLabel: "שפה",
-    suggestions: ["מה עוד צריך ממני?", "אפשר לראות איך זה ייראה?", "כמה זמן זה ייקח?"],
-    safety: "אני יכול להסביר ולהציע. יניב הוא זה שמאשר מחיר ותאריך.",
+    stageHelp: [
+      "אנחנו מסכמים את הצורך ומוודאים שלא חסר מידע חשוב.",
+      "ההצעה וההחלטות מחכות לאישור לפני שמתקדמים.",
+      "העבודה מתקדמת לפי מה שסיכמנו.",
+      "הפרויקט מוכן למסירה ולבדיקה שלך.",
+    ],
+    currentStage: "איפה אנחנו עכשיו",
+    previewEyebrow: "מה בונים עבורך",
+    previewTitle: "התצוגה של הפרויקט שלך",
+    previewHelp: "הגרסה האחרונה ששיתפנו מופיעה כאן מיד. אפשר לעבור בין המסכים, לאשר או לשלוח הערות.",
+    files: "המסמכים שהעלית",
+    noFiles: "עוד לא העלית מסמכים. אפשר לצרף קובץ מתוך השיחה באמצעות הכפתור ➕.",
+    open: "פתח",
+    noProject: "עוד אין פרויקט",
+    noProjectText: "נתחיל יחד. שום דבר לא הופך לפרויקט פעיל עד שהסוכנות מאשרת את המעבר.",
+    startCta: "בוא נגדיר מה צריך",
+    langLabel: "שפה",
+    suggestions: ["מה עוד צריך ממני?", "אפשר לראות את הגרסה האחרונה?", "מה השלב הבא?"],
+    safety: "אני יכול להסביר ולהציע. יניב הוא זה שמאשר מחיר, תשלום ותאריך.",
   },
   en: {
-    workspace: "Your space", intro: "Talk about the project, add documents and see how the process looks.",
-    chatTitle: "Project conversation", chatSub: "Tell us what you need — you can attach a document or talk.",
+    workspace: "Your space",
+    intro: "Continue the conversation and immediately see what we are building for you.",
+    chatTitle: "Project conversation",
+    chatSub: "Ask questions, clarify details or attach a document. Everything stays with your project.",
     stages: ["Understanding the need", "Approving the offer", "Building", "Handing it over"],
-    files: "Documents you added", noFiles: "No documents yet. Add one from the conversation with the ➕ button.",
-    open: "Open", details: "More details", detailsHint: "Offer, payments and change requests.",
-    openFull: "Open the full project", noProject: "No project yet",
-    noProjectText: "Let's start together. It takes a few minutes and nothing is final until you approve.",
-    startCta: "Let's define what you need", langLabel: "Language",
-    suggestions: ["What else do you need from me?", "Can I see how it will look?", "How long will it take?"],
-    safety: "I can explain and suggest. Yaniv is the one who confirms price and dates.",
+    stageHelp: [
+      "We are confirming the need and checking that no important details are missing.",
+      "The proposal and decisions are waiting for approval before work continues.",
+      "Work is moving ahead according to what we agreed.",
+      "The project is ready for your review and handoff.",
+    ],
+    currentStage: "Where we are now",
+    previewEyebrow: "What we are building",
+    previewTitle: "Your project preview",
+    previewHelp: "The latest version shared with you appears here automatically. Explore it, approve it or send comments.",
+    files: "Documents you added",
+    noFiles: "No documents yet. Attach one from the conversation using the ➕ button.",
+    open: "Open",
+    noProject: "No project yet",
+    noProjectText: "Let's start together. Nothing becomes an active project until the agency approves the move.",
+    startCta: "Let's define what you need",
+    langLabel: "Language",
+    suggestions: ["What else do you need from me?", "Can I see the latest version?", "What is the next step?"],
+    safety: "I can explain and suggest. Yaniv confirms price, payment and dates.",
   },
 } as const;
 
@@ -50,13 +71,14 @@ function stageIndex(status: string) {
   return 3;
 }
 
-export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props) {
-  const { clients, projects } = useAppData();
-  const { profile } = useAuth();
-
-  const client = clients.find((c) => c.id === clientId);
+export function ClientHomePage({ clientId, onRestartWizard }: Props) {
+  const { clients, projects, liveUpdates } = useAppData();
+  const client = clients.find((item) => item.id === clientId);
   const project = useMemo(
-    () => projects.filter((p) => p.clientId === clientId).slice(-1)[0],
+    () => projects
+      .filter((item) => item.clientId === clientId)
+      .slice()
+      .sort((a, b) => b.updatedDate.localeCompare(a.updatedDate))[0],
     [projects, clientId],
   );
 
@@ -65,11 +87,8 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
     if (saved === "he" || saved === "en") return saved;
     return navigator.language.toLowerCase().startsWith("he") ? "he" : "en";
   });
-  const [flow, setFlow] = useState<LiveFlow>({});
   const [solutionKind, setSolutionKind] = useState<SolutionKind | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [showDeliverable, setShowDeliverable] = useState(false);
-
   const text = copy[language];
 
   function changeLanguage(next: WordingLang) {
@@ -79,32 +98,21 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
 
   const refreshFiles = useCallback(async () => {
     if (!project) return;
-    try { setFiles(await listProjectFiles(project.id)); } catch { /* list stays as-is */ }
+    try { setFiles(await listProjectFiles(project.id)); } catch { /* keep the current list */ }
   }, [project]);
 
   useEffect(() => { void refreshFiles(); }, [refreshFiles]);
 
   useEffect(() => {
-    if (!profile?.id) return;
-    let active = true;
-    void fetchOnboardingState(profile.id)
-      .then((state) => {
-        const answers = (state?.answers ?? {}) as Record<string, any>;
-        if (active && answers._flow) setFlow(answers._flow as LiveFlow);
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, [profile?.id]);
-
-  useEffect(() => {
-    if (!project) return;
+    if (!project) { setSolutionKind(null); return; }
     let active = true;
     void getProjectSolutionKind(project.id)
       .then((kind) => {
-        if (!active) return;
-        setSolutionKind(kind ?? guessSolutionKind(project.name, project.summary));
+        if (active) setSolutionKind(kind ?? guessSolutionKind(project.name, project.summary));
       })
-      .catch(() => setSolutionKind(guessSolutionKind(project.name, project.summary)));
+      .catch(() => {
+        if (active) setSolutionKind(guessSolutionKind(project.name, project.summary));
+      });
     return () => { active = false; };
   }, [project]);
 
@@ -122,6 +130,7 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
 
   const product = deliverable(solutionKind, language);
   const stage = stageIndex(project.status);
+  const refreshToken = liveUpdates[project.id];
 
   async function openFile(file: ProjectFile) {
     try { window.open(await getProjectFileLink(file.path), "_blank", "noopener"); } catch { /* ignore */ }
@@ -141,14 +150,14 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
         </div>
       </header>
 
-      <ol className="client-space-stages">
-        {text.stages.map((label, index) => (
-          <li key={label} className={index <= stage ? "is-done" : ""}>
-            <span>{index + 1}</span>
-            {label}
-          </li>
-        ))}
-      </ol>
+      <section className="card client-current-stage" aria-label={text.currentStage}>
+        <span className="client-current-stage-number">{stage + 1}</span>
+        <div>
+          <p className="eyebrow">{text.currentStage}</p>
+          <h2>{text.stages[stage]}</h2>
+          <p>{text.stageHelp[stage]}</p>
+        </div>
+      </section>
 
       <div className="client-space-grid">
         <div className="client-space-chat">
@@ -182,37 +191,22 @@ export function ClientHomePage({ clientId, onNavigate, onRestartWizard }: Props)
           </section>
         </div>
 
-        <div className="client-space-side">
-          <ProjectFlowCanvas
-            flow={flow}
+        <aside className="client-space-preview" aria-label={text.previewTitle}>
+          <section className="card client-preview-intro">
+            <p className="eyebrow">{text.previewEyebrow}</p>
+            <h2>{text.previewTitle}</h2>
+            <p>{text.previewHelp}</p>
+          </section>
+          <PrototypeStudio
+            projectId={project.id}
+            projectName={project.name}
+            readOnly
+            clientMode
+            simple
             language={language}
-            solutionKind={solutionKind}
-            onOpenDeliverable={() => setShowDeliverable(true)}
+            refreshToken={refreshToken}
           />
-
-          {showDeliverable && (
-            <section className="card">
-              <header className="flow-canvas-head">
-                <h2>{product.name}</h2>
-                <button type="button" className="ghost-button" onClick={() => setShowDeliverable(false)}>×</button>
-              </header>
-              <PrototypeStudio
-                projectId={project.id}
-                projectName={project.name}
-                clientMode
-                simple
-                language={language}
-              />
-            </section>
-          )}
-
-          <SaveShortcutCard />
-
-          <Disclosure title={text.details}>
-            <p>{text.detailsHint}</p>
-            <button type="button" onClick={() => onNavigate("client-portal")}>{text.openFull}</button>
-          </Disclosure>
-        </div>
+        </aside>
       </div>
     </div>
   );
