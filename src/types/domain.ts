@@ -1,4 +1,5 @@
 export type UserRole = "agency_admin" | "client" | "supplier";
+export type PaymentDecision = "paid" | "override_unpaid";
 
 export type ProjectStatus =
   | "lead_started"

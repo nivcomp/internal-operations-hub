@@ -2,7 +2,15 @@
 
 ## Current result
 
-The agency-admin simplification is implemented on branch `codex/simplify-admin-ui` without changing the backend, authentication, RLS, client/supplier isolation, signed proposals, estimate rules or audit history.
+The approved-client workspace and payment gate refinement is implemented on branch `agent/client-simple-mvp-payment-gate`, based on `codex/simplify-admin-ui`.
+
+The client now stays in one simple workspace and sees the current stage, project conversation, client-visible files and the latest shared MVP directly. The visual flow canvas, misleading node buttons and the route into the full Advanced project interface were removed from the client experience. Shared client MVP versions refresh through the existing realtime data layer.
+
+Every agency UI route that creates a project now asks whether payment was received. Choosing paid opens the payment gate; choosing the explicit unpaid override creates the project with its payment gate blocked and records the choice. Lead promotion additionally validates the choice in the Edge Function and a new database RPC migration.
+
+`pnpm run build` passes. These changes are not yet live: the migration, updated `lead-conversations` Edge Function and frontend deployment require an explicit production release approval and an authenticated client smoke test.
+
+The earlier agency-admin simplification remains implemented on branch `codex/simplify-admin-ui` without changing authentication, client/supplier isolation, signed proposals, canonical estimate rules or audit history.
 
 Simple Mode now has four primary destinations: Home, CRM, Projects and Suppliers. A selected project opens exactly four daily areas: `אפיון`, `תמחור והצעה`, `ביצוע וספק`, and `סטטוס`. Lead conversations, tasks and finance are contextual; the complete existing product remains available behind `מערכת מתקדמת`.
 
@@ -16,19 +24,19 @@ A small UI refinement was also completed: the public client/lead registration li
 
 ## Recommended next work unit
 
-Review the pull request and run one authenticated preview smoke test on a real but controlled project before merge:
+After explicit production approval, apply `20260814150000_require_payment_decision_for_lead_promotion.sql`, deploy `lead-conversations`, publish the frontend, and run one authenticated smoke test on a controlled client/project:
 
-1. Open the project from Simple Projects and confirm the four areas and plain-language status summary.
-2. Open Discovery and verify the complete promoted lead transcript, including the `לתחילת השיחה` control.
-3. Confirm ILS is the new-estimate default, change the hourly calculation rate, test the ILS/USD/GBP selector, confirm the canonical estimate updates, approve a fixed price and create a proposal draft.
-4. Confirm the real supplier appears with the correct status, assign it, verify a pending supplier does not mark the project ready, generate a supplier brief, verify no internal pricing appears, and test preview, Print and browser Save as PDF.
-5. Open the same project in Advanced Mode and confirm the same estimate/proposal/document records and unchanged commercial/audit history.
-6. Verify a client and supplier account still see only their existing role-safe records.
+1. Create a manual project and confirm the payment dialog appears before creation.
+2. Promote a lead and confirm the same paid/unpaid choice is required and recorded.
+3. Confirm an unpaid override creates the project with work still blocked by payment.
+4. Sign in as that client and confirm there is no Advanced/full-project link or flow-canvas button clutter.
+5. Open a continuation link for a client with more than one project, confirm the linked project is selected, then create/share a client MVP as the agency and confirm it appears directly without refresh.
+6. Verify another client cannot see the project, chat, files or MVP.
 
 ## Constraints
 
 - Keep one application, repository and Supabase project.
-- Do not merge the pull request until the authenticated smoke test passes.
+- Do not merge or deploy the pull request until the migration order and authenticated smoke test are approved.
 - Do not create a second estimate, document, project or pricing model.
 - Keep the meeting/discovery surface client-safe.
 - Never expose client price, calculation rate, internal cost, agency margin or internal notes to suppliers.
@@ -36,7 +44,9 @@ Review the pull request and run one authenticated preview smoke test on a real b
 
 ## Acceptance criteria
 
-- The daily Simple flow works from Discovery through Pricing/Proposal to Supplier handoff without requiring Advanced Mode.
+- The client sees one simple, project-specific workspace and the current shared MVP directly.
+- Every project-creation UI path requires a paid confirmation or a deliberate unpaid override.
+- An unpaid override remains blocked for work start and is visible in the audit history.
 - Simple and Advanced show the same canonical records after every mutation.
 - The supplier brief is readable, printable and saveable as PDF and contains no agency-only commercial information.
 - Status answers only where the project is, what is missing, who is waiting and the next action.

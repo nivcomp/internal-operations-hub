@@ -11,6 +11,7 @@ type Body = {
   clientMessage?: string;
   reason?: string;
   projectName?: string;
+  paymentDecision?: "paid" | "override_unpaid";
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -241,12 +242,16 @@ Deno.serve(async (req) => {
 
     if (action === "promote") {
       if (thread.status === "disqualified") return json({ error: "Resume the lead before promoting it." }, 409);
+      if (body.paymentDecision !== "paid" && body.paymentDecision !== "override_unpaid") {
+        return json({ error: "Choose whether payment was received or explicitly open the project as an unpaid override." }, 409);
+      }
       const { data: projectId, error } = await anon.rpc("promote_client_onboarding", {
         _profile_id: thread.profileId,
         _project_name: String(body.projectName ?? "").trim() || null,
+        _payment_decision: body.paymentDecision,
       });
       if (error) return json({ error: error.message }, 400);
-      return json({ ok: true, projectId });
+      return json({ ok: true, projectId, paymentDecision: body.paymentDecision });
     }
 
     return json({ error: "Unknown action" }, 400);

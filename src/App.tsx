@@ -61,7 +61,7 @@ const roleViews: Record<UserRole, ViewKey[]> = {
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
     "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
   ],
-  client: ["home", "client-portal"],
+  client: ["home"],
   supplier: ["home", "supplier-portal"],
 };
 
@@ -138,6 +138,10 @@ function AppShell() {
     if (!sharedProject || (role === "client" && sharedProject.clientId !== profile?.clientId)) return;
     setSelectedClientId(sharedProject.clientId);
     setSelectedProjectId(sharedProject.id);
+    if (role === "client") {
+      setActiveView("home");
+      return;
+    }
     setActiveView("client-portal");
     if (role === "agency_admin") setModeState("advanced");
   }, [portalProjectId, status, projects, role, profile?.clientId]);
@@ -278,8 +282,12 @@ function AppShell() {
     openClientDetail(persisted.id);
     return persisted;
   }
-  async function handleCreateProject(clientId: string, input: Parameters<typeof createProject>[1]) {
-    const persisted = await createProject(clientId, input);
+  async function handleCreateProject(
+    clientId: string,
+    input: Parameters<typeof createProject>[1],
+    paymentDecision: Parameters<typeof createProject>[2],
+  ) {
+    const persisted = await createProject(clientId, input, paymentDecision);
     openProjectDetail(persisted.id);
     return persisted;
   }
@@ -289,7 +297,7 @@ function AppShell() {
       role === "client" ? (
         <ClientHomePage
           clientId={profile?.clientId}
-          onNavigate={navigate}
+          initialProjectId={portalProjectId}
           onRestartWizard={() => void restartOnboarding()}
         />
       ) : role === "supplier" ? (

@@ -3,10 +3,11 @@ import { AccessPanel } from "../components/AccessPanel";
 import { PastProjectsPanel } from "../components/crm/PastProjectsPanel";
 import { ClientEditDialog } from "../components/clients/ClientEditDialog";
 import { PageHeader } from "../components/PageHeader";
+import { PaymentGateDialog } from "../components/ui/PaymentGateDialog";
 import { StatusBadge } from "../components/StatusBadge";
 import { MutationKeys, useAppData, type NewProjectInput } from "../context/AppDataContext";
 import { canWorkStart, currency, getClientById, getProjectsForClient, statusLabels } from "../lib/domainHelpers";
-import type { ChangeRequest, Client, ClientPayment, HourBank, Project } from "../types/domain";
+import type { ChangeRequest, Client, ClientPayment, HourBank, PaymentDecision, Project } from "../types/domain";
 
 type ClientDetailPageProps = {
   selectedClientId?: string;
@@ -15,7 +16,7 @@ type ClientDetailPageProps = {
   changeRequests: ChangeRequest[];
   clientPayments: ClientPayment[];
   hourBanks: HourBank[];
-  onProjectCreate: (clientId: string, input: NewProjectInput) => Promise<unknown>;
+  onProjectCreate: (clientId: string, input: NewProjectInput, paymentDecision: PaymentDecision) => Promise<unknown>;
   onProjectSelect: (projectId: string) => void;
   onClientPortalOpen: (clientId: string) => void;
 };
@@ -36,6 +37,7 @@ export function ClientDetailPage({
   const { scopes, isPending, getError, getSuccess } = useAppData();
   const [projectForm, setProjectForm] = useState<NewProjectInput>(initialProjectForm);
   const [projectFormError, setProjectFormError] = useState<string | null>(null);
+  const [confirmCreate, setConfirmCreate] = useState(false);
   const [editingClient, setEditingClient] = useState(false);
   const client = selectedClientId ? getClientById(selectedClientId, clients) : undefined;
 
@@ -63,7 +65,7 @@ export function ClientDetailPage({
     (request) => clientProjectIds.includes(request.projectId) && request.status !== "declined" && request.status !== "client_approved",
   );
 
-  async function handleProjectSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleProjectSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
     if (!projectForm.name.trim()) {
@@ -71,15 +73,21 @@ export function ClientDetailPage({
       return;
     }
     setProjectFormError(null);
+    setConfirmCreate(true);
+  }
+
+  async function createProject(paymentDecision: PaymentDecision) {
+    if (saving) return;
     try {
       await onProjectCreate(activeClient.id, {
         name: projectForm.name.trim(),
         summary: projectForm.summary.trim(),
         budgetSignal: projectForm.budgetSignal.trim() || "Unknown",
-      });
+      }, paymentDecision);
+      setConfirmCreate(false);
       setProjectForm(initialProjectForm);
     } catch {
-      // Keep form values so the user can retry.
+      // Keep the form and dialog open so the user can retry.
     }
   }
 
@@ -273,6 +281,13 @@ export function ClientDetailPage({
       </section>
       <PastProjectsPanel clientId={client.id} />
       {editingClient ? <ClientEditDialog client={activeClient} onClose={() => setEditingClient(false)} /> : null}
+      <PaymentGateDialog
+        open={confirmCreate}
+        projectName={projectForm.name.trim()}
+        busy={saving}
+        onChoose={(decision) => void createProject(decision)}
+        onCancel={() => setConfirmCreate(false)}
+      />
     </>
   );
 }

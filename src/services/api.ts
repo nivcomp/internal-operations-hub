@@ -8,6 +8,7 @@ import type {
   FileLink,
   HourBank,
   PhasePricing,
+  PaymentDecision,
   Project,
   ProjectBrief,
   ProjectMessage,
@@ -408,6 +409,7 @@ export async function createProjectRow(input: {
   name: string;
   summary: string;
   budgetSignal: string;
+  paymentDecision: PaymentDecision;
 }): Promise<Project> {
   const { data, error } = await client
     .from("projects")
@@ -417,7 +419,7 @@ export async function createProjectRow(input: {
       summary: input.summary,
       budget_signal: input.budgetSignal,
       status: "discovery_in_progress",
-      payment_gate_status: "blocked",
+      payment_gate_status: input.paymentDecision === "paid" ? "paid" : "blocked",
     })
     .select("*")
     .single();
