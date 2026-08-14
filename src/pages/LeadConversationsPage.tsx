@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { LiveFlowDiagram } from "../components/onboarding/LiveFlowDiagram";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { PaymentGateDialog } from "../components/ui/PaymentGateDialog";
 import { useToast } from "../components/ui/Toast";
 import { useAppData } from "../context/AppDataContext";
 import {
@@ -16,6 +16,7 @@ import {
   type LeadConversationMessage,
 } from "../services/leadConversationsApi";
 import type { LeadConversationStatus } from "../services/onboardingChatApi";
+import type { PaymentDecision } from "../types/domain";
 
 type Props = { onProjectOpen: (projectId: string) => void };
 type Filter = "open" | "awaiting_review" | "paused" | "disqualified" | "promoted" | "all";
@@ -155,15 +156,17 @@ export function LeadConversationsPage({ onProjectOpen }: Props) {
     } finally { setBusy(false); }
   }
 
-  async function promote() {
+  async function promote(paymentDecision: PaymentDecision) {
     if (!selectedId || busy) return;
     setBusy(true);
     try {
-      const projectId = await promoteLeadConversation(selectedId, projectName.trim());
+      const projectId = await promoteLeadConversation(selectedId, projectName.trim(), paymentDecision);
       setConfirmPromote(false);
       await reload();
       await refreshSelected();
-      toast.notify("הפרויקט נפתח וכל השיחה והאפיון הועברו אליו");
+      toast.notify(paymentDecision === "paid"
+        ? "הפרויקט נפתח, התשלום סומן כמאושר וכל השיחה הועברה אליו"
+        : "הפרויקט נפתח כחריגה ללא תשלום ותחילת העבודה נשארה חסומה");
       onProjectOpen(projectId);
     } catch (cause) {
       toast.notify(cause instanceof Error ? cause.message : "לא הצלחנו לפתוח את הפרויקט", "error");
@@ -332,15 +335,11 @@ export function LeadConversationsPage({ onProjectOpen }: Props) {
         </main>
       </div>
 
-      <ConfirmDialog
+      <PaymentGateDialog
         open={confirmPromote}
-        title="לפתוח פרויקט מהליד הזה?"
-        description="המערכת תיצור פרויקט אחד ותעביר אליו את כל השיחה, האפיון, התרשים וההערות. הלקוח יעבור לממשק הפרויקט ויוכל להתקדם ל־MVP."
-        confirmLabel="כן, פתח פרויקט"
-        cancelLabel="עדיין לא"
-        destructive={false}
+        projectName={projectName.trim()}
         busy={busy}
-        onConfirm={() => void promote()}
+        onChoose={(decision) => void promote(decision)}
         onCancel={() => setConfirmPromote(false)}
       />
     </div>
