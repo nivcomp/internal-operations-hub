@@ -138,6 +138,10 @@ function AppShell() {
     if (!sharedProject || (role === "client" && sharedProject.clientId !== profile?.clientId)) return;
     setSelectedClientId(sharedProject.clientId);
     setSelectedProjectId(sharedProject.id);
+    if (role === "client") {
+      setActiveView("home");
+      return;
+    }
     setActiveView("client-portal");
     if (role === "agency_admin") setModeState("advanced");
   }, [portalProjectId, status, projects, role, profile?.clientId]);
@@ -293,6 +297,7 @@ function AppShell() {
       role === "client" ? (
         <ClientHomePage
           clientId={profile?.clientId}
+          initialProjectId={portalProjectId}
           onRestartWizard={() => void restartOnboarding()}
         />
       ) : role === "supplier" ? (

@@ -2786,3 +2786,40 @@ Track live discovery duration and safely deduct confirmed meeting hours from the
 
 **Next**
 - Build the saved interactive visual prototype studio with versioned client approval and reviewed Lovable export.
+
+---
+
+### 2026-08-14 — Simple approved-client workspace and payment gate
+
+**Work unit**
+Make the approved client experience project-specific and simple, surface shared MVPs directly, and require an explicit payment decision before every project-creation path.
+
+**Changes**
+- Rebuilt the authenticated client home as one simple workspace with project identity, current stage, project chat, client-visible files and a direct shared-MVP preview.
+- Kept continuation links bound to the requested client-owned project and added a compact project selector when the same client has multiple projects.
+- Removed the client flow canvas, misleading node/button controls and the route into the full Advanced project interface.
+- Restricted client MVP reads in the UI to client-audience shared/approved versions and added realtime refresh for `prototype_versions`.
+- Hid invalid legacy prototype actions from clients and replaced internal version/status wording with friendly version labels.
+- Added one reusable payment decision dialog to manual project creation, Simple meeting project creation and lead promotion.
+- Added typed payment decisions through the application service boundary. Paid creation sets the gate to paid; an unpaid override keeps it blocked and records the choice.
+- Added server and database validation for lead promotion plus activity and decision log entries while preserving retry safety.
+- Added migration `20260814150000_require_payment_decision_for_lead_promotion.sql`; it has not been applied to production in this work unit.
+
+**Tests**
+- `pnpm install --frozen-lockfile` passed.
+- The first TypeScript build found an uncovered Simple meeting project-creation call; it was corrected to use the payment dialog.
+- `pnpm run build` then passed (TypeScript + production Vite build). The existing large-chunk warning remains.
+- `git diff --check` is run again before publication.
+- No automated test or lint script exists. Authenticated role/RLS, realtime MVP display and the production migration still require a deployed browser smoke test.
+
+**Files**
+- Client workspace and MVP: `src/pages/home/ClientHomePage.tsx`, `src/components/prototype/PrototypeStudio.tsx`, `src/context/AppDataContext.tsx`, `src/App.tsx`, `src/styles.css`.
+- Payment gate: `src/components/ui/PaymentGateDialog.tsx`, `src/components/meeting/SimpleMeetingWizard.tsx`, `src/pages/ClientDetailPage.tsx`, `src/pages/LeadConversationsPage.tsx`, service/domain files.
+- Server/data: `supabase/functions/lead-conversations/index.ts`, `supabase/migrations/20260814150000_require_payment_decision_for_lead_promotion.sql`.
+- Memory: `ARCHITECTURE.md`, `DECISIONS.md`, `NEXT_TASK.md`, `WORK_LOG.md`.
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and pull request.
+
+**Next**
+- With explicit production approval: apply the migration, deploy `lead-conversations`, publish the frontend and run an authenticated agency/client smoke test before merge.

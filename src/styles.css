@@ -3100,6 +3100,19 @@ html, body, #root { max-width: 100%; }
 .client-space { max-width: 1180px; }
 .client-space-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: space-between; }
 .client-space-lang { display: flex; gap: 0.35rem; }
+.client-project-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(100%, 34rem);
+  margin-block: -0.35rem 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+}
+.client-project-picker span { flex: 0 0 auto; font-size: 0.82rem; font-weight: 800; color: var(--muted); }
+.client-project-picker select { min-width: 0; flex: 1; margin: 0; background: transparent; }
 .client-space-stages { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; }
 .client-space-stages li {
   display: flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.75rem; border-radius: 999px;

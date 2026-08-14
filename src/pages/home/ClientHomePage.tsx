@@ -7,7 +7,7 @@ import { getProjectSolutionKind } from "../../services/prototypeApi";
 import { getProjectFileLink, listProjectFiles, type ProjectFile } from "../../services/projectFilesApi";
 import { deliverable, guessSolutionKind, type SolutionKind, type WordingLang } from "../../lib/clientWording";
 
-type Props = { clientId?: string; onRestartWizard: () => void };
+type Props = { clientId?: string; initialProjectId?: string; onRestartWizard: () => void };
 
 const copy = {
   he: {
@@ -33,6 +33,7 @@ const copy = {
     noProjectText: "נתחיל יחד. שום דבר לא הופך לפרויקט פעיל עד שהסוכנות מאשרת את המעבר.",
     startCta: "בוא נגדיר מה צריך",
     langLabel: "שפה",
+    projectLabel: "הפרויקט שלך",
     suggestions: ["מה עוד צריך ממני?", "אפשר לראות את הגרסה האחרונה?", "מה השלב הבא?"],
     safety: "אני יכול להסביר ולהציע. יניב הוא זה שמאשר מחיר, תשלום ותאריך.",
   },
@@ -59,6 +60,7 @@ const copy = {
     noProjectText: "Let's start together. Nothing becomes an active project until the agency approves the move.",
     startCta: "Let's define what you need",
     langLabel: "Language",
+    projectLabel: "Your project",
     suggestions: ["What else do you need from me?", "Can I see the latest version?", "What is the next step?"],
     safety: "I can explain and suggest. Yaniv confirms price, payment and dates.",
   },
@@ -71,15 +73,20 @@ function stageIndex(status: string) {
   return 3;
 }
 
-export function ClientHomePage({ clientId, onRestartWizard }: Props) {
+export function ClientHomePage({ clientId, initialProjectId, onRestartWizard }: Props) {
   const { clients, projects, liveUpdates } = useAppData();
   const client = clients.find((item) => item.id === clientId);
-  const project = useMemo(
+  const clientProjects = useMemo(
     () => projects
       .filter((item) => item.clientId === clientId)
       .slice()
-      .sort((a, b) => b.updatedDate.localeCompare(a.updatedDate))[0],
+      .sort((a, b) => b.updatedDate.localeCompare(a.updatedDate)),
     [projects, clientId],
+  );
+  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId ?? "");
+  const project = useMemo(
+    () => clientProjects.find((item) => item.id === selectedProjectId) ?? clientProjects[0],
+    [clientProjects, selectedProjectId],
   );
 
   const [language, setLanguage] = useState<WordingLang>(() => {
@@ -90,6 +97,16 @@ export function ClientHomePage({ clientId, onRestartWizard }: Props) {
   const [solutionKind, setSolutionKind] = useState<SolutionKind | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const text = copy[language];
+
+  useEffect(() => {
+    if (initialProjectId && clientProjects.some((item) => item.id === initialProjectId)) {
+      setSelectedProjectId(initialProjectId);
+      return;
+    }
+    if (selectedProjectId && !clientProjects.some((item) => item.id === selectedProjectId)) {
+      setSelectedProjectId(clientProjects[0]?.id ?? "");
+    }
+  }, [clientProjects, initialProjectId, selectedProjectId]);
 
   function changeLanguage(next: WordingLang) {
     setLanguage(next);
@@ -149,6 +166,15 @@ export function ClientHomePage({ clientId, onRestartWizard }: Props) {
           <button type="button" className={language === "en" ? "primary-button" : "ghost-button"} onClick={() => changeLanguage("en")}>English</button>
         </div>
       </header>
+
+      {clientProjects.length > 1 ? (
+        <label className="client-project-picker">
+          <span>{text.projectLabel}</span>
+          <select value={project.id} onChange={(event) => setSelectedProjectId(event.target.value)}>
+            {clientProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+      ) : null}
 
       <section className="card client-current-stage" aria-label={text.currentStage}>
         <span className="client-current-stage-number">{stage + 1}</span>
