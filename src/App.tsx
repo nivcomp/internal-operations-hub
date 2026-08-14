@@ -61,7 +61,7 @@ const roleViews: Record<UserRole, ViewKey[]> = {
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
     "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
   ],
-  client: ["home", "client-portal"],
+  client: ["home"],
   supplier: ["home", "supplier-portal"],
 };
 
@@ -289,7 +289,6 @@ function AppShell() {
       role === "client" ? (
         <ClientHomePage
           clientId={profile?.clientId}
-          onNavigate={navigate}
           onRestartWizard={() => void restartOnboarding()}
         />
       ) : role === "supplier" ? (
