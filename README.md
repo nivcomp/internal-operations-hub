@@ -28,7 +28,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Interactive project-room chat shared with the client portal, including voice input and safe structured flow, wireframe, table and checklist artifacts.
 - Responsive Simple Mode meeting and portal presentation: visual artifacts reflow for phones and tablets, and flow/wireframe drafts can be downloaded as an SVG image, copied as an authenticated project-portal link or opened in an email draft.
 - The Advanced project workspace uses six primary sections with secondary operator tools behind progressive disclosure. Its pricing summary explicitly separates the published client view from internal rate, cost and margin data.
-- A saved interactive prototype studio turns reviewed chat, specification content, pasted text or DOCX source material into versioned app, WhatsApp-bot or automation MVP screens. Agency operators create and share drafts; clients can navigate and approve the exact shared version in their portal.
+- A saved interactive prototype studio turns reviewed chat, specification content, pasted text or DOCX source material into versioned app, WhatsApp-bot or automation MVP screens. Agency operators create and share drafts; clients can navigate, approve the exact shared version, or safely withdraw an accidental approval while preserving its history.
 - Shared project document center in Simple, Advanced and the client portal, using approved specification sections and existing `project_documents` records.
 - Supplier-safe handoff from the Simple project workspace using existing supplier-audience `supplier_brief` documents and an authenticated printable/PDF-save view.
 - Meetings, source uploads/transcripts and structured specification records.

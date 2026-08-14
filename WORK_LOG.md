@@ -1,5 +1,35 @@
 # Work Log
 
+### 2026-08-14 — Client can withdraw an accidental MVP approval
+
+**Work unit**
+Add a safe recovery path when a client approves the exact shared MVP version by mistake.
+
+**Changes**
+- Replaced the one-decision-per-version limitation with append-only client decision history; the latest decision is current.
+- Added a client-facing withdrawal control, optional correction note and confirmation dialog after approval.
+- Preserved the original approval, immutable version and complete conversation while returning the current decision to `changes_requested`.
+- Added an agency-visible latest-decision card and tightened client RLS reads to the signed-in client’s own approval history.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite, 287 modules); the existing large-chunk warning remains.
+- `git diff --check` passed before the implementation commit.
+- The production database was inspected read-only: the expected unique constraint exists, there is one current decision row and three prototype-approval policies. No production data or schema was changed.
+- No automated test or lint script exists. The migration and authenticated client/agency browser flow require deployment verification.
+
+**Files**
+- `src/components/prototype/PrototypeStudio.tsx`
+- `src/services/prototypeApi.ts`
+- `src/styles.css`
+- `supabase/migrations/20260814170000_allow_client_mvp_approval_reconsideration.sql`
+- Project memory and approval-flow documentation.
+
+**Commit**
+- `5165e19 Allow clients to withdraw MVP approval`
+
+**Next**
+- Apply the migration, publish the frontend and run the single authenticated client/agency smoke test recorded in `NEXT_TASK.md`.
+
 ### 2026-08-13 — Simple currency and supplier assignment refinements
 
 **Work unit**

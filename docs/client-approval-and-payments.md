@@ -10,6 +10,8 @@ Client approval and payment status are key gates before work starts.
 4. Approval is recorded with date and notes.
 5. Approved scope becomes the delivery baseline.
 
+For a shared MVP preview, an accidental approval can be withdrawn. The system records a newer change-request decision instead of deleting the approval. The already approved version stays immutable, and any correction is prepared as a new version.
+
 ## Payment Gate
 
 Work should not begin until one of these is true:

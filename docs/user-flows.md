@@ -37,6 +37,14 @@ An existing-project continuation link is a different flow. It remains bound to i
    - Enough paid hours are available in the client's hour bank.
 3. Once ready, Yaniv can assign supplier work.
 
+## MVP Review and Reconsideration
+
+1. The client reviews the exact shared MVP version in the simple project workspace.
+2. The client approves it or requests changes.
+3. If approval was accidental, the client can withdraw it after a clear confirmation step and optionally explain what should change.
+4. The original approval and the withdrawal remain in append-only history; the approved version is never edited in place.
+5. Yaniv sees the latest decision and creates a new version for any correction.
+
 ## Supplier Assignment
 
 1. Yaniv selects an approved supplier.

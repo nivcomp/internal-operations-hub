@@ -34,6 +34,7 @@ Can:
 - View project status.
 - View client-facing brief and scope.
 - Approve or reject scope.
+- Withdraw an accidental MVP approval and return the exact version for corrections.
 - Request changes.
 - Upload or share files and links.
 - View payment status and paid-hour balance.

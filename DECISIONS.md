@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-08-14 — Client MVP decisions are append-only and reconsiderable
+
+**Decision**
+An MVP approval is not deleted or overwritten when a client changes their mind. The client may withdraw an accidental approval by recording a newer `changes_requested` decision for the same exact version. The newest decision is current, while the original approval remains in history and the approved version remains immutable.
+
+**Reason**
+Clients need a clear recovery path after an accidental click, while the agency still needs an accurate record of what was approved and when. Editing an already approved version would make the historical approval ambiguous.
+
+**Consequences**
+The client portal shows a confirmation step before withdrawal and explains that the version and conversation remain saved. Agency MVP surfaces show the latest client decision. Any requested correction is delivered as a new MVP version rather than silently changing the version that was previously approved.
+
 ## 2026-08-13 — ILS is the operating default and pending suppliers may be planned
 
 **Decision**
