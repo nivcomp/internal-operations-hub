@@ -675,6 +675,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     // collection here — they only flag the project as having a fresh update.
     listen("chat_messages", () => {});
     listen("project_questions", () => {});
+    listen("prototype_versions", () => {});
     listen("prototype_approvals", () => {});
     listen("proposal_signatures", () => {});
 
