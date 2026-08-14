@@ -4,6 +4,7 @@ import {
   generatePrototype, listProjectPrototypes, recordPrototypeDecision, sharePrototype,
   type ProjectPrototype, type PrototypeKind, type PrototypeScreen, type PrototypeVersion,
 } from "../../services/prototypeApi";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 type Props = { projectId: string; projectName: string; readOnly?: boolean; clientMode?: boolean; simple?: boolean; language?: "he" | "en"; refreshToken?: number };
 
@@ -23,6 +24,7 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [studioFullScreen, setStudioFullScreen] = useState(false);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
   async function refresh(preferredPrototypeId?: string, preferredVersionId?: string) {
     const result = await listProjectPrototypes(projectId);
@@ -85,6 +87,19 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
     catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   }
 
+  async function reopenForChanges() {
+    if (!version) return;
+    setBusy(true); setError(""); setNotice("");
+    const reason = comment.trim() || (language === "he" ? "האישור בוטל כדי לחזור לתיקונים." : "Approval withdrawn to return for changes.");
+    try {
+      await recordPrototypeDecision(version, "changes_requested", reason);
+      await refresh(prototype.id, version.id);
+      setComment(""); setReopenDialogOpen(false);
+      setNotice(language === "he" ? "האישור בוטל. הגרסה והשיחה נשמרו, והפרויקט חזר לתיקונים." : "Approval withdrawn. The version and conversation were preserved and the project is back in review.");
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  }
+
   const handoffPayload = useMemo(() => version ? JSON.stringify({ project: projectName, prototypeType: prototype?.prototype_kind, version: version.version, summary: version.summary, ui: version.content, rules: ["Preserve the approved screens and interactions", "Implement authentication and role isolation", "Do not invent pricing or expose internal agency data", "Create the required database schema and integrations from the supplied specification"] }, null, 2) : "", [version, prototype?.prototype_kind, projectName]);
   async function copyExport(platform: "Lovable" | "Base44") { await navigator.clipboard.writeText(`Build an implementation of this reviewed MVP in ${platform}. Treat the JSON as the approved product contract. Include the required database, authentication, permissions, integrations and automation flows. Ask before inventing missing business rules.\n\n${handoffPayload}`); setNotice(`חבילת ה־MVP הועתקה עבור ${platform}. יש לבדוק אותה לפני ההדבקה.`); }
 
@@ -94,11 +109,21 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
     fullscreen: "פתח במסך מלא", exit: "צא ממסך מלא",
     prototype: "מה שבונים", version: "גרסה", approval: "האישור שלך לגרסה", approved: "אישרת את הגרסה", changes: "ביקשת שינויים",
     placeholder: "הערה או שינוי שתרצה", approve: "זה מתאים לי", request: "יש לי הערות",
+    approvedHelp: "אישרת בטעות או שינית את דעתך? אפשר לבטל את האישור ולחזור לתיקונים.",
+    undo: "ביטול האישור וחזרה לתיקונים", undoTitle: "לבטל את האישור?",
+    undoDescription: "האישור לגרסה הזו יבוטל והסוכנות תראה שהפרויקט חזר לתיקונים. הגרסה, השיחה והאישור המקורי יישמרו בהיסטוריה.",
+    undoConfirm: "כן, בטל את האישור", cancel: "לא, השאר מאושר",
+    changesHelp: "הגרסה נשמרה. הסוכנות תראה את הבקשה ותוכל להכין גרסה מתוקנת.",
   } : {
     title: thing.name, empty: `We have not shared a preview of ${thing.short} with you yet. We will let you know once it is ready.`,
     fullscreen: "Open full screen", exit: "Exit full screen",
     prototype: "What we are building", version: "Version", approval: "Your approval for version", approved: "You approved this version", changes: "You asked for changes",
     placeholder: "A comment or change you would like", approve: "This works for me", request: "I have comments",
+    approvedHelp: "Approved by mistake or changed your mind? You can withdraw approval and return it for changes.",
+    undo: "Withdraw approval and request changes", undoTitle: "Withdraw this approval?",
+    undoDescription: "This version will return for changes and the agency will be notified. The version, conversation and original approval stay in the history.",
+    undoConfirm: "Yes, withdraw approval", cancel: "Keep it approved",
+    changesHelp: "The version is preserved. The agency can now review your request and prepare a corrected version.",
   };
 
   if (!version && readOnly) return <section className="card prototype-empty"><h2>{clientCopy.title}</h2><p>{clientCopy.empty}</p></section>;
@@ -122,9 +147,21 @@ export function PrototypeStudio({ projectId, projectName, readOnly = false, clie
       <div className="prototype-device"><div className="prototype-device-bar"><i /><i /><i /><strong>{prototype.prototype_kind === "whatsapp" ? "WhatsApp Demo" : screen.title}</strong></div><div className="prototype-canvas"><h3>{screen.title}</h3>{screen.subtitle ? <p className="prototype-subtitle">{screen.subtitle}</p> : null}<div className="prototype-blocks">{screen.blocks.map((block, index) => <PrototypeBlockView key={`${block.type}-${index}`} block={block} />)}</div><div className="prototype-actions">{screen.actions.filter((action) => !clientMode || action.targetScreenId).map((action) => <button key={action.id} className={`prototype-action ${action.tone || "primary"}`} onClick={() => action.targetScreenId && setScreenId(action.targetScreenId)} disabled={!action.targetScreenId}>{action.label}</button>)}</div></div></div>
     </div> : <div className="prototype-empty"><p>{clientMode ? clientCopy.empty : "עדיין אין MVP שמור. אפשר ליצור אותו מהשיחה או מחומר שהלקוח שלח."}</p></div>}
 
-    {clientMode && version && (version.status === "shared" || version.status === "approved") ? <div className="prototype-approval"><h3>{clientCopy.approval} v{version.version}</h3>{decision ? <p><strong>{decision.decision === "approved" ? clientCopy.approved : clientCopy.changes}</strong>{decision.comment ? ` · ${decision.comment}` : ""}</p> : <><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={clientCopy.placeholder} /><div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void decide("approved")}>{clientCopy.approve}</button><button disabled={busy || !comment.trim()} onClick={() => void decide("changes_requested")}>{clientCopy.request}</button></div></>}</div> : null}
+    {!clientMode && decision ? <div className={`prototype-client-decision ${decision.decision}`}><strong>{decision.decision === "approved" ? "הלקוח אישר את הגרסה" : "הלקוח החזיר את הגרסה לתיקונים"}</strong>{decision.comment ? <p>{decision.comment}</p> : null}</div> : null}
+    {clientMode && version && (version.status === "shared" || version.status === "approved") ? <div className="prototype-approval"><h3>{clientCopy.approval} v{version.version}</h3>{decision ? decision.decision === "approved" ? <div className="prototype-approval-current"><p><strong>{clientCopy.approved}</strong>{decision.comment ? ` · ${decision.comment}` : ""}</p><p className="form-note">{clientCopy.approvedHelp}</p><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={clientCopy.placeholder} /><button type="button" disabled={busy} onClick={() => setReopenDialogOpen(true)}>{clientCopy.undo}</button></div> : <div className="prototype-approval-current"><p><strong>{clientCopy.changes}</strong>{decision.comment ? ` · ${decision.comment}` : ""}</p><p className="form-note">{clientCopy.changesHelp}</p></div> : <><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={clientCopy.placeholder} /><div className="action-row"><button className="primary-button" disabled={busy} onClick={() => void decide("approved")}>{clientCopy.approve}</button><button disabled={busy || !comment.trim()} onClick={() => void decide("changes_requested")}>{clientCopy.request}</button></div></>}</div> : null}
     {error ? <p className="form-error">{error}</p> : null}{notice ? <p className="form-success">{notice}</p> : null}
     {!readOnly && hasShared ? <p className="form-note">גרסה ששותפה נשארת בהיסטוריה. תיקונים תמיד יוצרים גרסה חדשה ואינם מוחקים את מה שהלקוח ראה.</p> : null}
+    <ConfirmDialog
+      open={reopenDialogOpen}
+      title={clientCopy.undoTitle}
+      description={clientCopy.undoDescription}
+      confirmLabel={clientCopy.undoConfirm}
+      cancelLabel={clientCopy.cancel}
+      destructive={false}
+      busy={busy}
+      onConfirm={() => void reopenForChanges()}
+      onCancel={() => setReopenDialogOpen(false)}
+    />
   </section>;
 }
 

@@ -2938,7 +2938,12 @@ html, body, #root { max-width: 100%; }
 .prototype-action.secondary { background: white; color: var(--prototype-primary); }
 .prototype-action.danger { background: var(--danger-bg); color: var(--danger); }
 .prototype-approval { margin-top: 1rem; padding: 1rem; border: 1px solid var(--success-line); border-radius: 14px; background: var(--success-bg); }
+.prototype-approval h3, .prototype-approval-current p { margin-block: 0; }
+.prototype-approval-current { display: grid; gap: .7rem; }
 .prototype-approval textarea { width: 100%; }
+.prototype-client-decision { margin-top: 1rem; padding: .85rem 1rem; border: 1px solid var(--success-line); border-radius: 12px; background: var(--success-bg); }
+.prototype-client-decision.changes_requested { border-color: var(--warning-line); background: var(--warning-bg); }
+.prototype-client-decision p { margin: .35rem 0 0; }
 .prototype-empty { padding: 1.25rem; text-align: center; }
 .prototype-fullscreen { position: fixed; inset: 0; z-index: 1100; margin: 0; padding: clamp(.65rem, 2vw, 1.5rem); overflow: auto; border: 0; border-radius: 0; background: var(--canvas); }
 .prototype-fullscreen .prototype-workbench { min-height: calc(100vh - 160px); }
