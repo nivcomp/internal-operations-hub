@@ -29,6 +29,7 @@ import type { CopilotChip } from "./services/copilotApi";
 import { AIWorkbenchPage } from "./pages/AIWorkbenchPage";
 import { AIUsagePage } from "./pages/AIUsagePage";
 import { AccessManagementPage } from "./pages/AccessManagementPage";
+import { ApiIntegrationsPage } from "./pages/ApiIntegrationsPage";
 import { ActionQueuePage } from "./pages/ActionQueuePage";
 import { ChangeRequestsPage } from "./pages/ChangeRequestsPage";
 import { ClientDetailPage } from "./pages/ClientDetailPage";
@@ -58,7 +59,7 @@ const roleViews: Record<UserRole, ViewKey[]> = {
     "home", "dashboard", "action-queue", "lead-conversations", "cash-flow-leads", "clients", "client-detail", "client-portal",
     "projects", "project-detail", "change-requests",
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
-    "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
+    "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management", "api-integrations",
   ],
   client: ["home", "client-portal"],
   supplier: ["home", "supplier-portal"],
@@ -393,6 +394,7 @@ function AppShell() {
     "access-management": (
       <AccessManagementPage onClientSelect={openClientDetail} onSupplierSelect={openSupplierDetail} />
     ),
+    "api-integrations": <ApiIntegrationsPage />,
   } satisfies Record<ViewKey, JSX.Element>;
 
   const simplePage: Record<SimpleView, JSX.Element> = {
