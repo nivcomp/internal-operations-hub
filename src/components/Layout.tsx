@@ -17,7 +17,7 @@ type NavGroup = { label: string; keys: ViewKey[] };
 
 const navGroups: NavGroup[] = [
   { label: "Overview", keys: ["home", "dashboard", "action-queue"] },
-  { label: "Clients", keys: ["lead-conversations", "clients", "client-detail", "client-portal"] },
+  { label: "Clients", keys: ["lead-conversations", "cash-flow-leads", "clients", "client-detail", "client-portal"] },
   { label: "Projects", keys: ["projects", "project-detail", "change-requests"] },
   { label: "Suppliers", keys: ["suppliers", "supplier-detail", "supplier-time", "supplier-portal"] },
   { label: "Finance", keys: ["pricing-margin", "payments-hours"] },

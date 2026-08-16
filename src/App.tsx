@@ -21,8 +21,6 @@ import { SimpleRecordsPage } from "./pages/simple/SimpleRecordsPage";
 import { CrmWorkspace } from "./components/crm/CrmWorkspace";
 import { SimpleTasksPage } from "./pages/simple/SimpleTasksPage";
 import { SimpleFinancePage } from "./pages/simple/SimpleFinancePage";
-import { SimpleProjectWorkspace } from "./pages/simple/SimpleProjectWorkspace";
-import { SupplierBriefPrintPage } from "./pages/simple/SupplierBriefPrintPage";
 import { MeetingWorkspace } from "./components/meeting/MeetingWorkspace";
 import { CopilotProvider, useCopilotScreen } from "./context/CopilotContext";
 import { CopilotDock } from "./components/copilot/CopilotDock";
@@ -51,17 +49,18 @@ import { SupplierPortalPage } from "./pages/SupplierPortalPage";
 import { SupplierTimePage } from "./pages/SupplierTimePage";
 import { SuppliersPage } from "./pages/SuppliersPage";
 import { LeadConversationsPage } from "./pages/LeadConversationsPage";
+import { CashFlowLeadsPage } from "./pages/CashFlowLeadsPage";
 import type { UserRole } from "./types/domain";
 import type { ViewKey } from "./views";
 
 const roleViews: Record<UserRole, ViewKey[]> = {
   agency_admin: [
-    "home", "dashboard", "action-queue", "lead-conversations", "clients", "client-detail", "client-portal",
+    "home", "dashboard", "action-queue", "lead-conversations", "cash-flow-leads", "clients", "client-detail", "client-portal",
     "projects", "project-detail", "change-requests",
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
     "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management",
   ],
-  client: ["home"],
+  client: ["home", "client-portal"],
   supplier: ["home", "supplier-portal"],
 };
 
@@ -118,15 +117,6 @@ function AppShell() {
   const [simpleView, setSimpleView] = useState<SimpleView>(() => simpleMeetingProjectId ? "meeting" : "home");
   const [cameFromSimple, setCameFromSimple] = useState(false);
   const [portalProjectId] = useState(() => new URLSearchParams(window.location.search).get("portalProject") ?? undefined);
-  const [supplierBriefPrint] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      projectId: params.get("supplierBriefProject") ?? "",
-      documentId: params.get("supplierBriefDocument") ?? "",
-      autoPrint: params.get("print") === "1",
-    };
-  });
-  const supplierBriefPrintActive = Boolean(supplierBriefPrint.projectId && supplierBriefPrint.documentId);
 
   useEffect(() => {
     if (!allowedViews.includes(activeView)) setActiveView(allowedViews[0]);
@@ -138,10 +128,6 @@ function AppShell() {
     if (!sharedProject || (role === "client" && sharedProject.clientId !== profile?.clientId)) return;
     setSelectedClientId(sharedProject.clientId);
     setSelectedProjectId(sharedProject.id);
-    if (role === "client") {
-      setActiveView("home");
-      return;
-    }
     setActiveView("client-portal");
     if (role === "agency_admin") setModeState("advanced");
   }, [portalProjectId, status, projects, role, profile?.clientId]);
@@ -228,12 +214,10 @@ function AppShell() {
 
   const openAdvanced = useCallback((view: ViewKey, context?: {
     projectId?: string; clientId?: string; supplierId?: string;
-    tab?: string;
   }) => {
     if (context?.projectId) setSelectedProjectId(context.projectId);
     if (context?.clientId) setSelectedClientId(context.clientId);
     if (context?.supplierId) setSelectedSupplierId(context.supplierId);
-    if (context?.projectId && context?.tab) window.sessionStorage.setItem("open-project-tab", `${context.projectId}:${context.tab}`);
     setCameFromSimple(true);
     setModeState("advanced");
     window.localStorage.setItem(MODE_STORAGE_KEY, "advanced");
@@ -251,11 +235,6 @@ function AppShell() {
     setSimpleMeetingProjectId(projectId);
     window.localStorage.setItem("cts.simple-meeting-project", projectId);
     setSimpleView("meeting");
-  }, []);
-
-  const openSimpleProject = useCallback((projectId: string) => {
-    setSelectedProjectId(projectId);
-    setSimpleView("project");
   }, []);
 
   const closeSimpleMeeting = useCallback((finished = false) => {
@@ -297,7 +276,6 @@ function AppShell() {
       role === "client" ? (
         <ClientHomePage
           clientId={profile?.clientId}
-          initialProjectId={portalProjectId}
           onRestartWizard={() => void restartOnboarding()}
         />
       ) : role === "supplier" ? (
@@ -371,6 +349,7 @@ function AppShell() {
     ),
     crm: <CrmWorkspace onClientSelect={openClientDetail} onCreateProject={openClientDetail} />,
     "lead-conversations": <LeadConversationsPage onProjectOpen={openProjectDetail} />,
+    "cash-flow-leads": <CashFlowLeadsPage />,
     suppliers: <SuppliersPage onSupplierSelect={openSupplierDetail} />,
     "supplier-detail": (
       <SupplierDetailPage
@@ -420,25 +399,17 @@ function AppShell() {
   } satisfies Record<ViewKey, JSX.Element>;
 
   const simplePage: Record<SimpleView, JSX.Element> = {
-    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} onMeetingStarted={openSimpleMeeting} onOpenLeadConversations={() => setSimpleView("lead-conversations")} />,
+    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} onMeetingStarted={openSimpleMeeting} onOpenLeadConversations={() => openAdvanced("lead-conversations")} />,
     crm: (
       <CrmWorkspace
         onClientSelect={(clientId) => openAdvanced("client-detail", { clientId })}
         onCreateProject={(clientId) => openAdvanced("client-detail", { clientId })}
-        onOpenLeadConversations={() => setSimpleView("lead-conversations")}
       />
     ),
-    "lead-conversations": <LeadConversationsPage onProjectOpen={openSimpleProject} />,
+    "lead-conversations": <LeadConversationsPage onProjectOpen={(projectId) => openAdvanced("project-detail", { projectId })} />,
+    "cash-flow-leads": <CashFlowLeadsPage />,
     clients: <SimpleRecordsPage kind="clients" />,
-    projects: <SimpleRecordsPage kind="projects" onProjectOpen={openSimpleProject} />,
-    project: (() => {
-      const project = projects.find((item) => item.id === selectedProjectId);
-      return project ? <SimpleProjectWorkspace
-        project={project}
-        onBack={() => setSimpleView("projects")}
-        onOpenSupplier={(supplierId) => openAdvanced("supplier-portal", { supplierId })}
-      /> : <section className="card" dir="rtl"><h2>לא נבחר פרויקט</h2><button type="button" onClick={() => setSimpleView("projects")}>חזרה לפרויקטים</button></section>;
-    })(),
+    projects: <SimpleRecordsPage kind="projects" />,
     suppliers: <SimpleRecordsPage kind="suppliers" />,
     tasks: <SimpleTasksPage />,
     finance: <SimpleFinancePage />,
@@ -461,15 +432,11 @@ function AppShell() {
       <CopilotProvider
         onChip={(chip: CopilotChip) => {
           if (chip.type === "navigate") {
-            if (simpleModeActive && chip.view === "projects") setSimpleView("projects");
-            else if (simpleModeActive && chip.view === "suppliers") setSimpleView("suppliers");
-            else if (simpleModeActive && chip.view === "clients") setSimpleView("crm");
-            else if (simpleModeActive && chip.view === "lead-conversations") setSimpleView("lead-conversations");
-            else if (simpleModeActive) openAdvanced(chip.view as ViewKey);
+            if (simpleModeActive) openAdvanced(chip.view as ViewKey);
             else navigate(chip.view as ViewKey);
           }
           else if (chip.type === "open_project") {
-            if (simpleModeActive) openSimpleProject(chip.id);
+            if (simpleModeActive) openAdvanced("project-detail", { projectId: chip.id });
             else openProjectDetail(chip.id);
           }
           else if (chip.type === "open_client") {
@@ -495,9 +462,7 @@ function AppShell() {
         supplierId={selectedSupplierId}
         label={activeView}
       />
-      {supplierBriefPrintActive ? (
-        <SupplierBriefPrintPage projectId={supplierBriefPrint.projectId} documentId={supplierBriefPrint.documentId} autoPrint={supplierBriefPrint.autoPrint} />
-      ) : simpleModeActive ? (
+      {simpleModeActive ? (
         <SimpleLayout
           accountLabel={profile?.fullName ?? profile?.email ?? ""}
           onSignOut={() => void signOut()}
@@ -545,8 +510,8 @@ function AppShell() {
       )}
       </Layout>
       )}
-      {!supplierBriefPrintActive ? <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} /> : null}
-      {!supplierBriefPrintActive ? <CopilotDock /> : null}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <CopilotDock />
       </CopilotProvider>
       </ModeContext.Provider>
     </NavContext.Provider>

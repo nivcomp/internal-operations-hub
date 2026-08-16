@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import type { ViewKey } from "../views";
 
 export type UiMode = "simple" | "advanced";
-export type SimpleView = "home" | "crm" | "lead-conversations" | "clients" | "projects" | "project" | "suppliers" | "tasks" | "finance" | "meeting";
+export type SimpleView = "home" | "crm" | "lead-conversations" | "cash-flow-leads" | "clients" | "projects" | "suppliers" | "tasks" | "finance" | "meeting";
 
 export type AdvancedContext = {
   projectId?: string;
@@ -46,4 +46,5 @@ export const advancedTargets = {
   dashboard: "dashboard",
   actionQueue: "action-queue",
   leadConversations: "lead-conversations",
+  cashFlowLeads: "cash-flow-leads",
 } satisfies Record<string, ViewKey>;
