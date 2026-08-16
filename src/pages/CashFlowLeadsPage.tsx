@@ -129,7 +129,7 @@ export function CashFlowLeadsPage() {
     <div className="cashflow-admin-page" dir="rtl" lang="he">
       <header className="page-header">
         <div>
-          <p className="eyebrow">נעים מחשבים</p>
+          <p className="eyebrow">ניב מחשבים</p>
           <h1>לידים תזרים</h1>
           <p>לידים שהתקבלו מטופס אמיר תזרים מזומנים.</p>
         </div>

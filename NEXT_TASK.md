@@ -4,7 +4,7 @@
 
 The "אמיר תזרים מזומנים" campaign intake is implemented in the shared application.
 
-`/amir-cashflow` is a public Hebrew RTL form branded as "נעים מחשבים". It validates required fields, email, the conditional "other accounting system" field and explicit contact consent, trims text before saving, and inserts a fixed-source `new` lead through the existing Supabase client.
+`/amir-cashflow` is a public Hebrew RTL form branded as "ניב מחשבים". It validates required fields, email, the conditional "other accounting system" field and explicit contact consent, trims text before saving, and inserts a fixed-source `new` lead through the existing Supabase client.
 
 The repeatable `cash_flow_leads` migration includes database defaults, status and source constraints, public insert-only RLS and agency-admin read/update RLS. The authenticated internal application exposes **Cash Flow Leads** in Advanced Mode and **לידים תזרים** in Simple Mode, with search, the five requested status controls, a full desktop table and mobile lead cards with direct `tel:` calling.
 

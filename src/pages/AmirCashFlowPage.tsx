@@ -99,13 +99,13 @@ export function AmirCashFlowPage() {
         <header className="cashflow-brand-area">
           <div className="cashflow-brand-mark" aria-hidden>נ</div>
           <div>
-            <strong>נעים מחשבים</strong>
+            <strong>ניב מחשבים</strong>
             <span>פתרונות מעשיים לעסקים</span>
           </div>
         </header>
 
         <section className="cashflow-intro">
-          <p className="eyebrow">נעים מחשבים</p>
+          <p className="eyebrow">ניב מחשבים</p>
           <h1>אמיר תזרים מזומנים</h1>
           <p>בדיקת התאמה לתוכנת תזרים מזומנים לעסק</p>
         </section>
@@ -114,7 +114,7 @@ export function AmirCashFlowPage() {
           <section className="cashflow-success" role="status" aria-live="polite">
             <span aria-hidden>✓</span>
             <h2>הפרטים נקלטו בהצלחה. נחזור אליכם בהקדם.</h2>
-            <p>תודה שפניתם לנעים מחשבים.</p>
+            <p>תודה שפניתם לניב מחשבים.</p>
           </section>
         ) : (
           <form className="cashflow-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
@@ -296,7 +296,7 @@ export function AmirCashFlowPage() {
                 aria-invalid={Boolean(errors.consent)}
                 aria-describedby={errors.consent ? "consent-error" : undefined}
               />
-              <span>אני מאשר/ת לנעים מחשבים לשמור את הפרטים וליצור איתי קשר לגבי תוכנת תזרים מזומנים.</span>
+              <span>אני מאשר/ת לניב מחשבים לשמור את הפרטים וליצור איתי קשר לגבי תוכנת תזרים מזומנים.</span>
             </label>
             <FieldError id="consent-error" message={errors.consent} />
 
