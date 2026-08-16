@@ -1,5 +1,39 @@
 # Work Log
 
+### 2026-08-16 — External API and AI Skill design package
+
+**Work unit**
+Characterize the complete Supabase-backed system and produce a machine-readable API package from which an AI engine can generate a safe, full-featured connector or Skill.
+
+**Changes**
+- Generated an exact public-schema catalog from `src/integrations/supabase/types.ts`: 82 tables, 988 row fields, 172 relationships and 9 database functions, including separate insert/update shapes.
+- Added an OpenAPI 3.1 gateway contract for identity, capability discovery, paginated reads, validated creates, optimistic-concurrency updates, guarded deletes, business actions and audit reads.
+- Added a per-table authorization/mutation matrix covering agency, client and supplier boundaries, append-only/protected data, canonical pricing and legacy read-only pricing.
+- Catalogued 12 existing Edge Function service families and their guarded operations.
+- Added one self-contained `docs/api/ai-skill-input.json` package plus a copy-ready generator prompt and Hebrew implementation/security reference.
+- Added deterministic generation commands that fail if a schema table is missing from the domain/policy mapping.
+- Recorded that this is a design contract: the scoped OAuth/audit gateway must be implemented before any generated Skill can connect, and a Supabase `service_role` key must never be distributed.
+
+**Verification**
+- `pnpm run api:docs` passed and regenerated the package deterministically.
+- JSON parsing and inventory assertions passed for all package files: 82 table policies, 12 service families and OpenAPI 3.1.
+- All internal OpenAPI references resolved, operation ids were unique and every table had a populated Row schema.
+- A secret-shape scan found no JWT, API key or service-role credential in the package.
+- `pnpm run build` passed (TypeScript + Vite, 287 modules); the existing large-chunk warning remains. The first sandboxed attempt was blocked by parent-directory read restrictions, then the identical approved build completed successfully.
+- `git diff --check` passed before commit. No database, production environment or deployed application was changed.
+
+**Files**
+- `docs/api/`
+- `scripts/generate-api-catalog.mjs`
+- `scripts/generate-api-contract.mjs`
+- `README.md`, architecture/decision memory and `NEXT_TASK.md`
+
+**Commit**
+- `e2e2274 Document scoped external API contract`
+
+**Next**
+- Implement and stage-test the read-only authenticated gateway foundation recorded in `NEXT_TASK.md` before enabling writes, deletes or a generated Skill.
+
 ### 2026-08-14 — Client can withdraw an accidental MVP approval
 
 **Work unit**
