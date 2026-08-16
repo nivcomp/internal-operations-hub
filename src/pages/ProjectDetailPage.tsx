@@ -66,6 +66,12 @@ export function ProjectDetailPage({
   const [paymentForm, setPaymentForm] = useState<NewClientPaymentInput>(initialPaymentForm);
   const [supplierToAssign, setSupplierToAssign] = useState("");
   const [tab, setTab] = useState<ProjectTab>(() => {
+    const requestedTab = window.sessionStorage.getItem("open-project-tab");
+    if (requestedTab?.startsWith(`${selectedProjectId}:`)) {
+      window.sessionStorage.removeItem("open-project-tab");
+      const value = requestedTab.slice(String(selectedProjectId).length + 1) as ProjectTab;
+      if (["overview", "meeting", "scope", "estimate", "commercial", "proposal", "suppliers", "money", "changes", "timeline", "assistant", "documents", "files"].includes(value)) return value;
+    }
     const requestedProject = window.sessionStorage.getItem("open-project-meeting");
     if (requestedProject && requestedProject === selectedProjectId) {
       window.sessionStorage.removeItem("open-project-meeting");

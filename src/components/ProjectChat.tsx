@@ -33,13 +33,13 @@ type ProjectChatProps = {
 
 const chatCopy = {
   he: {
-    refresh: "רענן", loading: "טוען את השיחה…", empty: "עוד אין הודעות. אפשר להתחיל לכתוב למטה.",
+    refresh: "רענן", start: "לתחילת השיחה", loading: "טוען את השיחה…", empty: "עוד אין הודעות. אפשר להתחיל לכתוב למטה.",
     thinking: "חושב…", retry: "נסה שוב", dismiss: "סגור", send: "שלח", sending: "שולח…",
     placeholder: "כתוב הודעה…", disabled: "שליחה מושבתת בתצוגה מקדימה",
     attach: "➕ צרף מסמך", uploading: "מעלה…", uploaded: "המסמך נוסף לפרויקט",
   },
   en: {
-    refresh: "Refresh", loading: "Loading conversation…", empty: "No messages yet. Start the conversation below.",
+    refresh: "Refresh", start: "Start of conversation", loading: "Loading conversation…", empty: "No messages yet. Start the conversation below.",
     thinking: "Thinking…", retry: "Retry", dismiss: "Dismiss", send: "Send", sending: "Sending…",
     placeholder: "Write your message… (Hebrew or English)", disabled: "Sending is disabled in preview mode",
     attach: "➕ Attach a document", uploading: "Uploading…", uploaded: "Document added to the project",
@@ -412,9 +412,10 @@ export function ProjectChat({
           <h2>{title}</h2>
           <p className="chat-sub">{subtitle}</p>
         </div>
-        <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>
-          {text.refresh}
-        </button>
+        <div className="action-row compact">
+          {messages.length ? <button type="button" className="ghost-button" onClick={() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>{text.start}</button> : null}
+          <button type="button" className="ghost-button" onClick={() => void load()} disabled={loadState === "loading"}>{text.refresh}</button>
+        </div>
       </header>
 
       {readOnly && <p className="chat-readonly">{readOnlyReason ?? "Preview mode — sending is disabled."}</p>}

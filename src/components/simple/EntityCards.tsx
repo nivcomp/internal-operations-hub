@@ -102,9 +102,6 @@ export function SimpleProjectCard({ project, onContinue }: { project: Project; o
         <button type="button" onClick={() => openAdvanced("project-detail", { projectId: project.id })}>
           פתח פרויקט מלא
         </button>
-        <button type="button" onClick={() => openAdvanced("project-detail", { projectId: project.id, tab: "chat" })}>
-          שיחת הלקוח
-        </button>
       </div>
     </article>
   );

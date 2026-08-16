@@ -4,7 +4,7 @@ import type { Agency, User } from "../types/domain";
 export const agency: Agency = {
   id: "agency-1",
   name: "Yaniv Studio",
-  defaultCurrency: "GBP",
+  defaultCurrency: "ILS",
   marginTargetPercent: 35,
   settings: {
     requiresPaymentBeforeWork: true,

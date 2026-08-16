@@ -56,6 +56,7 @@ import type {
   FileLink,
   HourBank,
   PhasePricing,
+  PaymentDecision,
   Project,
   ProjectBrief,
   ProjectMessage,
@@ -139,7 +140,7 @@ export type AppDataValue = {
   createClient: (input: NewClientInput) => Promise<Client>;
   updateClient: (clientId: string, input: NewClientInput) => Promise<Client>;
   createSupplier: (input: NewSupplierInput) => Promise<Supplier>;
-  createProject: (clientId: string, input: NewProjectInput) => Promise<Project>;
+  createProject: (clientId: string, input: NewProjectInput, paymentDecision: PaymentDecision) => Promise<Project>;
   createChangeRequest: (projectId: string, clientId: string, input: NewChangeRequestInput) => Promise<ChangeRequest>;
   submitClientChangeRequest: (projectId: string, clientId: string, input: { title: string; description: string }) => Promise<ChangeRequest>;
   createTimeEntry: (projectId: string, input: NewTimeEntryInput) => Promise<TimeEntry>;
@@ -369,14 +370,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   }, [runAction, recordActivity]);
 
-  const createProject = useCallback((clientId: string, input: NewProjectInput): Promise<Project> => {
+  const createProject = useCallback((clientId: string, input: NewProjectInput, paymentDecision: PaymentDecision): Promise<Project> => {
     return runAction(MutationKeys.createProject(clientId), "Project saved.", async () => {
       const persisted = await createProjectRow({
-        clientId, name: input.name, summary: input.summary, budgetSignal: input.budgetSignal,
+        clientId, name: input.name, summary: input.summary, budgetSignal: input.budgetSignal, paymentDecision,
       });
       setProjects((current) => [...current, persisted]);
       const company = clients.find((c) => c.id === clientId)?.company ?? "a client";
-      await recordActivity("Project created", `${persisted.name} was created for ${company}.`);
+      await recordActivity(
+        "Project created",
+        `${persisted.name} was created for ${company}. Payment decision: ${paymentDecision === "paid" ? "confirmed paid" : "opened by explicit unpaid override"}.`,
+      );
       return persisted;
     });
   }, [runAction, clients, recordActivity]);
@@ -675,6 +679,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     // collection here — they only flag the project as having a fresh update.
     listen("chat_messages", () => {});
     listen("project_questions", () => {});
+    listen("prototype_versions", () => {});
     listen("prototype_approvals", () => {});
     listen("proposal_signatures", () => {});
 

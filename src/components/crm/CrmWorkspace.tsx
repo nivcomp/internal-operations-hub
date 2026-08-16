@@ -22,10 +22,11 @@ export const STAGE_LABELS_HE: Record<LeadStage, string> = {
 type Props = {
   onClientSelect?: (clientId: string) => void;
   onCreateProject?: (clientId: string) => void;
+  onOpenLeadConversations?: () => void;
 };
 
 /** Hebrew lead pipeline shared by Simple Mode and the full system. */
-export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
+export function CrmWorkspace({ onClientSelect, onCreateProject, onOpenLeadConversations }: Props) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [batches, setBatches] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +127,7 @@ export function CrmWorkspace({ onClientSelect, onCreateProject }: Props) {
           {view === "board" ? "תצוגת רשימה" : "תצוגת צנרת"}
         </button>
         <button type="button" className="ghost-button" onClick={() => setNewLeadOpen((open) => !open)}>ליד חדש</button>
+        {onOpenLeadConversations ? <button type="button" className="ghost-button" onClick={onOpenLeadConversations}>שיחות כניסה מהאתר</button> : null}
         <button type="button" className="primary-button" onClick={() => setImportOpen(true)}>ייבוא Excel / CSV</button>
       </div>
 

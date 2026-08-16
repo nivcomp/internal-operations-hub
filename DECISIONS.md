@@ -1,5 +1,27 @@
 # Decisions
 
+## 2026-08-13 — ILS is the operating default and pending suppliers may be planned
+
+**Decision**
+New agency estimates and generic system money displays default to ILS, with USD and GBP offered next in that order. Changing an estimate currency changes its unit and never performs an implicit exchange conversion. Simple supplier handoff shows suppliers of every status; pending-review suppliers may be associated for planning, inactive suppliers may not be assigned, and execution readiness requires an approved assigned supplier.
+
+**Reason**
+The agency operates primarily in shekels, while hiding a real supplier because approval is pending makes the daily workflow look incomplete. Planning association and authorization to begin work are separate decisions.
+
+**Consequences**
+Existing saved amounts and currencies are not rewritten. Supplier status is explicit at selection time, and the Simple readiness indicator cannot imply that a pending supplier is authorized to execute.
+
+## 2026-08-13 — Simple Mode is the daily agency workflow, not a second system
+
+**Decision**
+The agency-admin Simple Mode has four primary destinations (Home, CRM, Projects and Suppliers). A Simple project has exactly four daily areas: Discovery, Pricing & Proposal, Execution & Supplier, and Status. Specialist controls remain available through contextual disclosure or `מערכת מתקדמת`.
+
+**Reason**
+The existing complete navigation and technical project tabs exposed too many equal choices for daily work. The agency needs an obvious next action without losing existing capabilities.
+
+**Consequences**
+Simple and Advanced continue to share the same authentication, RLS, projects, `project_estimates`, proposals and documents. The Simple pricing workspace may show agency-only commercial values, but the embedded meeting/discovery surface remains client-safe. Supplier handoff renders only supplier-audience `supplier_brief` records. No duplicate pricing, document or project model is introduced.
+
 ## 2026-08-08 — Prototypes are bounded data, not executable AI code
 
 **Decision**
@@ -206,3 +228,17 @@ Creating a project on the client's first message, creating it on client submissi
 
 **Consequences**
 Lead conversations and messages have their own pre-project tables. Client-visible messages and agency-only notes are separated. Pause and disqualification are enforced server-side. Promotion is agency-only, retry-safe and migrates the transcript, brief, flow and internal notes into one canonical project. Existing project-continuation links remain unchanged.
+
+### 2026-08-14 — Explicit payment choice before project creation
+
+**Decision**
+Every agency UI path that creates a project must stop for an explicit payment decision. The agency admin either confirms that payment was received or records a deliberate unpaid override. Lead promotion also enforces the choice in the Edge Function and database RPC.
+
+**Reason**
+Creating a delivery project is a commercial commitment. It must not happen accidentally before payment, while still allowing Yaniv to open an exceptional project intentionally when business circumstances require it.
+
+**Alternatives considered**
+Creating projects immediately and checking payment later, or blocking every unpaid project without an override.
+
+**Consequences**
+A paid choice opens the project with a paid payment gate. An unpaid override opens the project with a blocked payment gate, records the choice in the activity history (and in decision history for lead promotion), and does not make supplier work ready to start. The client remains in the simple client workspace; the override does not expose Advanced Mode.

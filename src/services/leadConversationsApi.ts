@@ -1,4 +1,5 @@
 import { supabase } from "../integrations/supabase/client";
+import type { PaymentDecision } from "../types/domain";
 import type { LeadConversationStatus, LiveDocument, LiveFlow, OnboardingAnswers } from "./onboardingChatApi";
 
 export type LeadConversationMessage = {
@@ -102,7 +103,7 @@ export async function setLeadConversationStatus(
   return result.conversation;
 }
 
-export async function promoteLeadConversation(conversationId: string, projectName: string): Promise<string> {
-  const result = await call<{ projectId: string }>({ action: "promote", conversationId, projectName });
+export async function promoteLeadConversation(conversationId: string, projectName: string, paymentDecision: PaymentDecision): Promise<string> {
+  const result = await call<{ projectId: string }>({ action: "promote", conversationId, projectName, paymentDecision });
   return result.projectId;
 }

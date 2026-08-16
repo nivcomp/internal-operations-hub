@@ -2,40 +2,32 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import { useMode } from "../../context/ModeContext";
 import { useCopilot } from "../../context/CopilotContext";
-import { ShareLinksCard } from "../../components/simple/ShareLinksCard";
 import { InviteDrawer } from "../../components/simple/InviteDrawer";
-import { copyToClipboard } from "../../services/accessApi";
-import {
-  listRegistrations, loadRegistrationSettings, publicRegistrationLink,
-  type PublicRegistration, type RegistrationSettings,
-} from "../../services/registrationApi";
+import { listRegistrations, type PublicRegistration } from "../../services/registrationApi";
 import {
   getNeedsPricingItems, getSupplierTimeApprovalItems, getWaitingApprovalItems, getWaitingPaymentItems,
 } from "../../lib/actionQueue";
 import { buildProjectCommercials, needsScheduleAttention } from "../../lib/projectCommercials";
 import { SimpleMeetingWizard } from "../../components/meeting/SimpleMeetingWizard";
 
-type Props = { onSearch: () => void; onMeetingStarted: (projectId: string) => void };
+type Props = { onSearch: () => void; onMeetingStarted: (projectId: string) => void; onOpenLeadConversations: () => void };
 
-export function SimpleHomePage({ onSearch, onMeetingStarted }: Props) {
+export function SimpleHomePage({ onSearch, onMeetingStarted, onOpenLeadConversations }: Props) {
   const {
     clients, suppliers, projects, changeRequests, clientPayments, timeEntries,
     projectSchedules, estimateSummaries, supplierProfiles,
   } = useAppData();
   const { setSimpleView, openAdvanced } = useMode();
   const copilot = useCopilot();
-  const [inviteRole, setInviteRole] = useState<"client" | "supplier" | null>(null);
-  const [settings, setSettings] = useState<RegistrationSettings[]>([]);
+  const [inviteRole, setInviteRole] = useState<"client" | null>(null);
   const [registrations, setRegistrations] = useState<PublicRegistration[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [copied, setCopied] = useState<string | null>(null);
   const [meetingWizardOpen, setMeetingWizardOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
       try {
-        const [s, r] = await Promise.all([loadRegistrationSettings(), listRegistrations()]);
-        setSettings(s); setRegistrations(r);
+        setRegistrations(await listRegistrations());
       } catch { /* informational only */ }
     })();
   }, [refreshToken]);
@@ -70,13 +62,6 @@ export function SimpleHomePage({ onSearch, onMeetingStarted }: Props) {
   ];
   const total = attention.reduce((sum, item) => sum + item.count, 0);
 
-  async function copyPublicLink(role: "client" | "supplier") {
-    const item = settings.find((entry) => entry.role === role);
-    if (!item) return;
-    await copyToClipboard(publicRegistrationLink(item));
-    setCopied(role);
-  }
-
   return (
     <div className="simple-page">
       <header className="simple-head">
@@ -109,16 +94,7 @@ export function SimpleHomePage({ onSearch, onMeetingStarted }: Props) {
         <h2>פעולות מהירות</h2>
         <div className="simple-quick-grid">
           <button type="button" onClick={() => setInviteRole("client")}>הזמן לקוח</button>
-          <button type="button" onClick={() => setInviteRole("supplier")}>הזמן ספק</button>
-          <button type="button" onClick={() => openAdvanced("clients")}>צור לקוח</button>
-          <button type="button" onClick={() => openAdvanced("projects")}>צור פרויקט</button>
-          <button type="button" onClick={() => openAdvanced("suppliers")}>צור ספק</button>
-          <button type="button" onClick={() => void copyPublicLink("client")}>
-            {copied === "client" ? "הועתק" : "העתק לינק הרשמת לקוח"}
-          </button>
-          <button type="button" onClick={() => void copyPublicLink("supplier")}>
-            {copied === "supplier" ? "הועתק" : "העתק לינק הרשמת ספק"}
-          </button>
+          <button type="button" onClick={onOpenLeadConversations}>שיחות כניסה מהאתר</button>
           <button type="button" onClick={onSearch}>חפש לקוח, ספק או פרויקט</button>
           <button
             type="button"
@@ -132,9 +108,6 @@ export function SimpleHomePage({ onSearch, onMeetingStarted }: Props) {
           </button>
         </div>
       </section>
-
-      <ShareLinksCard refreshToken={refreshToken} />
-
       {inviteRole ? (
         <InviteDrawer
           role={inviteRole}

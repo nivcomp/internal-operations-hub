@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { PaymentGateDialog } from "../ui/PaymentGateDialog";
 import { useAppData, type NewClientInput, type NewProjectInput } from "../../context/AppDataContext";
 import { startMeeting } from "../../services/meetingWorkflowApi";
+import type { PaymentDecision } from "../../types/domain";
 
 type Props = { onClose: () => void; onStarted: (projectId: string) => void };
 type Step = "client-kind" | "client" | "project";
@@ -18,6 +20,7 @@ export function SimpleMeetingWizard({ onClose, onStarted }: Props) {
   const [query, setQuery] = useState("");
   const [creatingClient, setCreatingClient] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
+  const [confirmCreate, setConfirmCreate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,10 +44,10 @@ export function SimpleMeetingWizard({ onClose, onStarted }: Props) {
     try { const client = await createClient(newClient); setClientId(client.id); setStep("project"); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
-  async function createTheProject() {
+  async function createTheProject(paymentDecision: PaymentDecision) {
     if (!clientId || !newProject.name.trim()) { setError("יש להזין שם פרויקט."); return; }
     setBusy(true); setError("");
-    try { const project = await createProject(clientId, newProject); await openMeeting(project.id); }
+    try { const project = await createProject(clientId, newProject, paymentDecision); setConfirmCreate(false); await openMeeting(project.id); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
   async function openMeeting(projectId: string) {
@@ -86,11 +89,21 @@ export function SimpleMeetingWizard({ onClose, onStarted }: Props) {
             <label>שם הפרויקט<input value={newProject.name} onChange={(e) => setNewProject({ ...newProject, name: e.target.value })} /></label>
             <label>תיאור ראשוני<textarea rows={3} value={newProject.summary} onChange={(e) => setNewProject({ ...newProject, summary: e.target.value })} /></label>
             <label>איתות תקציב<input value={newProject.budgetSignal} onChange={(e) => setNewProject({ ...newProject, budgetSignal: e.target.value })} placeholder="לדוגמה: 20–30 אלף ₪" /></label>
-            <button className="primary-button" disabled={busy} onClick={() => void createTheProject()}>{busy ? "פותח פגישה…" : "צור פרויקט ופתח פגישה"}</button>
+            <button className="primary-button" disabled={busy} onClick={() => {
+              if (!newProject.name.trim()) { setError("יש להזין שם פרויקט."); return; }
+              setError(""); setConfirmCreate(true);
+            }}>{busy ? "פותח פגישה…" : "צור פרויקט ופתח פגישה"}</button>
           </div> : null}
         </> : null}
         {error ? <p className="form-error">{error}</p> : null}
       </div>
     </section>
+    <PaymentGateDialog
+      open={confirmCreate}
+      projectName={newProject.name.trim() || "הפרויקט החדש"}
+      busy={busy}
+      onChoose={(decision) => void createTheProject(decision)}
+      onCancel={() => setConfirmCreate(false)}
+    />
   </div>;
 }
