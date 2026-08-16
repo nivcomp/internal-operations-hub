@@ -1822,6 +1822,20 @@ kbd {
 .toast button { background: none; border: 0; cursor: pointer; color: var(--ink-3); margin-left: auto; }
 
 /* Confirm dialog */
+.dialog-card {
+  width: min(440px, 100%);
+  margin-top: 12vh;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: 0 24px 60px -20px rgba(10, 23, 18, 0.35);
+}
+.dialog-card h2 { margin: 0 0 .55rem; }
+.dialog-card p { margin: 0; color: var(--ink-2); line-height: 1.55; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: .65rem; margin-top: 1.15rem; }
+.dialog-card .danger-button { border-color: #b42318; background: #b42318; color: #fff; }
+.dialog-card .danger-button:hover { border-color: #8f1b13; background: #8f1b13; color: #fff; }
 .confirm-dialog {
   width: min(420px, 100%); background: var(--surface); border-radius: var(--r-lg);
   border: 1px solid var(--line); padding: 1.25rem; box-shadow: 0 24px 60px -20px rgba(10, 23, 18, 0.35);
@@ -3226,6 +3240,16 @@ html, body, #root { max-width: 100%; }
   color: var(--danger);
 }
 
+.cashflow-admin-success {
+  margin-bottom: 1rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--success-line);
+  border-radius: var(--r);
+  background: var(--success-bg);
+  color: var(--success);
+  font-weight: 700;
+}
+
 .cashflow-submit-error {
   margin: 1rem 0 0;
 }
@@ -3372,6 +3396,86 @@ html, body, #root { max-width: 100%; }
   font-size: .78rem;
 }
 
+.cashflow-lead-table-actions,
+.cashflow-lead-management-actions,
+.cashflow-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.cashflow-lead-table-actions {
+  min-width: 150px;
+}
+
+.cashflow-lead-table-actions button,
+.cashflow-lead-management-actions button {
+  white-space: nowrap;
+}
+
+.cashflow-edit-backdrop {
+  overflow-y: auto;
+  padding-block: 2rem;
+}
+
+.cashflow-edit-dialog {
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: 0 24px 60px -20px rgba(10, 23, 18, 0.35);
+}
+
+.cashflow-edit-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: .9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.cashflow-edit-dialog-header h2,
+.cashflow-edit-dialog-header p {
+  margin: 0;
+}
+
+.cashflow-edit-close {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.cashflow-edit-form b {
+  color: var(--danger);
+}
+
+.cashflow-edit-field-error,
+.cashflow-edit-submit-error {
+  color: var(--danger);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.cashflow-edit-submit-error {
+  margin: 0;
+  padding: .7rem .8rem;
+  border-radius: var(--r-sm);
+  background: var(--danger-bg);
+}
+
+.cashflow-edit-actions {
+  justify-content: flex-end;
+  padding-top: .25rem;
+}
+
 @media (max-width: 700px) {
   .cashflow-public-page {
     padding: 1rem .75rem 2rem;
@@ -3515,6 +3619,35 @@ html, body, #root { max-width: 100%; }
   }
 
   .cashflow-mobile-status select {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .cashflow-lead-management-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cashflow-lead-management-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .cashflow-edit-backdrop {
+    padding: .5rem;
+  }
+
+  .cashflow-edit-dialog {
+    max-height: calc(100dvh - 1rem);
+    padding: 1rem;
+  }
+
+  .cashflow-edit-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cashflow-edit-actions button {
     width: 100%;
     min-height: 44px;
   }

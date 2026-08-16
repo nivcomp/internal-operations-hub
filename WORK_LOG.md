@@ -2827,3 +2827,36 @@ Correct the campaign business name everywhere to "ניב מחשבים".
 
 **Next**
 - Submit one approved production test lead and verify the mobile call, status and Excel workflow end to end.
+
+---
+
+### 2026-08-16 — Cash-flow lead editing and deletion
+
+**Work unit**
+Allow agency admins to edit and explicitly delete Amir cash-flow leads on desktop and mobile.
+
+**Changes**
+- Added a Hebrew edit dialog for all lead contact, company, need, accounting-system and notes fields.
+- Added required-field and email validation plus trimming before saving.
+- Added edit/delete actions to desktop rows and mobile lead cards.
+- Added a named destructive confirmation before deleting a lead.
+- Added an agency-admin-only DELETE grant and RLS policy; anonymous access remains insert-only.
+
+**Tests**
+- `npx tsc --noEmit` passed after implementation.
+- The production Vite bundle passed with `--configLoader runner`; the standard config bundler is blocked only by the desktop sandbox's ancestor-directory read restriction.
+- `git diff --check` passed after implementation.
+- Production Lovable build and authenticated edit/delete smoke testing remain publication checks.
+
+**Files**
+- `src/pages/CashFlowLeadsPage.tsx`
+- `src/services/cashFlowLeadsApi.ts`
+- `src/components/ui/ConfirmDialog.tsx`, `src/styles.css`
+- `supabase/migrations/20260816112000_cash_flow_lead_deletion.sql`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and branch.
+
+**Next**
+- Run one approved disposable production lead through submit, edit, call, status, Excel and confirmed deletion end to end.

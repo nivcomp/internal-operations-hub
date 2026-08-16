@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { EmptyState } from "../components/ui/EmptyState";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import {
+  ACCOUNTING_SYSTEM_OPTIONS,
   CASH_FLOW_LEAD_STATUSES,
+  deleteCashFlowLead,
   listCashFlowLeads,
+  updateCashFlowLead,
   updateCashFlowLeadStatus,
   type CashFlowLead,
+  type CashFlowLeadDetailsInput,
   type CashFlowLeadStatus,
 } from "../services/cashFlowLeadsApi";
 
@@ -15,6 +20,57 @@ const STATUS_LABELS: Record<CashFlowLeadStatus, string> = {
   not_relevant: "לא רלוונטי",
   converted: "הומר ללקוח",
 };
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type EditField = keyof CashFlowLeadDetailsInput;
+type EditErrors = Partial<Record<EditField, string>>;
+
+function leadToEditInput(lead: CashFlowLead): CashFlowLeadDetailsInput {
+  return {
+    firstName: lead.first_name,
+    lastName: lead.last_name,
+    companyName: lead.company_name,
+    phone: lead.phone ?? "",
+    mobilePhone: lead.mobile_phone,
+    email: lead.email,
+    physicalAddress: lead.physical_address ?? "",
+    reasonForCashFlowSoftware: lead.reason_for_cash_flow_software,
+    accountingSystem: lead.accounting_system,
+    accountingSystemOther: lead.accounting_system_other ?? "",
+    notes: lead.notes ?? "",
+  };
+}
+
+function trimEditInput(input: CashFlowLeadDetailsInput): CashFlowLeadDetailsInput {
+  return Object.fromEntries(
+    Object.entries(input).map(([key, value]) => [key, value.trim()]),
+  ) as CashFlowLeadDetailsInput;
+}
+
+function validateEdit(input: CashFlowLeadDetailsInput): EditErrors {
+  const errors: EditErrors = {};
+  const required: Array<[EditField, string]> = [
+    ["firstName", "יש להזין שם פרטי."],
+    ["lastName", "יש להזין שם משפחה."],
+    ["companyName", "יש להזין שם חברה."],
+    ["mobilePhone", "יש להזין טלפון סלולרי."],
+    ["email", "יש להזין אימייל."],
+    ["reasonForCashFlowSoftware", "יש להזין את סיבת הפנייה."],
+    ["accountingSystem", "יש לבחור מערכת הנהלת חשבונות."],
+  ];
+  required.forEach(([field, message]) => {
+    if (!input[field]) errors[field] = message;
+  });
+  if (input.email && !EMAIL_PATTERN.test(input.email)) errors.email = "כתובת האימייל אינה תקינה.";
+  if (input.accountingSystem === "אחר" && !input.accountingSystemOther) {
+    errors.accountingSystemOther = "יש להזין את שם המערכת.";
+  }
+  return errors;
+}
+
+function EditFieldError({ id, message }: { id: string; message?: string }) {
+  return message ? <span id={id} className="cashflow-edit-field-error" role="alert">{message}</span> : null;
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("he-IL", {
@@ -41,6 +97,14 @@ export function CashFlowLeadsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [editingLead, setEditingLead] = useState<CashFlowLead | null>(null);
+  const [editForm, setEditForm] = useState<CashFlowLeadDetailsInput | null>(null);
+  const [editErrors, setEditErrors] = useState<EditErrors>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
+  const [deletingLead, setDeletingLead] = useState<CashFlowLead | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +146,69 @@ export function CashFlowLeadsPage() {
       setError("לא הצלחנו לעדכן את סטטוס הליד. נסו שוב.");
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  function openEdit(lead: CashFlowLead) {
+    setEditingLead(lead);
+    setEditForm(leadToEditInput(lead));
+    setEditErrors({});
+    setEditSubmitError(null);
+    setActionMessage(null);
+  }
+
+  function closeEdit() {
+    if (editSaving) return;
+    setEditingLead(null);
+    setEditForm(null);
+    setEditErrors({});
+    setEditSubmitError(null);
+  }
+
+  function updateEdit(field: EditField, value: string) {
+    setEditForm((current) => current ? { ...current, [field]: value } : current);
+    setEditErrors((current) => ({ ...current, [field]: undefined }));
+  }
+
+  async function saveEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingLead || !editForm || editSaving) return;
+    const trimmed = trimEditInput(editForm);
+    const nextErrors = validateEdit(trimmed);
+    setEditForm(trimmed);
+    setEditErrors(nextErrors);
+    setEditSubmitError(null);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setEditSaving(true);
+    try {
+      const updated = await updateCashFlowLead(editingLead.id, trimmed);
+      setLeads((current) => current.map((lead) => lead.id === updated.id ? updated : lead));
+      setEditingLead(null);
+      setEditForm(null);
+      setActionMessage(`הפרטים של ${updated.first_name} ${updated.last_name} עודכנו בהצלחה.`);
+    } catch {
+      setEditSubmitError("לא הצלחנו לשמור את השינויים. נסו שוב.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deletingLead || deleteBusy) return;
+    const lead = deletingLead;
+    setDeleteBusy(true);
+    setError(null);
+    try {
+      await deleteCashFlowLead(lead.id);
+      setLeads((current) => current.filter((item) => item.id !== lead.id));
+      setDeletingLead(null);
+      setActionMessage(`הליד של ${lead.first_name} ${lead.last_name} נמחק.`);
+    } catch {
+      setDeletingLead(null);
+      setError("לא הצלחנו למחוק את הליד. נסו שוב.");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -135,6 +262,8 @@ export function CashFlowLeadsPage() {
         </div>
         <div className="control-note">הרשימה והסטטוסים זמינים למנהלי הסוכנות בלבד.</div>
       </header>
+
+      {actionMessage ? <div className="cashflow-admin-success" role="status">{actionMessage}</div> : null}
 
       {error ? (
         <div className="cashflow-admin-error" role="alert">
@@ -222,6 +351,11 @@ export function CashFlowLeadsPage() {
                       ))}
                     </select>
                   </label>
+
+                  <div className="cashflow-lead-management-actions">
+                    <button type="button" onClick={() => openEdit(lead)}>עריכת ליד</button>
+                    <button type="button" className="danger-link" onClick={() => setDeletingLead(lead)}>מחיקת ליד</button>
+                  </div>
                 </article>
               ))}
               </div>
@@ -238,6 +372,7 @@ export function CashFlowLeadsPage() {
                     <th>מערכת הנהלת חשבונות</th>
                     <th>סיבת הפנייה</th>
                     <th>סטטוס</th>
+                    <th>פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -269,6 +404,12 @@ export function CashFlowLeadsPage() {
                           ))}
                         </select>
                       </td>
+                      <td>
+                        <div className="cashflow-lead-table-actions">
+                          <button type="button" onClick={() => openEdit(lead)}>עריכה</button>
+                          <button type="button" className="danger-link" onClick={() => setDeletingLead(lead)}>מחיקה</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -278,6 +419,112 @@ export function CashFlowLeadsPage() {
           )}
         </section>
       )}
+
+      {editingLead && editForm ? (
+        <div className="dialog-backdrop cashflow-edit-backdrop" role="presentation" onClick={closeEdit}>
+          <section
+            className="cashflow-edit-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cashflow-edit-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="cashflow-edit-dialog-header">
+              <div>
+                <p className="eyebrow">עריכת ליד</p>
+                <h2 id="cashflow-edit-title">{editingLead.first_name} {editingLead.last_name}</h2>
+              </div>
+              <button type="button" className="cashflow-edit-close" onClick={closeEdit} disabled={editSaving} aria-label="סגירת חלון העריכה">×</button>
+            </header>
+
+            <form className="form-grid cashflow-edit-form" onSubmit={(event) => void saveEdit(event)} noValidate>
+              <label>
+                שם פרטי <b aria-hidden>*</b>
+                <input value={editForm.firstName} onChange={(event) => updateEdit("firstName", event.target.value)} required aria-invalid={Boolean(editErrors.firstName)} />
+                <EditFieldError id="edit-first-name-error" message={editErrors.firstName} />
+              </label>
+              <label>
+                שם משפחה <b aria-hidden>*</b>
+                <input value={editForm.lastName} onChange={(event) => updateEdit("lastName", event.target.value)} required aria-invalid={Boolean(editErrors.lastName)} />
+                <EditFieldError id="edit-last-name-error" message={editErrors.lastName} />
+              </label>
+              <label className="span-2">
+                שם חברה <b aria-hidden>*</b>
+                <input value={editForm.companyName} onChange={(event) => updateEdit("companyName", event.target.value)} required aria-invalid={Boolean(editErrors.companyName)} />
+                <EditFieldError id="edit-company-error" message={editErrors.companyName} />
+              </label>
+              <label>
+                טלפון
+                <input type="tel" dir="ltr" value={editForm.phone} onChange={(event) => updateEdit("phone", event.target.value)} />
+              </label>
+              <label>
+                טלפון סלולרי <b aria-hidden>*</b>
+                <input type="tel" dir="ltr" value={editForm.mobilePhone} onChange={(event) => updateEdit("mobilePhone", event.target.value)} required aria-invalid={Boolean(editErrors.mobilePhone)} />
+                <EditFieldError id="edit-mobile-error" message={editErrors.mobilePhone} />
+              </label>
+              <label>
+                אימייל <b aria-hidden>*</b>
+                <input type="email" dir="ltr" value={editForm.email} onChange={(event) => updateEdit("email", event.target.value)} required aria-invalid={Boolean(editErrors.email)} />
+                <EditFieldError id="edit-email-error" message={editErrors.email} />
+              </label>
+              <label>
+                כתובת פיזית
+                <input value={editForm.physicalAddress} onChange={(event) => updateEdit("physicalAddress", event.target.value)} />
+              </label>
+              <label className="span-2">
+                למה מחפשים תוכנת תזרים? <b aria-hidden>*</b>
+                <textarea rows={4} value={editForm.reasonForCashFlowSoftware} onChange={(event) => updateEdit("reasonForCashFlowSoftware", event.target.value)} required aria-invalid={Boolean(editErrors.reasonForCashFlowSoftware)} />
+                <EditFieldError id="edit-reason-error" message={editErrors.reasonForCashFlowSoftware} />
+              </label>
+              <label className="span-2">
+                מערכת הנהלת חשבונות <b aria-hidden>*</b>
+                <select
+                  value={editForm.accountingSystem}
+                  onChange={(event) => {
+                    updateEdit("accountingSystem", event.target.value);
+                    if (event.target.value !== "אחר") updateEdit("accountingSystemOther", "");
+                  }}
+                  required
+                  aria-invalid={Boolean(editErrors.accountingSystem)}
+                >
+                  <option value="">בחרו מערכת</option>
+                  {ACCOUNTING_SYSTEM_OPTIONS.map((system) => <option key={system} value={system}>{system}</option>)}
+                </select>
+                <EditFieldError id="edit-accounting-error" message={editErrors.accountingSystem} />
+              </label>
+              {editForm.accountingSystem === "אחר" ? (
+                <label className="span-2">
+                  שם המערכת <b aria-hidden>*</b>
+                  <input value={editForm.accountingSystemOther} onChange={(event) => updateEdit("accountingSystemOther", event.target.value)} required aria-invalid={Boolean(editErrors.accountingSystemOther)} />
+                  <EditFieldError id="edit-accounting-other-error" message={editErrors.accountingSystemOther} />
+                </label>
+              ) : null}
+              <label className="span-2">
+                הערות נוספות
+                <textarea rows={3} value={editForm.notes} onChange={(event) => updateEdit("notes", event.target.value)} />
+              </label>
+
+              {editSubmitError ? <p className="cashflow-edit-submit-error span-2" role="alert">{editSubmitError}</p> : null}
+              <div className="cashflow-edit-actions span-2">
+                <button type="button" onClick={closeEdit} disabled={editSaving}>ביטול</button>
+                <button type="submit" className="primary-button" disabled={editSaving}>{editSaving ? "שומר שינויים…" : "שמירת שינויים"}</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deletingLead)}
+        title="מחיקת ליד"
+        description={deletingLead ? `האם למחוק לצמיתות את הליד של ${deletingLead.first_name} ${deletingLead.last_name} מחברת ${deletingLead.company_name}? לא ניתן לבטל פעולה זו.` : ""}
+        confirmLabel="כן, למחוק את הליד"
+        cancelLabel="ביטול"
+        busyLabel="מוחק…"
+        busy={deleteBusy}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => { if (!deleteBusy) setDeletingLead(null); }}
+      />
     </div>
   );
 }

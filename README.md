@@ -44,7 +44,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 
 The public route `/amir-cashflow` is a Hebrew, RTL lead form branded as "ניב מחשבים". It collects the business contact, cash-flow need and accounting system, requires explicit contact consent, and writes directly to the configured Supabase project.
 
-The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read the table. Authenticated agency admins can search all campaign leads, call or email them, update their status and download the complete campaign list as an `.xlsx` workbook from **Cash Flow Leads** / **לידים תזרים** in the internal navigation. Mobile uses practical lead cards with direct calling; desktop keeps the full table view.
+The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`, and `20260816112000_cash_flow_lead_deletion.sql` adds agency-admin-only deletion. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read, edit or delete the table. Authenticated agency admins can search all campaign leads, call or email them, edit their details, update their status, delete a lead after explicit confirmation, and download the complete campaign list as an `.xlsx` workbook from **Cash Flow Leads** / **לידים תזרים** in the internal navigation. Mobile uses practical lead cards with direct calling and management actions; desktop keeps the full table view.
 
 ## Pricing rule
 
@@ -82,10 +82,10 @@ pnpm run build
 
 Before production:
 
-1. Apply all pending Supabase migrations, including `20260816090000_cash_flow_leads.sql`.
+1. Apply all pending Supabase migrations, including `20260816090000_cash_flow_leads.sql` and `20260816112000_cash_flow_lead_deletion.sql`.
 2. Confirm the deployed frontend has `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for the intended Supabase project. The repository fallback points to the existing project, but deployment environment variables remain the recommended configuration.
 3. Publish or synchronize the matching Git commit through Lovable.
-4. Submit one test lead at `/amir-cashflow`, confirm it appears only for an authenticated agency admin, and verify each status update.
+4. Submit one test lead at `/amir-cashflow`, confirm it appears only for an authenticated agency admin, and verify editing, status changes and confirmed deletion.
 5. Point the desired public domain path to the deployed app and verify SPA fallback routing serves `/amir-cashflow` directly.
 
 Production currently serves the campaign form at `https://project.stat.ninja/amir-cashflow`. The connected Supabase table and RLS policies are active; submit a clearly identified test lead before a campaign launch and remove it after verifying the internal mobile call/status workflow.

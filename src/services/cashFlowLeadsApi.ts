@@ -27,7 +27,7 @@ export const ACCOUNTING_SYSTEM_OPTIONS = [
   "אחר",
 ] as const;
 
-export type CashFlowLeadSubmission = {
+export type CashFlowLeadDetailsInput = {
   firstName: string;
   lastName: string;
   companyName: string;
@@ -41,13 +41,17 @@ export type CashFlowLeadSubmission = {
   notes: string;
 };
 
+export type CashFlowLeadSubmission = CashFlowLeadDetailsInput;
+
+const CASH_FLOW_LEAD_SELECT = "id, created_at, first_name, last_name, company_name, phone, mobile_phone, email, physical_address, reason_for_cash_flow_software, accounting_system, accounting_system_other, notes, source, status";
+
 function trimmedOrNull(value: string): string | null {
   const trimmed = value.trim();
   return trimmed || null;
 }
 
-export async function submitCashFlowLead(input: CashFlowLeadSubmission): Promise<void> {
-  const { error } = await supabase.from("cash_flow_leads").insert({
+function detailsUpdate(input: CashFlowLeadDetailsInput) {
+  return {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
     company_name: input.companyName.trim(),
@@ -61,6 +65,12 @@ export async function submitCashFlowLead(input: CashFlowLeadSubmission): Promise
       ? trimmedOrNull(input.accountingSystemOther)
       : null,
     notes: trimmedOrNull(input.notes),
+  };
+}
+
+export async function submitCashFlowLead(input: CashFlowLeadSubmission): Promise<void> {
+  const { error } = await supabase.from("cash_flow_leads").insert({
+    ...detailsUpdate(input),
     source: "amir_cashflow_form",
     status: "new",
   });
@@ -71,7 +81,7 @@ export async function submitCashFlowLead(input: CashFlowLeadSubmission): Promise
 export async function listCashFlowLeads(): Promise<CashFlowLead[]> {
   const { data, error } = await supabase
     .from("cash_flow_leads")
-    .select("id, created_at, first_name, last_name, company_name, phone, mobile_phone, email, physical_address, reason_for_cash_flow_software, accounting_system, accounting_system_other, notes, source, status")
+    .select(CASH_FLOW_LEAD_SELECT)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -86,9 +96,36 @@ export async function updateCashFlowLeadStatus(
     .from("cash_flow_leads")
     .update({ status })
     .eq("id", leadId)
-    .select("id, created_at, first_name, last_name, company_name, phone, mobile_phone, email, physical_address, reason_for_cash_flow_software, accounting_system, accounting_system_other, notes, source, status")
+    .select(CASH_FLOW_LEAD_SELECT)
     .single();
 
   if (error) throw new Error(error.message);
   return data;
+}
+
+export async function updateCashFlowLead(
+  leadId: string,
+  input: CashFlowLeadDetailsInput,
+): Promise<CashFlowLead> {
+  const { data, error } = await supabase
+    .from("cash_flow_leads")
+    .update(detailsUpdate(input))
+    .eq("id", leadId)
+    .select(CASH_FLOW_LEAD_SELECT)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteCashFlowLead(leadId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("cash_flow_leads")
+    .delete()
+    .eq("id", leadId)
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Lead was not deleted");
 }

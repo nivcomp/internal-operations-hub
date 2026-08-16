@@ -6,6 +6,7 @@ type ConfirmDialogProps = {
   description: string;
   confirmLabel: string;
   cancelLabel?: string;
+  busyLabel?: string;
   destructive?: boolean;
   busy?: boolean;
   onConfirm: () => void;
@@ -14,7 +15,7 @@ type ConfirmDialogProps = {
 
 /** Used only for destructive or irreversible actions. */
 export function ConfirmDialog({
-  open, title, description, confirmLabel, cancelLabel = "Cancel",
+  open, title, description, confirmLabel, cancelLabel = "Cancel", busyLabel = "Working…",
   destructive = true, busy = false, onConfirm, onCancel,
 }: ConfirmDialogProps) {
   useEffect(() => {
@@ -41,7 +42,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? "Working…" : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

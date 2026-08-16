@@ -24,7 +24,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - A shared document center that creates versioned specification, technical and implementation drafts from approved sections and exposes only client-audience documents in the client portal.
 - Scope approval, payments/paid hours, schedules, supplier assignment, start gates, time tracking and supplier payables.
 - Excel/CSV import and CRM enrichment suggestions.
-- A public Hebrew RTL cash-flow software lead form with Supabase persistence and an agency-only internal status list.
+- A public Hebrew RTL cash-flow software lead form with Supabase persistence and an agency-only internal list with calling, editing, confirmed deletion, statuses and Excel export.
 
 ## Canonical pricing rule
 
@@ -35,7 +35,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - Automatic AI-to-specification section updates are intentionally deferred; AI suggestions must not silently overwrite reviewed or approved sections.
 - Signed-in browser verification is still required for microphone, private storage and role-specific RLS paths after deployment.
 - Database migrations and Edge Functions require deployment verification in the connected Supabase environment.
-- The `cash_flow_leads` migration and matching frontend require Lovable/Supabase deployment plus one public-submit/admin-read production smoke test.
+- The cash-flow lead workflow requires one approved production smoke test covering public submit, admin edit/status, Excel export and confirmed deletion.
 - No automated test or lint script is configured.
 - Payment-provider and accounting integrations are outside the current MVP.
 
