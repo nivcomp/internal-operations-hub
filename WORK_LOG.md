@@ -2712,7 +2712,7 @@ Track live discovery duration and safely deduct confirmed meeting hours from the
 Add the public Hebrew "אמיר תזרים מזומנים" lead form, its database table and an agency-only lead management view.
 
 **Changes**
-- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "נעים מחשבים", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
+- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "ניב מחשבים", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
 - Added `cash_flow_leads` with automatic ids/timestamps, constrained source/status values, anonymous insert-only RLS and agency-admin read/update RLS.
 - Added **Cash Flow Leads** to Advanced Mode and **לידים תזרים** to Simple Mode, including search and five status controls.
 - Updated generated Supabase types, project documentation and the pnpm lockfile so frozen installs are reproducible again.
