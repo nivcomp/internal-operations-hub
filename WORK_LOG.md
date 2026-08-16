@@ -2783,3 +2783,23 @@ Publish the campaign form through Lovable and activate its Supabase table.
 
 **Next**
 - Submit one approved production test lead, verify it appears in **לידים תזרים**, test direct calling on a phone and exercise one status update.
+
+---
+
+### 2026-08-16 — Cash-flow lead Excel export
+
+**Work unit**
+Allow agency admins to download every Amir cash-flow campaign lead as an Excel workbook.
+
+**Changes**
+- Added **הורדת כל הלידים לאקסל** to the internal cash-flow lead toolbar.
+- Exported all loaded campaign leads, independent of the current search filter, with Hebrew column headers and practical column widths.
+- Included contact details, address, reason, accounting system, notes, source and Hebrew status labels.
+- Used the existing `xlsx` dependency and added responsive toolbar styling.
+
+**Tests**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; existing large-chunk warnings remain.
+
+**Next**
+- After the first approved test submission, download the workbook and confirm Hebrew text, phone values and status labels in Excel.

@@ -3296,9 +3296,27 @@ html, body, #root { max-width: 100%; }
   font-weight: 700;
 }
 
-.cashflow-leads-toolbar > span {
+.cashflow-leads-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.cashflow-leads-toolbar-actions > span {
   color: var(--ink-3);
   font-size: .82rem;
+}
+
+.cashflow-leads-toolbar-actions button {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.cashflow-export-error {
+  margin: -.35rem 0 1rem;
+  color: var(--danger);
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .cashflow-admin-page th,
@@ -3368,6 +3386,15 @@ html, body, #root { max-width: 100%; }
   .cashflow-admin-error {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .cashflow-leads-toolbar-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cashflow-leads-toolbar-actions button {
+    width: 100%;
   }
 
   .cashflow-form-grid {
