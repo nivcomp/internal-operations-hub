@@ -38,13 +38,13 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Change requests, schedules, payment/paid-hours gates and supplier assignments.
 - Draft execution packages based on signed scope.
 - Excel/CSV import and CRM pipeline.
-- Public Hebrew lead intake for the "׳׳׳™׳¨ ׳×׳–׳¨׳™׳ ׳׳–׳•׳׳ ׳™׳" campaign, with an agency-only lead list and status workflow.
+- Public Hebrew lead intake for the "אמיר תזרים מזומנים" campaign, with an agency-only lead list and status workflow.
 
 ## Amir cash-flow lead form
 
-The public route `/amir-cashflow` is a Hebrew, RTL lead form branded as "׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳". It collects the business contact, cash-flow need and accounting system, requires explicit contact consent, and writes directly to the configured Supabase project.
+The public route `/amir-cashflow` is a Hebrew, RTL lead form branded as "ניב מחשבים". It collects the business contact, cash-flow need and accounting system, requires explicit contact consent, and writes directly to the configured Supabase project.
 
-The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read the table. Authenticated agency admins can search all campaign leads, call or email them, update their status and download the complete campaign list as an `.xlsx` workbook from **Cash Flow Leads** / **׳׳™׳“׳™׳ ׳×׳–׳¨׳™׳** in the internal navigation. Mobile uses practical lead cards with direct calling; desktop keeps the full table view.
+The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read the table. Authenticated agency admins can search all campaign leads, call or email them, update their status and download the complete campaign list as an `.xlsx` workbook from **Cash Flow Leads** / **לידים תזרים** in the internal navigation. Mobile uses practical lead cards with direct calling; desktop keeps the full table view.
 
 ## Pricing rule
 
@@ -101,12 +101,11 @@ Production currently serves the campaign form at `https://project.stat.ninja/ami
 
 ## Project memory
 
-- `PRODUCT_VISION.md` ג€” product purpose and principles.
-- `MVP_SCOPE.md` ג€” implemented MVP and current limits.
-- `ARCHITECTURE.md` ג€” actual architecture and canonical systems.
-- `DECISIONS.md` ג€” decisions that future work must preserve.
-- `NEXT_TASK.md` ג€” exactly one next work unit.
-- `WORK_LOG.md` ג€” chronological implementation history.
-- `AGENTS.md` ג€” automation rules.
-- `docs/` ג€” historical and detailed domain references; where they conflict with current code and top-level memory, verify the code and update the top-level memory.
-
+- `PRODUCT_VISION.md` — product purpose and principles.
+- `MVP_SCOPE.md` — implemented MVP and current limits.
+- `ARCHITECTURE.md` — actual architecture and canonical systems.
+- `DECISIONS.md` — decisions that future work must preserve.
+- `NEXT_TASK.md` — exactly one next work unit.
+- `WORK_LOG.md` — chronological implementation history.
+- `AGENTS.md` — automation rules.
+- `docs/` — historical and detailed domain references; where they conflict with current code and top-level memory, verify the code and update the top-level memory.

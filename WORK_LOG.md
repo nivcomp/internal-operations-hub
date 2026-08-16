@@ -1,6 +1,6 @@
 # Work Log
 
-### 2026-08-13 ג€” QR code for public client/lead registration link
+### 2026-08-13 — QR code for public client/lead registration link
 
 **Work unit**
 Add a scannable QR code next to the public client registration link so leads can open it on a phone without typing the URL.
@@ -9,7 +9,7 @@ Add a scannable QR code next to the public client registration link so leads can
 - Installed `qrcode` and `@types/qrcode`.
 - Created reusable `src/components/ui/QrCode.tsx` that renders the link as a data-URI PNG.
 - Added the QR code to the advanced Access Management page (`src/components/access/PublicLinkSettings.tsx`) below the client registration link.
-- Added the QR code to the Simple Mode ג€Share linksג€ card (`src/components/simple/ShareLinksCard.tsx`) for the client link.
+- Added the QR code to the Simple Mode “Share links” card (`src/components/simple/ShareLinksCard.tsx`) for the client link.
 - The QR code updates automatically when the link is rotated.
 
 **Tests**
@@ -25,7 +25,7 @@ Add a scannable QR code next to the public client registration link so leads can
 **Next**
 - Continue with the already planned production release of the lead-conversation inbox.
 
-### 2026-08-13 ג€” Agency-controlled pre-project lead conversations
+### 2026-08-13 — Agency-controlled pre-project lead conversations
 
 **Work unit**
 Implement the approved lead-to-project workflow so Yaniv can see and guide the full new-client conversation before deciding whether a project should exist.
@@ -33,8 +33,8 @@ Implement the approved lead-to-project workflow so Yaniv can see and guide the f
 **Changes**
 - Added durable pre-project lead conversations and messages with separate client-visible and agency-only visibility.
 - Added invited, active, awaiting-review, paused, disqualified and promoted states plus unread tracking.
-- Added the ג€Lead Conversationsג€ inbox to both Simple and Advanced Mode with the full transcript, evolving brief/flow, manager replies, private notes and status controls.
-- Changed AI and classic client onboarding completion into ג€send for reviewג€; it no longer creates a project.
+- Added the “Lead Conversations” inbox to both Simple and Advanced Mode with the full transcript, evolving brief/flow, manager replies, private notes and status controls.
+- Changed AI and classic client onboarding completion into “send for review”; it no longer creates a project.
 - Enforced pause, review and disqualification server-side in `onboarding-chat`.
 - Added agency-only, retry-safe promotion that creates one project and migrates the transcript, internal notes, brief, diagram and specification drafts.
 - Created lead threads at quick invitation and public-registration claim while preserving existing project-continuation behavior.
@@ -55,7 +55,7 @@ Implement the approved lead-to-project workflow so Yaniv can see and guide the f
 **Next**
 - Obtain explicit approval for the production database migration, deploy database/functions/frontend as one release, then run the authenticated client/admin smoke test.
 
-### 2026-08-13 ג€” Production release of client identity and project binding
+### 2026-08-13 — Production release of client identity and project binding
 
 **Work unit**
 Publish the personalized onboarding, exact-project handoff and authenticated business context as one production release.
@@ -77,7 +77,7 @@ Publish the personalized onboarding, exact-project handoff and authenticated bus
 
 ---
 
-### 2026-08-12 ג€” Authenticated business identity inside onboarding AI
+### 2026-08-12 — Authenticated business identity inside onboarding AI
 
 **Work unit**
 Make the onboarding conversation itself know the signed-in client's stored business identity instead of only displaying it in the surrounding page.
@@ -105,7 +105,7 @@ Make the onboarding conversation itself know the signed-in client's stored busin
 
 ---
 
-### 2026-08-12 ג€” Personalized client identity and exact project binding
+### 2026-08-12 — Personalized client identity and exact project binding
 
 **Work unit**
 Show a new client whose workspace they entered and preserve every onboarding artifact inside the exact project created for their authenticated account.
@@ -137,10 +137,10 @@ Show a new client whose workspace they entered and preserve every onboarding art
 
 ---
 
-### 2026-08-12 ג€” Conversation-first new-client entry and link clarity
+### 2026-08-12 — Conversation-first new-client entry and link clarity
 
 **Work unit**
-Replace the confusing new-client onboarding document wall with a friendly conversation and make the agencyג€™s client-link purposes explicit without changing the existing project-continuation contract.
+Replace the confusing new-client onboarding document wall with a friendly conversation and make the agency’s client-link purposes explicit without changing the existing project-continuation contract.
 
 **Changes**
 - Rebuilt `AiOnboardingWorkspace` around one dominant, welcoming chat with one-question-at-a-time guidance and a visible composer.
@@ -148,13 +148,13 @@ Replace the confusing new-client onboarding document wall with a friendly conver
 - Removed empty document rows, draft estimate placeholders and early edit controls from the first impression.
 - Added a compact conversation-to-brief-to-MVP explanation; the live summary now appears only after real content exists and stays collapsed until the client chooses to review it.
 - Moved the classic form to a quiet fallback and made the agency handoff appear only after the AI marks the brief ready.
-- Added responsive desktop/mobile presentation and kept the composer visible on a 390ֳ—844 viewport.
+- Added responsive desktop/mobile presentation and kept the composer visible on a 390×844 viewport.
 - Clarified in Simple and Advanced access controls that public registration and personal invitation links start a new brief, while an existing meeting/project must use the project-specific continuation link.
-- Audited and hardened the continuation path: `/continue?t=ג€¦` is tied to `project_id`, marks onboarding complete, returns that exact project from activation, and redirects both new and existing accounts through `portalProject` so multi-project clients do not land on the wrong project.
+- Audited and hardened the continuation path: `/continue?t=…` is tied to `project_id`, marks onboarding complete, returns that exact project from activation, and redirects both new and existing accounts through `portalProject` so multi-project clients do not land on the wrong project.
 
 **Tests**
 - `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
-- Desktop and 390ֳ—844 mobile visual checks passed in the local in-app browser with no console errors.
+- Desktop and 390×844 mobile visual checks passed in the local in-app browser with no console errors.
 - `git diff --check` passed before publication.
 
 **Files**
@@ -173,7 +173,7 @@ Replace the confusing new-client onboarding document wall with a friendly conver
 
 ---
 
-### 2026-08-09 ג€” Copilot MVP and project-hours context
+### 2026-08-09 — Copilot MVP and project-hours context
 
 **Work unit**
 Allow the floating agency Copilot to inspect the saved MVP and answer or prepare project-hour estimates from canonical records.
@@ -182,7 +182,7 @@ Allow the floating agency Copilot to inspect the saved MVP and answer or prepare
 - Added role-filtered MVP version, summary, screen, block, action, data-model and automation context to the Copilot.
 - Added canonical project estimate totals and item-level hour ranges.
 - Added recorded discovery meeting hours and agency-only supplier logged/approved hours.
-- On a client detail with up to three projects, the agency Copilot receives each projectג€™s detailed context instead of only project names.
+- On a client detail with up to three projects, the agency Copilot receives each project’s detailed context instead of only project names.
 - If no estimate exists, an explicit owner request can produce a grounded `add_estimate_items` draft from the saved MVP; it cannot silently save or return an unexplained screen-count multiplier.
 - Client and supplier roles remain filtered from internal pricing, margin and unrelated records.
 - Added one shared agency client-details editor to the client list, Simple client card and Advanced client detail. It updates the existing `clients` row and local shared state immediately; no duplicate client model or broader portal permission was introduced.
@@ -193,7 +193,7 @@ Allow the floating agency Copilot to inspect the saved MVP and answer or prepare
 - No database migration or new pricing source was added.
 
 
-### 2026-08-09 ג€” Durable conversation memory for MVP revisions
+### 2026-08-09 — Durable conversation memory for MVP revisions
 
 **Work unit**
 Preserve long client conversations for first-time and revised MVP generation, and tell clients when conversation occurred after the shared MVP.
@@ -203,7 +203,7 @@ Preserve long client conversations for first-time and revised MVP generation, an
 - Legacy/incomplete summaries are rebuilt in batches from the available client conversation before MVP generation.
 - MVP generation now receives durable conversation memory, the latest 30 messages, the approved specification and active change requests.
 - Added a client-safe freshness check comparing the latest shared MVP with the latest human conversation message.
-- When an MVP exists and newer conversation is present, the chat shows ג€Iג€™m done explaining ג€” request an updated MVPג€ and routes to the existing controlled request form.
+- When an MVP exists and newer conversation is present, the chat shows “I’m done explaining — request an updated MVP” and routes to the existing controlled request form.
 
 **Tests**
 - `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
@@ -211,13 +211,13 @@ Preserve long client conversations for first-time and revised MVP generation, an
 - No database migration or new table is required; the existing role-safe `ai_project_summaries` table is reused.
 
 
-### 2026-08-09 ג€” Client-requested MVP refresh
+### 2026-08-09 — Client-requested MVP refresh
 
 **Work unit**
 Let a client request a new MVP version after a significant project change without giving the client direct AI or publishing authority.
 
 **Changes**
-- Added a focused Hebrew/English ג€Request an MVP updateג€ form below the shared MVP in the client portal.
+- Added a focused Hebrew/English “Request an MVP update” form below the shared MVP in the client portal.
 - Saves the request in the existing `change_requests` workflow so agency review, hour impact, pricing and approval rules remain canonical.
 - The agency-only prototype generator now includes active project change requests in its source context.
 - Creating the next MVP revision still produces immutable version history and uses the existing automatic client sharing flow.
@@ -228,7 +228,7 @@ Let a client request a new MVP version after a significant project change withou
 - No table, pricing model or client-side AI execution path was added.
 
 
-### 2026-08-09 ג€” Reliable automatic MVP sharing and client-safe review
+### 2026-08-09 — Reliable automatic MVP sharing and client-safe review
 
 **Work unit**
 Repair existing and future client MVP visibility, remove remaining estimated-money exposure, and complete portal localization.
@@ -251,7 +251,7 @@ Repair existing and future client MVP visibility, remove remaining estimated-mon
 - Apply `20260809100000_fix_prototype_sharing_and_version_updates.sql` and deploy `project-prototype` in the Supabase project connected to Lovable.
 
 
-### 2026-08-08 ג€” Focused client specification and MVP review
+### 2026-08-08 — Focused client specification and MVP review
 
 **Work unit**
 Simplify the client-facing project review while preserving the existing unified application, pricing source and role boundaries.
@@ -274,7 +274,7 @@ Simplify the client-facing project review while preserving the existing unified 
 - Deploy the updated `project-prototype` Edge Function and apply pending migrations in the Supabase project connected to Lovable.
 
 
-### 2026-08-08 ג€” Saved interactive MVP prototype studio
+### 2026-08-08 — Saved interactive MVP prototype studio
 
 **Work unit**
 Create a versioned, client-safe interactive MVP studio inside the existing project meeting and portal.
@@ -302,7 +302,7 @@ Create a versioned, client-safe interactive MVP studio inside the existing proje
 
 ---
 
-### 2026-08-08 ג€” Responsive meeting visuals and simplified client portal
+### 2026-08-08 — Responsive meeting visuals and simplified client portal
 
 **Work unit**
 Make the meeting/portal usable on mobile, improve visual artifacts, remove the duplicate client-facing flow, and add safe sharing.
@@ -341,7 +341,7 @@ Do not delete previous entries. Record only work that actually happened and test
 
 ## Entry template
 
-### YYYY-MM-DD ג€” Short work-unit title
+### YYYY-MM-DD — Short work-unit title
 
 **Work unit**  
 The single unit selected for this cycle.
@@ -366,7 +366,7 @@ The single unit selected for this cycle.
 
 ---
 
-### 2026-07-11 ג€” Automation memory foundation
+### 2026-07-11 — Automation memory foundation
 
 **Work unit**  
 Create the top-level project memory files used by future Codex automation cycles.
@@ -2327,7 +2327,7 @@ Prepare the existing application for the first Lovable UI refinement pass withou
 **Next**  
 - Prepare the existing application for the first Lovable UI refinement pass while preserving all current business logic.
 
-## 2026-08-02 ג€” Operational MVP usability
+## 2026-08-02 — Operational MVP usability
 
 **Work unit**  
 Make normal daily workflows completable in-app: supplier creation, client/supplier access, and actionable portals.
@@ -2361,7 +2361,7 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 **Next**  
 - Agency-side scope authoring workspace (see `NEXT_TASK.md`).
 
-## 2026-08-02 ג€” Multi-party AI project chat (phase 1)
+## 2026-08-02 — Multi-party AI project chat (phase 1)
 
 - Work unit: shared project conversation model + secure AI edge function + three role chats.
 - Migration: `project_conversations`, `conversation_participants`, `chat_messages`, `ai_runs`,
@@ -2384,14 +2384,14 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 - Next: agency confirmation cards that apply proposed actions as real mutations, plus pricing
   configuration, chat file attachments, Supplier Mode and the Role Test Lab.
 
-## 2026-08-03 ג€” Project estimation & budget simulation
+## 2026-08-03 — Project estimation & budget simulation
 
 - **Work unit:** Database-backed estimation model, client budget simulator, supplier estimate review, Yaniv estimate control.
 - **Main changes:** New tables `project_estimates`, `estimate_items`, `estimate_role_allocations`, `estimate_supplier_reviews`, `estimate_adjustments`, `estimate_scenarios`, `estimate_versions` with strict RLS. New `src/types/estimation.ts`, `src/lib/estimation.ts` (hours, buffers, internal cost, recommended fixed price, margin, warnings, calendar duration), `src/services/estimationApi.ts`, and three components mounted in Project Detail, Client Portal and Supplier Portal.
 - **Tests:** `pnpm run build` passed; Playwright run against the live preview created an estimate and a work item, confirmed hours/margin rendering and DB persistence (test row removed afterwards).
 - **Known gaps:** No AI-generated estimates (deliberately out of scope), no phase-level milestone pricing sync with `project_pricing`, adjustments are creatable via API but have no dedicated UI form yet.
 
-## 2026-08-03 ג€” AI chat connected to the estimation system
+## 2026-08-03 — AI chat connected to the estimation system
 
 **Work unit:** Make the multi-party AI chat estimate-aware, with human-confirmed actions only.
 
@@ -2406,16 +2406,16 @@ Make normal daily workflows completable in-app: supplier creation, client/suppli
 
 **Tests:** `pnpm run build` passes. Edge function boots and returns 401 without auth.
 
-**Limitations:** action payload editing before confirmation is supported by the API but not yet exposed as an inline form in the UI ג€” the user asks the assistant to revise instead.
+**Limitations:** action payload editing before confirmation is supported by the API but not yet exposed as an inline form in the UI — the user asks the assistant to revise instead.
 
-## 2026-08-03 ג€” Guided onboarding and role home screens
+## 2026-08-03 — Guided onboarding and role home screens
 
 - Work unit: guided onboarding wizards (client, supplier), Yaniv setup assistant, and simple role-specific home screens.
 - Main changes: new `public.onboarding_state` table with own-row RLS plus agency-admin read; `submit_client_onboarding` / `submit_supplier_onboarding` security-definer RPCs that only touch the caller's own linked records; `src/services/onboardingApi.ts`; `src/context/OnboardingContext.tsx`; `WizardShell`, `ClientOnboardingWizard`, `SupplierOnboardingWizard`, `AgencySetupAssistant`; `AgencyHomePage`, `ClientHomePage`, `SupplierHomePage`; new `home` view wired as the first view for every role.
 - Tests: `pnpm run build` passes; headless browser check of the agency home screen (no console errors). Client and supplier wizards were not exercised end-to-end because no client/supplier session is available in this environment.
 - Next work unit: recorded in NEXT_TASK.md.
 
-### 2026-08-03 ג€” Persistent voice-enabled AI copilot
+### 2026-08-03 — Persistent voice-enabled AI copilot
 
 **Work unit**  
 A workspace-wide copilot: a persistent bubble/panel, live screen context, voice conversation, form assistance, navigation shortcuts, and safe (confirmation-gated) actions.
@@ -2429,7 +2429,7 @@ A workspace-wide copilot: a persistent bubble/panel, live screen context, voice 
 - Chips (navigate / open record / focus or pre-fill a field) are validated server-side against what the role may reach; pre-filling never saves.
 
 **Tests**  
-- `pnpm run build` ג€” passed.
+- `pnpm run build` — passed.
 - Preview check as the agency admin: bubble opens, context header reads the current screen, the model returned a role-correct next step and a working navigation chip, no console errors.
 - Not covered: client and supplier copilot sessions, and the voice round-trip (no microphone in the check environment).
 
@@ -2439,14 +2439,14 @@ A workspace-wide copilot: a persistent bubble/panel, live screen context, voice 
 **Next work unit**  
 See `NEXT_TASK.md`.
 
-## 2026-08-03 ג€” Copilot Operator Mode (agency_admin)
+## 2026-08-03 — Copilot Operator Mode (agency_admin)
 
 - Work unit: upgrade the agency_admin copilot into a typed AI system operator.
 - Main changes: new `copilot_operator_actions` queue and `copilot_audit_log` tables; `archived_at` on clients/projects/suppliers; new `supabase/functions/_shared/operator.ts` catalog of 33 typed admin actions with entity resolution, risk classification, dependency-aware delete/archive safety and business-rule checks; agency-wide snapshot in `copilot/context.ts`; operator prompt, queue endpoints (`operator_queue|confirm|cancel|retry`) and deferred multi-step plan resolution in `copilot/index.ts`; Operator Mode badge, risk cards and action queue in `CopilotDock.tsx`.
-- Tests: `pnpm run build` passed; live edge-function tests as agency_admin ג€” cross-project question, client creation + confirmation, Hebrew two-step plan (create project + requested date) executed in order, delete-with-history refusal, `paid_ready_to_start` blocked without approved scope/payment, audit + activity rows verified in the database.
+- Tests: `pnpm run build` passed; live edge-function tests as agency_admin — cross-project question, client creation + confirmation, Hebrew two-step plan (create project + requested date) executed in order, delete-with-history refusal, `paid_ready_to_start` blocked without approved scope/payment, audit + activity rows verified in the database.
 - Known limitations: scope publication, estimate publishing/fixed price and change-request pricing still run through the existing project-chat proposal pipeline; supplier payments and printable flow-diagram export are not operator actions yet.
 
-### 2026-08-03 ג€” Public registration blank-screen fix
+### 2026-08-03 — Public registration blank-screen fix
 
 **Work unit**  
 Restore the public client/supplier registration routes on the custom domain.
@@ -2459,7 +2459,7 @@ Restore the public client/supplier registration routes on the custom domain.
 
 **Tests**  
 - `pnpm run build` passed; Vite emitted a separate `JoinPage` chunk.
-- Playwright loaded `/join/supplier?c=fd6bac99f4a7` at 1280ֳ—1800, rendered the complete supplier form, and reported no page errors or failed requests.
+- Playwright loaded `/join/supplier?c=fd6bac99f4a7` at 1280×1800, rendered the complete supplier form, and reported no page errors or failed requests.
 - The repaired build was verified locally; the custom domain continues serving the previous deployment until this change is published.
 
 **Files**  
@@ -2475,13 +2475,13 @@ Restore the public client/supplier registration routes on the custom domain.
 **Next**  
 - Extend the operator catalog to estimate publishing, fixed-price approval and change-request pricing through the existing confirmation pipeline.
 
-## 2026-08-03 ג€” Excel/CSV import + CRM pipeline
+## 2026-08-03 — Excel/CSV import + CRM pipeline
 - Work unit: Import system (xlsx/csv) and Hebrew CRM lead pipeline.
 - Main changes: crm_leads/contact_notes/past_projects/import_batches/import_rows/crm_ai_suggestions tables, private `crm-imports` bucket, `crm-import` and `crm-ai-map` edge functions, `ImportWizard`, `CrmWorkspace`, `PastProjectsPanel`, new `crm` view in both Simple and Advanced modes.
 - Tests: `pnpm run build` passed.
 - Notes: AI mapping and lead enrichment are suggestions only; nothing is written without explicit confirmation. Past projects are reference-only and excluded from pricing/margin.
 
-## 2026-08-06 ג€” Unified repository and memory synchronization
+## 2026-08-06 — Unified repository and memory synchronization
 
 **Work unit**
 Audit and synchronize the unified repository, application architecture and persistent project memory without developing the next Simple Mode meeting flow.
@@ -2512,11 +2512,11 @@ Audit and synchronize the unified repository, application architecture and persi
 - Created after this log entry; the final task report records the SHA and PR.
 
 **Next**
-- Build the complete existing/new client ג†’ existing/new project ג†’ meeting workspace flow inside Simple Mode without automatically navigating to Advanced Mode and without duplicating infrastructure.
+- Build the complete existing/new client → existing/new project → meeting workspace flow inside Simple Mode without automatically navigating to Advanced Mode and without duplicating infrastructure.
 
 ---
 
-### 2026-08-06 ג€” Simple Mode live discovery meeting
+### 2026-08-06 — Simple Mode live discovery meeting
 
 **Work unit**
 Build the complete client/project meeting-start flow and reusable live discovery room inside Simple Mode.
@@ -2548,7 +2548,7 @@ Build the complete client/project meeting-start flow and reusable live discovery
 
 ---
 
-### 2026-08-08 ג€” Chat-first Simple meeting refinement
+### 2026-08-08 — Chat-first Simple meeting refinement
 
 **Work unit**
 Replace the long form-first meeting experience with a guided conversational flow before merging PR #6.
@@ -2578,7 +2578,7 @@ Replace the long form-first meeting experience with a guided conversational flow
 
 ---
 
-### 2026-08-08 ג€” Interactive AI project room
+### 2026-08-08 — Interactive AI project room
 
 **Work unit**
 Make the existing persistent project chat the primary Simple Mode meeting experience and add safe visual artifacts and voice input shared with the client portal.
@@ -2610,7 +2610,7 @@ Make the existing persistent project chat the primary Simple Mode meeting experi
 
 ---
 
-### 2026-08-08 ג€” Shared Simple Mode document center
+### 2026-08-08 — Shared Simple Mode document center
 
 **Work unit**
 Create automatic reviewed specification documents and expose the existing project document system in Simple Mode and the client portal.
@@ -2644,7 +2644,7 @@ Create automatic reviewed specification documents and expose the existing projec
 
 ---
 
-### 2026-08-08 ג€” Unmetered agency project chat
+### 2026-08-08 — Unmetered agency project chat
 
 **Work unit**
 Remove project-chat usage quotas from the agency admin while preserving client and supplier portal limits.
@@ -2673,7 +2673,7 @@ Remove project-chat usage quotas from the agency admin while preserving client a
 
 ---
 
-### 2026-08-08 ג€” Discovery meeting time accounting
+### 2026-08-08 — Discovery meeting time accounting
 
 **Work unit**
 Track live discovery duration and safely deduct confirmed meeting hours from the existing paid-hours bank.
@@ -2706,15 +2706,15 @@ Track live discovery duration and safely deduct confirmed meeting hours from the
 
 ---
 
-### 2026-08-16 ג€” Amir cash-flow lead intake
+### 2026-08-16 — Amir cash-flow lead intake
 
 **Work unit**
-Add the public Hebrew "׳׳׳™׳¨ ׳×׳–׳¨׳™׳ ׳׳–׳•׳׳ ׳™׳" lead form, its database table and an agency-only lead management view.
+Add the public Hebrew "אמיר תזרים מזומנים" lead form, its database table and an agency-only lead management view.
 
 **Changes**
-- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
+- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "ניב מחשבים", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
 - Added `cash_flow_leads` with automatic ids/timestamps, constrained source/status values, anonymous insert-only RLS and agency-admin read/update RLS.
-- Added **Cash Flow Leads** to Advanced Mode and **׳׳™׳“׳™׳ ׳×׳–׳¨׳™׳** to Simple Mode, including search and five status controls.
+- Added **Cash Flow Leads** to Advanced Mode and **לידים תזרים** to Simple Mode, including search and five status controls.
 - Updated generated Supabase types, project documentation and the pnpm lockfile so frozen installs are reproducible again.
 
 **Tests**
@@ -2731,14 +2731,14 @@ Add the public Hebrew "׳׳׳™׳¨ ׳×׳–׳¨׳™׳ ׳׳–׳•׳
 - Application routing/navigation, shared styles, README and project memory files
 
 **Commit**
-- `18af3928c1745da3b3c7447bebed5af8902c6c3a` ג€” `Add Amir cash-flow lead intake`
+- `18af3928c1745da3b3c7447bebed5af8902c6c3a` — `Add Amir cash-flow lead intake`
 
 **Next**
 - Synchronize `main` through Lovable, apply the migration to the connected Supabase project, publish, and run one public-submit/admin-status production smoke test.
 
 ---
 
-### 2026-08-16 ג€” Cash-flow lead mobile operations
+### 2026-08-16 — Cash-flow lead mobile operations
 
 **Work unit**
 Make the Simple Mode cash-flow lead list practical on phones while preserving the full desktop view.
@@ -2747,7 +2747,7 @@ Make the Simple Mode cash-flow lead list practical on phones while preserving th
 - Replaced the wide table on small screens with Hebrew RTL lead cards.
 - Added a prominent direct-call action and clickable phone/email details for every lead.
 - Kept the requested lead fields and status controls available in both mobile and desktop layouts.
-- Renamed the internal heading to the Hebrew **׳׳™׳“׳™׳ ׳×׳–׳¨׳™׳** used in Simple Mode navigation.
+- Renamed the internal heading to the Hebrew **לידים תזרים** used in Simple Mode navigation.
 
 **Tests**
 - `npx tsc --noEmit` passed.
@@ -2763,7 +2763,7 @@ Make the Simple Mode cash-flow lead list practical on phones while preserving th
 
 ---
 
-### 2026-08-16 ג€” Cash-flow production publication
+### 2026-08-16 — Cash-flow production publication
 
 **Work unit**
 Publish the campaign form through Lovable and activate its Supabase table.
@@ -2782,17 +2782,17 @@ Publish the campaign form through Lovable and activate its Supabase table.
 - No synthetic lead was submitted.
 
 **Next**
-- Submit one approved production test lead, verify it appears in **׳׳™׳“׳™׳ ׳×׳–׳¨׳™׳**, test direct calling on a phone and exercise one status update.
+- Submit one approved production test lead, verify it appears in **לידים תזרים**, test direct calling on a phone and exercise one status update.
 
 ---
 
-### 2026-08-16 ג€” Cash-flow lead Excel export
+### 2026-08-16 — Cash-flow lead Excel export
 
 **Work unit**
 Allow agency admins to download every Amir cash-flow campaign lead as an Excel workbook.
 
 **Changes**
-- Added **׳”׳•׳¨׳“׳× ׳›׳ ׳”׳׳™׳“׳™׳ ׳׳׳§׳¡׳** to the internal cash-flow lead toolbar.
+- Added **הורדת כל הלידים לאקסל** to the internal cash-flow lead toolbar.
 - Exported all loaded campaign leads, independent of the current search filter, with Hebrew column headers and practical column widths.
 - Included contact details, address, reason, accounting system, notes, source and Hebrew status labels.
 - Used the existing `xlsx` dependency and added responsive toolbar styling.
@@ -2806,16 +2806,16 @@ Allow agency admins to download every Amir cash-flow campaign lead as an Excel w
 
 ---
 
-### 2026-08-16 ג€” Cash-flow campaign brand correction
+### 2026-08-16 — Cash-flow campaign brand correction
 
 **Work unit**
-Correct the campaign business name everywhere to "׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳".
+Correct the campaign business name everywhere to "ניב מחשבים".
 
 **Changes**
 - Updated the public form header and intro branding.
 - Updated the consent wording and post-submit thank-you message.
 - Updated the internal cash-flow lead view and project documentation.
-- Preserved unrelated natural-language phrases such as "׳ ׳¢׳™׳ ׳׳׳•׳“".
+- Preserved unrelated natural-language phrases such as "נעים מאוד".
 
 **Tests**
 - Exact repository search confirms no occurrence of the previous business name remains.
@@ -2827,4 +2827,3 @@ Correct the campaign business name everywhere to "׳ ׳™׳‘ ׳׳—׳©׳
 
 **Next**
 - Submit one approved production test lead and verify the mobile call, status and Excel workflow end to end.
-

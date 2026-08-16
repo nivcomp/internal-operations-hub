@@ -33,23 +33,23 @@ function trimSubmission(input: CashFlowLeadSubmission): CashFlowLeadSubmission {
 function validate(input: CashFlowLeadSubmission, consent: boolean): FormErrors {
   const errors: FormErrors = {};
   const required: Array<[FieldName, string]> = [
-    ["firstName", "׳™׳© ׳׳”׳–׳™׳ ׳©׳ ׳₪׳¨׳˜׳™."],
-    ["lastName", "׳™׳© ׳׳”׳–׳™׳ ׳©׳ ׳׳©׳₪׳—׳”."],
-    ["companyName", "׳™׳© ׳׳”׳–׳™׳ ׳©׳ ׳—׳‘׳¨׳”."],
-    ["mobilePhone", "׳™׳© ׳׳”׳–׳™׳ ׳˜׳׳₪׳•׳ ׳¡׳׳•׳׳¨׳™."],
-    ["email", "׳™׳© ׳׳”׳–׳™׳ ׳׳™׳׳™׳™׳."],
-    ["reasonForCashFlowSoftware", "׳™׳© ׳׳”׳¡׳‘׳™׳¨ ׳‘׳§׳¦׳¨׳” ׳׳׳” ׳׳×׳ ׳׳—׳₪׳©׳™׳ ׳×׳•׳›׳ ׳”."],
-    ["accountingSystem", "׳™׳© ׳׳‘׳—׳•׳¨ ׳׳¢׳¨׳›׳× ׳”׳ ׳”׳׳× ׳—׳©׳‘׳•׳ ׳•׳×."],
+    ["firstName", "יש להזין שם פרטי."],
+    ["lastName", "יש להזין שם משפחה."],
+    ["companyName", "יש להזין שם חברה."],
+    ["mobilePhone", "יש להזין טלפון סלולרי."],
+    ["email", "יש להזין אימייל."],
+    ["reasonForCashFlowSoftware", "יש להסביר בקצרה למה אתם מחפשים תוכנה."],
+    ["accountingSystem", "יש לבחור מערכת הנהלת חשבונות."],
   ];
 
   required.forEach(([field, message]) => {
     if (!input[field]) errors[field] = message;
   });
-  if (input.email && !EMAIL_PATTERN.test(input.email)) errors.email = "׳™׳© ׳׳”׳–׳™׳ ׳›׳×׳•׳‘׳× ׳׳™׳׳™׳™׳ ׳×׳§׳™׳ ׳”.";
-  if (input.accountingSystem === "׳׳—׳¨" && !input.accountingSystemOther) {
-    errors.accountingSystemOther = "׳™׳© ׳׳¦׳™׳™׳ ׳׳™׳–׳• ׳׳¢׳¨׳›׳× ׳”׳ ׳”׳׳× ׳—׳©׳‘׳•׳ ׳•׳× ׳™׳© ׳׳›׳.";
+  if (input.email && !EMAIL_PATTERN.test(input.email)) errors.email = "יש להזין כתובת אימייל תקינה.";
+  if (input.accountingSystem === "אחר" && !input.accountingSystemOther) {
+    errors.accountingSystemOther = "יש לציין איזו מערכת הנהלת חשבונות יש לכם.";
   }
-  if (!consent) errors.consent = "׳™׳© ׳׳׳©׳¨ ׳׳× ׳©׳׳™׳¨׳× ׳”׳₪׳¨׳˜׳™׳ ׳•׳™׳¦׳™׳¨׳× ׳”׳§׳©׳¨.";
+  if (!consent) errors.consent = "יש לאשר את שמירת הפרטים ויצירת הקשר.";
   return errors;
 }
 
@@ -87,7 +87,7 @@ export function AmirCashFlowPage() {
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      setSubmitError("׳׳ ׳”׳¦׳׳—׳ ׳• ׳׳©׳׳•׳¨ ׳׳× ׳”׳₪׳¨׳˜׳™׳ ׳›׳¨׳’׳¢. ׳ ׳¡׳• ׳©׳•׳‘ ׳‘׳¢׳•׳“ ׳¨׳’׳¢.");
+      setSubmitError("לא הצלחנו לשמור את הפרטים כרגע. נסו שוב בעוד רגע.");
     } finally {
       setSubmitting(false);
     }
@@ -97,38 +97,38 @@ export function AmirCashFlowPage() {
     <main className="cashflow-public-page" dir="rtl" lang="he">
       <div className="cashflow-public-shell">
         <header className="cashflow-brand-area">
-          <div className="cashflow-brand-mark" aria-hidden>׳ </div>
+          <div className="cashflow-brand-mark" aria-hidden>נ</div>
           <div>
-            <strong>׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳</strong>
-            <span>׳₪׳×׳¨׳•׳ ׳•׳× ׳׳¢׳©׳™׳™׳ ׳׳¢׳¡׳§׳™׳</span>
+            <strong>ניב מחשבים</strong>
+            <span>פתרונות מעשיים לעסקים</span>
           </div>
         </header>
 
         <section className="cashflow-intro">
-          <p className="eyebrow">׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳</p>
-          <h1>׳׳׳™׳¨ ׳×׳–׳¨׳™׳ ׳׳–׳•׳׳ ׳™׳</h1>
-          <p>׳‘׳“׳™׳§׳× ׳”׳×׳׳׳” ׳׳×׳•׳›׳ ׳× ׳×׳–׳¨׳™׳ ׳׳–׳•׳׳ ׳™׳ ׳׳¢׳¡׳§</p>
+          <p className="eyebrow">ניב מחשבים</p>
+          <h1>אמיר תזרים מזומנים</h1>
+          <p>בדיקת התאמה לתוכנת תזרים מזומנים לעסק</p>
         </section>
 
         {submitted ? (
           <section className="cashflow-success" role="status" aria-live="polite">
-            <span aria-hidden>ג“</span>
-            <h2>׳”׳₪׳¨׳˜׳™׳ ׳ ׳§׳׳˜׳• ׳‘׳”׳¦׳׳—׳”. ׳ ׳—׳–׳•׳¨ ׳׳׳™׳›׳ ׳‘׳”׳§׳“׳.</h2>
-            <p>׳×׳•׳“׳” ׳©׳₪׳ ׳™׳×׳ ׳׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳.</p>
+            <span aria-hidden>✓</span>
+            <h2>הפרטים נקלטו בהצלחה. נחזור אליכם בהקדם.</h2>
+            <p>תודה שפניתם לניב מחשבים.</p>
           </section>
         ) : (
           <form className="cashflow-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
             <div className="cashflow-form-heading">
               <div>
-                <h2>׳₪׳¨׳˜׳™ ׳”׳¢׳¡׳§ ׳•׳”׳¦׳•׳¨׳</h2>
-                <p>׳׳׳׳• ׳׳× ׳”׳₪׳¨׳˜׳™׳ ׳•׳ ׳™׳¦׳•׳¨ ׳׳™׳×׳›׳ ׳§׳©׳¨ ׳׳‘׳“׳™׳§׳× ׳”׳×׳׳׳”.</p>
+                <h2>פרטי העסק והצורך</h2>
+                <p>מלאו את הפרטים וניצור איתכם קשר לבדיקת התאמה.</p>
               </div>
-              <span><b aria-hidden>*</b> ׳©׳“׳” ׳—׳•׳‘׳”</span>
+              <span><b aria-hidden>*</b> שדה חובה</span>
             </div>
 
             <div className="cashflow-form-grid">
               <label>
-                ׳©׳ ׳₪׳¨׳˜׳™ <b aria-hidden>*</b>
+                שם פרטי <b aria-hidden>*</b>
                 <input
                   value={form.firstName}
                   onChange={(event) => update("firstName", event.target.value)}
@@ -142,7 +142,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label>
-                ׳©׳ ׳׳©׳₪׳—׳” <b aria-hidden>*</b>
+                שם משפחה <b aria-hidden>*</b>
                 <input
                   value={form.lastName}
                   onChange={(event) => update("lastName", event.target.value)}
@@ -156,7 +156,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label className="span-2">
-                ׳©׳ ׳—׳‘׳¨׳” <b aria-hidden>*</b>
+                שם חברה <b aria-hidden>*</b>
                 <input
                   value={form.companyName}
                   onChange={(event) => update("companyName", event.target.value)}
@@ -170,7 +170,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label>
-                ׳˜׳׳₪׳•׳
+                טלפון
                 <input
                   type="tel"
                   dir="ltr"
@@ -183,7 +183,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label>
-                ׳˜׳׳₪׳•׳ ׳¡׳׳•׳׳¨׳™ <b aria-hidden>*</b>
+                טלפון סלולרי <b aria-hidden>*</b>
                 <input
                   type="tel"
                   dir="ltr"
@@ -200,7 +200,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label>
-                ׳׳™׳׳™׳™׳ <b aria-hidden>*</b>
+                אימייל <b aria-hidden>*</b>
                 <input
                   type="email"
                   dir="ltr"
@@ -217,7 +217,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label>
-                ׳›׳×׳•׳‘׳× ׳₪׳™׳–׳™׳×
+                כתובת פיזית
                 <input
                   value={form.physicalAddress}
                   onChange={(event) => update("physicalAddress", event.target.value)}
@@ -227,7 +227,7 @@ export function AmirCashFlowPage() {
               </label>
 
               <label className="span-2">
-                ׳׳׳” ׳׳×׳ ׳׳—׳₪׳©׳™׳ ׳×׳•׳›׳ ׳” ׳׳×׳–׳¨׳™׳ ׳׳–׳•׳׳ ׳™׳? <b aria-hidden>*</b>
+                למה אתם מחפשים תוכנה לתזרים מזומנים? <b aria-hidden>*</b>
                 <textarea
                   rows={5}
                   value={form.reasonForCashFlowSoftware}
@@ -241,26 +241,26 @@ export function AmirCashFlowPage() {
               </label>
 
               <label className="span-2">
-                ׳׳™׳–׳• ׳׳¢׳¨׳›׳× ׳”׳ ׳”׳׳× ׳—׳©׳‘׳•׳ ׳•׳× ׳™׳© ׳׳›׳? <b aria-hidden>*</b>
+                איזו מערכת הנהלת חשבונות יש לכם? <b aria-hidden>*</b>
                 <select
                   value={form.accountingSystem}
                   onChange={(event) => {
                     update("accountingSystem", event.target.value);
-                    if (event.target.value !== "׳׳—׳¨") update("accountingSystemOther", "");
+                    if (event.target.value !== "אחר") update("accountingSystemOther", "");
                   }}
                   required
                   aria-invalid={Boolean(errors.accountingSystem)}
                   aria-describedby={errors.accountingSystem ? "accounting-system-error" : undefined}
                 >
-                  <option value="">׳‘׳—׳¨׳• ׳׳¢׳¨׳›׳×</option>
+                  <option value="">בחרו מערכת</option>
                   {ACCOUNTING_SYSTEM_OPTIONS.map((system) => <option key={system} value={system}>{system}</option>)}
                 </select>
                 <FieldError id="accounting-system-error" message={errors.accountingSystem} />
               </label>
 
-              {form.accountingSystem === "׳׳—׳¨" ? (
+              {form.accountingSystem === "אחר" ? (
                 <label className="span-2">
-                  ׳׳™׳–׳• ׳׳¢׳¨׳›׳×? <b aria-hidden>*</b>
+                  איזו מערכת? <b aria-hidden>*</b>
                   <input
                     value={form.accountingSystemOther}
                     onChange={(event) => update("accountingSystemOther", event.target.value)}
@@ -274,7 +274,7 @@ export function AmirCashFlowPage() {
               ) : null}
 
               <label className="span-2">
-                ׳”׳¢׳¨׳•׳× ׳ ׳•׳¡׳₪׳•׳×
+                הערות נוספות
                 <textarea
                   rows={4}
                   value={form.notes}
@@ -296,14 +296,14 @@ export function AmirCashFlowPage() {
                 aria-invalid={Boolean(errors.consent)}
                 aria-describedby={errors.consent ? "consent-error" : undefined}
               />
-              <span>׳׳ ׳™ ׳׳׳©׳¨/׳× ׳׳ ׳™׳‘ ׳׳—׳©׳‘׳™׳ ׳׳©׳׳•׳¨ ׳׳× ׳”׳₪׳¨׳˜׳™׳ ׳•׳׳™׳¦׳•׳¨ ׳׳™׳×׳™ ׳§׳©׳¨ ׳׳’׳‘׳™ ׳×׳•׳›׳ ׳× ׳×׳–׳¨׳™׳ ׳׳–׳•׳׳ ׳™׳.</span>
+              <span>אני מאשר/ת לניב מחשבים לשמור את הפרטים וליצור איתי קשר לגבי תוכנת תזרים מזומנים.</span>
             </label>
             <FieldError id="consent-error" message={errors.consent} />
 
             {submitError ? <p className="cashflow-submit-error" role="alert">{submitError}</p> : null}
 
             <button className="primary-button cashflow-submit" type="submit" disabled={submitting || !consent}>
-              {submitting ? "׳©׳•׳׳—׳™׳ ׳׳× ׳”׳₪׳¨׳˜׳™׳ג€¦" : "׳©׳׳™׳—׳× ׳₪׳¨׳˜׳™׳"}
+              {submitting ? "שולחים את הפרטים…" : "שליחת פרטים"}
             </button>
           </form>
         )}
@@ -311,4 +311,3 @@ export function AmirCashFlowPage() {
     </main>
   );
 }
-
