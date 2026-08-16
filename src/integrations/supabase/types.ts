@@ -5098,10 +5098,19 @@ export type Database = {
         }
         Returns: number
       }
-      promote_client_onboarding: {
-        Args: { _profile_id: string; _project_name?: string }
-        Returns: string
-      }
+      promote_client_onboarding:
+        | {
+            Args: { _profile_id: string; _project_name?: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              _payment_decision: string
+              _profile_id: string
+              _project_name: string
+            }
+            Returns: string
+          }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
