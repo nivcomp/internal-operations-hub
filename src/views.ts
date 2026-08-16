@@ -4,6 +4,7 @@ export const views = [
   { key: "action-queue", label: "Action Queue" },
   { key: "crm", label: "CRM Pipeline" },
   { key: "lead-conversations", label: "Lead Conversations" },
+  { key: "cash-flow-leads", label: "Cash Flow Leads" },
   { key: "clients", label: "Clients" },
   { key: "client-detail", label: "Client Detail" },
   { key: "projects", label: "Projects" },

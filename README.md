@@ -21,7 +21,6 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 
 - Client, CRM lead, project, supplier and invitation management.
 - Simple and advanced dashboards over the same `AppDataProvider` state.
-- Daily Simple navigation limited to Home, CRM, Projects and Suppliers, with one four-area project workspace and the complete operator system behind `מערכת מתקדמת`.
 - Client and supplier portals with strict visibility rules.
 - Project chat, onboarding chat, persistent Copilot and voice Copilot.
 - Client and supplier project chats retain usage quotas; agency-admin project chats are unmetered in both Simple and Advanced Mode while still retaining input safety controls and usage logging.
@@ -30,7 +29,6 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - The Advanced project workspace uses six primary sections with secondary operator tools behind progressive disclosure. Its pricing summary explicitly separates the published client view from internal rate, cost and margin data.
 - A saved interactive prototype studio turns reviewed chat, specification content, pasted text or DOCX source material into versioned app, WhatsApp-bot or automation MVP screens. Agency operators create and share drafts; clients can navigate and approve the exact shared version in their portal.
 - Shared project document center in Simple, Advanced and the client portal, using approved specification sections and existing `project_documents` records.
-- Supplier-safe handoff from the Simple project workspace using existing supplier-audience `supplier_brief` documents and an authenticated printable/PDF-save view.
 - Meetings, source uploads/transcripts and structured specification records.
 - Live meeting timing with start/end/duration, plus an agency-only idempotent charge ledger that can deduct confirmed discovery hours from the existing client/project hour bank.
 - Simple Mode meeting launcher for existing/new clients and projects, with a resumable live discovery room that stays inside the compact application.
@@ -40,6 +38,13 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Change requests, schedules, payment/paid-hours gates and supplier assignments.
 - Draft execution packages based on signed scope.
 - Excel/CSV import and CRM pipeline.
+- Public Hebrew lead intake for the "אמיר תזרים מזומנים" campaign, with an agency-only lead list and status workflow.
+
+## Amir cash-flow lead form
+
+The public route `/amir-cashflow` is a Hebrew, RTL lead form branded as "נעים מחשבים". It collects the business contact, cash-flow need and accounting system, requires explicit contact consent, and writes directly to the configured Supabase project.
+
+The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read the table. Authenticated agency admins can search all campaign leads, call or email them and update their status from **Cash Flow Leads** / **לידים תזרים** in the internal navigation. Mobile uses practical lead cards with direct calling; desktop keeps the full table view.
 
 ## Pricing rule
 
@@ -74,6 +79,14 @@ pnpm run build
 ```
 
 `pnpm run build` includes TypeScript compilation. No lint or automated test script is currently configured.
+
+Before production:
+
+1. Apply all pending Supabase migrations, including `20260816090000_cash_flow_leads.sql`.
+2. Confirm the deployed frontend has `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for the intended Supabase project. The repository fallback points to the existing project, but deployment environment variables remain the recommended configuration.
+3. Publish or synchronize the matching Git commit through Lovable.
+4. Submit one test lead at `/amir-cashflow`, confirm it appears only for an authenticated agency admin, and verify each status update.
+5. Point the desired public domain path to the deployed app and verify SPA fallback routing serves `/amir-cashflow` directly.
 
 ## Security invariants
 

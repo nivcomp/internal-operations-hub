@@ -1,88 +1,5 @@
 # Work Log
 
-### 2026-08-13 — Simple currency and supplier assignment refinements
-
-**Work unit**
-Make the Simple pricing and supplier handoff controls match the agency's actual daily defaults.
-
-**Changes**
-- Made ILS the application and new-estimate default, with the visible selector ordered ILS, USD and GBP.
-- Kept existing estimate values unchanged; choosing another currency changes the recorded/displayed unit and does not perform a silent exchange conversion.
-- Made all existing suppliers visible in the Simple project handoff selector with approved, pending-review and inactive labels.
-- Allowed a pending-review supplier to be assigned for planning while keeping execution visibly blocked until supplier approval; inactive suppliers remain visible but cannot be assigned.
-- Tightened the Simple ready-to-start summary so it also requires an approved assigned supplier and estimate items assigned to that supplier.
-
-**Verification**
-- `pnpm run build` passed (TypeScript + Vite, 288 modules); the existing large-chunk warning remains.
-- `git diff --check` passed.
-- GitHub branch `codex/simplify-admin-ui` and Lovable preview were verified at source commit `7d10205755690f2903bb1e4a99c6cc773f374370` with a clean working tree.
-- Published the matching frontend to `https://project.stat.ninja/` and confirmed the live `App-CV4mLSjq.js` bundle contains the ILS/USD/GBP options plus the pending-supplier planning labels.
-
-**Next**
-- Refresh the authenticated production session and smoke-test the real project's currency selector and supplier assignment without changing unrelated production data.
-
-### 2026-08-13 — Simplified agency-admin daily workflow
-
-**Work unit**
-Audit and simplify the agency-admin experience without changing backend, authentication, RLS, role isolation, signed proposals, estimate rules or audit history.
-
-**Changes**
-- Audited visible Simple and Advanced controls in `ADMIN_UI_AUDIT.md`, including working, partial, dead and advanced-only classifications.
-- Reduced Simple primary navigation to Home, CRM, Projects and Suppliers, with pre-project lead conversations available contextually and the complete product behind `מערכת מתקדמת`.
-- Added a four-area Simple project workspace: Discovery, Pricing & Proposal, Execution & Supplier, and Status.
-- Added a canonical `project_estimates` pricing workspace with explicit hourly rate, hours, cost, budget, recommended price, margin, risk summary, human fixed-price approval and existing proposal publication flow.
-- Added supplier assignment and supplier-safe `supplier_brief` generation, preview, print/PDF-save view and contextual supplier portal access.
-- Added a plain-language project status summary and a direct control to return to the beginning of the original client conversation.
-- Kept one persistent contextual Copilot and repaired the previously ignored Advanced project-tab deep-link context.
-- Removed duplicate Simple project actions and reduced the Home quick-action grid to one primary and three secondary actions.
-
-**Verification**
-- `npx tsc --noEmit` passed.
-- `pnpm run build` passed; the existing large-chunk warning remains.
-- The Vite application and unauthenticated login boundary loaded successfully in the local in-app browser.
-- No lint or automated test script exists in `package.json`.
-- An authenticated real-project smoke test remains required because the matching local build had no signed-in browser session. No production data was changed and no release was published.
-
-**Files**
-- `ADMIN_UI_AUDIT.md`
-- Simple layout, Home, CRM, record cards and project workspace components
-- Canonical pricing, supplier handoff, status and supplier-print components
-- `App.tsx`, project chat/deep-link routing and responsive/print styles
-- Project memory documents
-
-**Next**
-- Review the pull request and run the single authenticated preview smoke test described in `NEXT_TASK.md`; do not merge until it passes.
-
-### 2026-08-13 — Production release of agency-controlled lead conversations
-
-**Work unit**
-Apply the approved production database migration and publish the matching lead-to-project release.
-
-**Changes**
-- Applied `20260813100000_lead_conversation_inbox.sql` to the connected production database.
-- Backfilled one existing no-project onboarding conversation as a lead while preserving its six messages.
-- Deployed `onboarding-chat`, `lead-conversations`, `access-admin`, and `public-registration` from source commit `d87e0de` without source changes.
-- Published the matching Lovable frontend to production; the public URL redirects to `https://project.stat.ninja/`.
-
-**Verification**
-- Confirmed both lead tables exist, all four RLS policies are installed, and the agency-only promotion guard is active.
-- Confirmed client submission no longer creates a project.
-- Confirmed Lovable reports the project as published and ready.
-- Confirmed the production login boundary loads without browser console errors.
-- The earlier `npx tsc --noEmit`, `npm run build`, and `git diff --check` checks remain green for the published source.
-- A full authenticated client/admin interaction smoke test remains required because this run did not have both signed-in production roles available.
-
-**Files**
-- `NEXT_TASK.md`
-- `WORK_LOG.md`
-
-**Commit**
-- Production source: `d87e0de Add agency-controlled lead conversations`.
-- This deployment record will be committed separately on the current feature branch.
-
-**Next**
-- Run one authenticated client/admin production smoke test through message visibility, reply/private note isolation, pause/resume, review submission, retry-safe promotion, artifact transfer, and continuation-link preservation.
-
 ### 2026-08-13 — QR code for public client/lead registration link
 
 **Work unit**
@@ -2789,37 +2706,57 @@ Track live discovery duration and safely deduct confirmed meeting hours from the
 
 ---
 
-### 2026-08-14 — Simple approved-client workspace and payment gate
+### 2026-08-16 — Amir cash-flow lead intake
 
 **Work unit**
-Make the approved client experience project-specific and simple, surface shared MVPs directly, and require an explicit payment decision before every project-creation path.
+Add the public Hebrew "אמיר תזרים מזומנים" lead form, its database table and an agency-only lead management view.
 
 **Changes**
-- Rebuilt the authenticated client home as one simple workspace with project identity, current stage, project chat, client-visible files and a direct shared-MVP preview.
-- Kept continuation links bound to the requested client-owned project and added a compact project selector when the same client has multiple projects.
-- Removed the client flow canvas, misleading node/button controls and the route into the full Advanced project interface.
-- Restricted client MVP reads in the UI to client-audience shared/approved versions and added realtime refresh for `prototype_versions`.
-- Hid invalid legacy prototype actions from clients and replaced internal version/status wording with friendly version labels.
-- Added one reusable payment decision dialog to manual project creation, Simple meeting project creation and lead promotion.
-- Added typed payment decisions through the application service boundary. Paid creation sets the gate to paid; an unpaid override keeps it blocked and records the choice.
-- Added server and database validation for lead promotion plus activity and decision log entries while preserving retry safety.
-- Added migration `20260814150000_require_payment_decision_for_lead_promotion.sql`; it has not been applied to production in this work unit.
+- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "נעים מחשבים", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
+- Added `cash_flow_leads` with automatic ids/timestamps, constrained source/status values, anonymous insert-only RLS and agency-admin read/update RLS.
+- Added **Cash Flow Leads** to Advanced Mode and **לידים תזרים** to Simple Mode, including search and five status controls.
+- Updated generated Supabase types, project documentation and the pnpm lockfile so frozen installs are reproducible again.
 
 **Tests**
-- `pnpm install --frozen-lockfile` passed.
-- The first TypeScript build found an uncovered Simple meeting project-creation call; it was corrected to use the payment dialog.
-- `pnpm run build` then passed (TypeScript + production Vite build). The existing large-chunk warning remains.
-- `git diff --check` is run again before publication.
-- No automated test or lint script exists. Authenticated role/RLS, realtime MVP display and the production migration still require a deployed browser smoke test.
+- `pnpm install --frozen-lockfile` passed after synchronizing the previously stale lockfile.
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed (TypeScript + Vite); the existing large App chunk warning remains.
+- `git diff --check` passed.
+- No lint or automated test script exists in `package.json`. The migration and public/admin production smoke test remain deployment checks.
 
 **Files**
-- Client workspace and MVP: `src/pages/home/ClientHomePage.tsx`, `src/components/prototype/PrototypeStudio.tsx`, `src/context/AppDataContext.tsx`, `src/App.tsx`, `src/styles.css`.
-- Payment gate: `src/components/ui/PaymentGateDialog.tsx`, `src/components/meeting/SimpleMeetingWizard.tsx`, `src/pages/ClientDetailPage.tsx`, `src/pages/LeadConversationsPage.tsx`, service/domain files.
-- Server/data: `supabase/functions/lead-conversations/index.ts`, `supabase/migrations/20260814150000_require_payment_decision_for_lead_promotion.sql`.
-- Memory: `ARCHITECTURE.md`, `DECISIONS.md`, `NEXT_TASK.md`, `WORK_LOG.md`.
+- `supabase/migrations/20260816090000_cash_flow_leads.sql`
+- `src/pages/AmirCashFlowPage.tsx`, `src/pages/CashFlowLeadsPage.tsx`
+- `src/services/cashFlowLeadsApi.ts`, `src/integrations/supabase/types.ts`
+- Application routing/navigation, shared styles, README and project memory files
 
 **Commit**
-- Created after this log entry; the final task report records the SHA and pull request.
+- `18af3928c1745da3b3c7447bebed5af8902c6c3a` — `Add Amir cash-flow lead intake`
 
 **Next**
-- With explicit production approval: apply the migration, deploy `lead-conversations`, publish the frontend and run an authenticated agency/client smoke test before merge.
+- Synchronize `main` through Lovable, apply the migration to the connected Supabase project, publish, and run one public-submit/admin-status production smoke test.
+
+---
+
+### 2026-08-16 — Cash-flow lead mobile operations
+
+**Work unit**
+Make the Simple Mode cash-flow lead list practical on phones while preserving the full desktop view.
+
+**Changes**
+- Replaced the wide table on small screens with Hebrew RTL lead cards.
+- Added a prominent direct-call action and clickable phone/email details for every lead.
+- Kept the requested lead fields and status controls available in both mobile and desktop layouts.
+- Renamed the internal heading to the Hebrew **לידים תזרים** used in Simple Mode navigation.
+
+**Tests**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; the existing large App chunk warning remains.
+
+**Files**
+- `src/pages/CashFlowLeadsPage.tsx`
+- `src/styles.css`
+- `README.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Next**
+- Synchronize and publish `main` in Lovable, apply the Supabase migration, then verify the public form and direct calling on the production domain.
