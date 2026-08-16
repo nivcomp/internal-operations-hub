@@ -2760,3 +2760,26 @@ Make the Simple Mode cash-flow lead list practical on phones while preserving th
 
 **Next**
 - Synchronize and publish `main` in Lovable, apply the Supabase migration, then verify the public form and direct calling on the production domain.
+
+---
+
+### 2026-08-16 — Cash-flow production publication
+
+**Work unit**
+Publish the campaign form through Lovable and activate its Supabase table.
+
+**Changes**
+- Applied `20260816090000_cash_flow_leads.sql` through the authenticated Lovable cloud database connection.
+- Imported the canonical GitHub cash-flow files into the existing Lovable project and preserved its newer payment-gate/client-space call signatures.
+- Wired the public route and the Simple/Advanced internal navigation in the active Lovable edit branch.
+- Published the project and verified `https://project.stat.ninja/amir-cashflow` renders the Hebrew RTL form rather than the login screen.
+
+**Verification**
+- Lovable `npx tsc --noEmit` passed.
+- Lovable `pnpm run build` passed; only the existing large-chunk warning remains.
+- The production table has 15 columns, 3 RLS policies and 0 leads before campaign testing.
+- The live form exposes every requested field and keeps submit disabled until consent.
+- No synthetic lead was submitted.
+
+**Next**
+- Submit one approved production test lead, verify it appears in **לידים תזרים**, test direct calling on a phone and exercise one status update.

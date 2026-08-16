@@ -88,6 +88,8 @@ Before production:
 4. Submit one test lead at `/amir-cashflow`, confirm it appears only for an authenticated agency admin, and verify each status update.
 5. Point the desired public domain path to the deployed app and verify SPA fallback routing serves `/amir-cashflow` directly.
 
+Production currently serves the campaign form at `https://project.stat.ninja/amir-cashflow`. The connected Supabase table and RLS policies are active; submit a clearly identified test lead before a campaign launch and remove it after verifying the internal mobile call/status workflow.
+
 ## Security invariants
 
 - Agency admin owns final scope, pricing, supplier assignment and work readiness.
