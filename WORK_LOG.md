@@ -2703,3 +2703,35 @@ Track live discovery duration and safely deduct confirmed meeting hours from the
 
 **Next**
 - Build the saved interactive visual prototype studio with versioned client approval and reviewed Lovable export.
+
+---
+
+### 2026-08-16 — Amir cash-flow lead intake
+
+**Work unit**
+Add the public Hebrew "אמיר תזרים מזומנים" lead form, its database table and an agency-only lead management view.
+
+**Changes**
+- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "נעים מחשבים", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
+- Added `cash_flow_leads` with automatic ids/timestamps, constrained source/status values, anonymous insert-only RLS and agency-admin read/update RLS.
+- Added **Cash Flow Leads** to Advanced Mode and **לידים תזרים** to Simple Mode, including search and five status controls.
+- Updated generated Supabase types, project documentation and the pnpm lockfile so frozen installs are reproducible again.
+
+**Tests**
+- `pnpm install --frozen-lockfile` passed after synchronizing the previously stale lockfile.
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed (TypeScript + Vite); the existing large App chunk warning remains.
+- `git diff --check` passed.
+- No lint or automated test script exists in `package.json`. The migration and public/admin production smoke test remain deployment checks.
+
+**Files**
+- `supabase/migrations/20260816090000_cash_flow_leads.sql`
+- `src/pages/AmirCashFlowPage.tsx`, `src/pages/CashFlowLeadsPage.tsx`
+- `src/services/cashFlowLeadsApi.ts`, `src/integrations/supabase/types.ts`
+- Application routing/navigation, shared styles, README and project memory files
+
+**Commit**
+- `18af3928c1745da3b3c7447bebed5af8902c6c3a` — `Add Amir cash-flow lead intake`
+
+**Next**
+- Synchronize `main` through Lovable, apply the migration to the connected Supabase project, publish, and run one public-submit/admin-status production smoke test.
