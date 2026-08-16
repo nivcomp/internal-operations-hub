@@ -20,6 +20,7 @@ export const views = [
   { key: "ai-workbench", label: "AI Workbench" },
   { key: "ai-usage", label: "AI Usage & Alerts" },
   { key: "access-management", label: "Access Management" },
+  { key: "api-integrations", label: "API & Integrations" },
 ] as const;
 
 export type ViewKey = (typeof views)[number]["key"];
