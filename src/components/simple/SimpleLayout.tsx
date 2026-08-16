@@ -10,6 +10,7 @@ const navItems: { key: SimpleView; label: string }[] = [
   { key: "suppliers", label: "ספקים" },
   { key: "tasks", label: "משימות" },
   { key: "finance", label: "כספים" },
+  { key: "cash-flow-leads", label: "לידים תזרים" },
 ];
 
 type Props = {

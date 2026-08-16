@@ -22,11 +22,13 @@ Do not split the modes into different repositories, applications, deployments or
 - Simple meeting navigation remembers only the selected project id locally so a refresh can restore the view; durable meeting, source, specification, conversation and estimate state remains in Supabase, and `startMeeting` is idempotent for active meetings.
 - Simple meeting sessions are intentionally client-safe even when an agency admin is signed in: they use the `project_guide` conversation/context and show only estimates explicitly marked `client_visible`. Internal rate, cost and margin controls exist only in Advanced Mode.
 - Public registration is bundled separately at startup to avoid authenticated-client boot failures, but writes to the same Supabase project.
+- The public `/amir-cashflow` campaign form is also bundled separately from the authenticated application. It inserts into `cash_flow_leads` through the existing publishable Supabase client; RLS allows fixed-source new-lead inserts but no anonymous reads, while agency admins manage the list inside the authenticated app.
 - New-client AI onboarding is initially bound to the authenticated profile. The onboarding Edge Function resolves the linked client record server-side and gives the AI the authoritative client and business names, while the activity, need and project scope still come only from what the client shares. Submission is one retry-safe database operation that creates the client's project, copies the complete onboarding transcript into that project's `client_agency` conversation, stores the structured brief and flow as reviewable project drafts, and returns the exact project id used by the portal redirect. MVP generation remains agency-only and reads that same project conversation plus reviewed specification sections.
 
 ## Canonical domain systems
 
 - Clients and projects: `clients`, `projects`; imported prospects stay in `crm_leads` until linked or converted.
+- Campaign intake: `cash_flow_leads` stores the standalone Amir cash-flow campaign submissions and their simple agency-managed pipeline status.
 - Meeting and discovery: `client_meetings`, `meeting_sources`.
 - Meeting accounting: client-safe timing is stored on `client_meetings`; one immutable agency-only `meeting_time_charges` row records confirmed billable discovery hours and the existing `paid_hours` bank deduction.
 - Project conversation: `project_conversations`, `conversation_participants`, `chat_messages`, `ai_runs`, `ai_generated_drafts`.

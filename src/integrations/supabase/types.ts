@@ -718,6 +718,60 @@ export type Database = {
           },
         ]
       }
+      cash_flow_leads: {
+        Row: {
+          accounting_system: string
+          accounting_system_other: string | null
+          company_name: string
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          mobile_phone: string
+          notes: string | null
+          phone: string | null
+          physical_address: string | null
+          reason_for_cash_flow_software: string
+          source: string
+          status: string
+        }
+        Insert: {
+          accounting_system: string
+          accounting_system_other?: string | null
+          company_name: string
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          mobile_phone: string
+          notes?: string | null
+          phone?: string | null
+          physical_address?: string | null
+          reason_for_cash_flow_software: string
+          source?: string
+          status?: string
+        }
+        Update: {
+          accounting_system?: string
+          accounting_system_other?: string | null
+          company_name?: string
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          mobile_phone?: string
+          notes?: string | null
+          phone?: string | null
+          physical_address?: string | null
+          reason_for_cash_flow_software?: string
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       change_requests: {
         Row: {
           agency_price: number | null

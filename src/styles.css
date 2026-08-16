@@ -3061,6 +3061,290 @@ html, body, #root { max-width: 100%; }
 .flow-crm-column-title { font-size: 0.72rem; padding-bottom: 0.25rem; border-bottom: 2px solid; }
 .flow-crm-card { background: #fff; border: 1px solid var(--color-border, #e2e8f0); border-radius: 0.5rem; padding: 0.35rem 0.45rem; font-size: 0.78rem; }
 
+/* ---------- Amir cash-flow lead intake ---------- */
+.cashflow-public-page {
+  min-height: 100vh;
+  padding: clamp(1rem, 4vw, 3rem) 1rem;
+  background: #edf2ee;
+}
+
+.cashflow-public-shell {
+  width: min(100%, 820px);
+  margin: 0 auto;
+}
+
+.cashflow-brand-area {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 2rem;
+}
+
+.cashflow-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.cashflow-brand-area strong,
+.cashflow-brand-area span {
+  display: block;
+}
+
+.cashflow-brand-area strong {
+  color: var(--ink-strong);
+  font-size: 1.05rem;
+}
+
+.cashflow-brand-area span {
+  color: var(--ink-3);
+  font-size: .8rem;
+}
+
+.cashflow-intro {
+  margin-bottom: 1.5rem;
+}
+
+.cashflow-intro h1 {
+  margin: .15rem 0 .35rem;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.12;
+}
+
+.cashflow-intro > p:last-child {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+}
+
+.cashflow-form,
+.cashflow-success {
+  padding: clamp(1.1rem, 4vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.cashflow-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.cashflow-form-heading h2,
+.cashflow-form-heading p {
+  margin: 0;
+}
+
+.cashflow-form-heading p {
+  margin-top: .25rem;
+  color: var(--ink-3);
+}
+
+.cashflow-form-heading > span {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  font-size: .78rem;
+}
+
+.cashflow-form b {
+  color: var(--danger);
+}
+
+.cashflow-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cashflow-form-grid label {
+  display: grid;
+  gap: .4rem;
+  color: var(--ink-2);
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.cashflow-form-grid input,
+.cashflow-form-grid select,
+.cashflow-form-grid textarea {
+  min-height: 46px;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.cashflow-form-grid input[dir="ltr"] {
+  text-align: left;
+}
+
+.cashflow-field-error {
+  color: var(--danger);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.cashflow-form [aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.cashflow-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  margin-top: 1.35rem;
+  color: var(--ink-2);
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cashflow-consent input {
+  flex: 0 0 auto;
+  width: 20px;
+  min-height: 20px;
+  margin: .1rem 0 0;
+  accent-color: var(--brand);
+}
+
+.cashflow-submit-error,
+.cashflow-admin-error {
+  padding: .8rem 1rem;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--r);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.cashflow-submit-error {
+  margin: 1rem 0 0;
+}
+
+.cashflow-submit {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 1.25rem;
+  font-size: 1rem;
+}
+
+.cashflow-success {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.cashflow-success > span {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--success-bg);
+  color: var(--success);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.cashflow-success h2 {
+  max-width: 520px;
+  margin: 1rem 0 .35rem;
+}
+
+.cashflow-success p {
+  margin: 0;
+  color: var(--ink-3);
+}
+
+.cashflow-admin-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cashflow-admin-error p {
+  margin: 0;
+}
+
+.cashflow-leads-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cashflow-leads-toolbar label {
+  display: grid;
+  width: min(100%, 390px);
+  gap: .35rem;
+  color: var(--ink-2);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.cashflow-leads-toolbar > span {
+  color: var(--ink-3);
+  font-size: .82rem;
+}
+
+.cashflow-admin-page th,
+.cashflow-admin-page td {
+  text-align: right;
+}
+
+.cashflow-admin-page td[dir="ltr"] {
+  text-align: left;
+}
+
+.cashflow-admin-page td select {
+  min-width: 130px;
+}
+
+.cashflow-reason-cell {
+  min-width: 240px;
+  max-width: 380px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 700px) {
+  .cashflow-public-page {
+    padding: 1rem .75rem 2rem;
+  }
+
+  .cashflow-brand-area {
+    margin-bottom: 1.5rem;
+  }
+
+  .cashflow-form-heading,
+  .cashflow-leads-toolbar,
+  .cashflow-admin-error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cashflow-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cashflow-form-grid .span-2 {
+    grid-column: auto;
+  }
+}
+
 @media (max-width: 900px) {
   .client-space-grid { grid-template-columns: 1fr; }
   .client-space-chat .chat-panel { min-height: 55vh; }
