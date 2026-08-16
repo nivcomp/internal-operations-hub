@@ -23,7 +23,7 @@ const domainTables = {
     "registration_settings",
   ],
   crm_and_leads: [
-    "clients", "contact_notes", "crm_leads", "lead_conversation_messages", "lead_conversations",
+    "cash_flow_leads", "clients", "contact_notes", "crm_leads", "lead_conversation_messages", "lead_conversations",
     "past_projects",
   ],
   projects_and_delivery: [

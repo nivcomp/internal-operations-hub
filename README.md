@@ -77,7 +77,7 @@ pnpm run build
 
 ## External API design package
 
-`docs/api/` contains the machine-readable contract for the scoped external API and AI Skill connector. `docs/api/ai-skill-input.json` is the single-file package for an AI Skill generator; it embeds the OpenAPI 3.1 contract, the generated catalog of all 82 public tables and 9 domain RPC functions, the per-table permission matrix and the guarded business-action inventory.
+`docs/api/` contains the machine-readable contract for the scoped external API and AI Skill connector. `docs/api/ai-skill-input.json` is the single-file package for an AI Skill generator; it embeds the OpenAPI 3.1 contract, the generated catalog of all 83 public tables and 9 domain RPC functions, the per-table permission matrix and the guarded business-action inventory.
 
 Regenerate the schema-derived package after database type changes:
 

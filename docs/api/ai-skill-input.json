@@ -179,6 +179,7 @@
                   "ai_usage_events",
                   "ai_usage_limits",
                   "approvals",
+                  "cash_flow_leads",
                   "change_requests",
                   "chat_messages",
                   "client_meetings",
@@ -321,6 +322,7 @@
                   "ai_usage_events",
                   "ai_usage_limits",
                   "approvals",
+                  "cash_flow_leads",
                   "change_requests",
                   "chat_messages",
                   "client_meetings",
@@ -499,6 +501,7 @@
                   "ai_usage_events",
                   "ai_usage_limits",
                   "approvals",
+                  "cash_flow_leads",
                   "change_requests",
                   "chat_messages",
                   "client_meetings",
@@ -658,6 +661,7 @@
                   "ai_usage_events",
                   "ai_usage_limits",
                   "approvals",
+                  "cash_flow_leads",
                   "change_requests",
                   "chat_messages",
                   "client_meetings",
@@ -813,6 +817,7 @@
                   "ai_usage_events",
                   "ai_usage_limits",
                   "approvals",
+                  "cash_flow_leads",
                   "change_requests",
                   "chat_messages",
                   "client_meetings",
@@ -980,6 +985,7 @@
                   "ai_usage_events",
                   "ai_usage_limits",
                   "approvals",
+                  "cash_flow_leads",
                   "change_requests",
                   "chat_messages",
                   "client_meetings",
@@ -1741,7 +1747,7 @@
     "database": "PostgreSQL via Supabase",
     "schema": "public",
     "postgrestVersion": "14.5",
-    "tableCount": 82,
+    "tableCount": 83,
     "functionCount": 9,
     "tables": [
       {
@@ -3804,6 +3810,196 @@
             ]
           }
         ]
+      },
+      {
+        "name": "cash_flow_leads",
+        "row": {
+          "accounting_system": {
+            "type": "string",
+            "required": false
+          },
+          "accounting_system_other": {
+            "type": "string | null",
+            "required": false
+          },
+          "company_name": {
+            "type": "string",
+            "required": false
+          },
+          "created_at": {
+            "type": "string",
+            "required": false
+          },
+          "email": {
+            "type": "string",
+            "required": false
+          },
+          "first_name": {
+            "type": "string",
+            "required": false
+          },
+          "id": {
+            "type": "string",
+            "required": false
+          },
+          "last_name": {
+            "type": "string",
+            "required": false
+          },
+          "mobile_phone": {
+            "type": "string",
+            "required": false
+          },
+          "notes": {
+            "type": "string | null",
+            "required": false
+          },
+          "phone": {
+            "type": "string | null",
+            "required": false
+          },
+          "physical_address": {
+            "type": "string | null",
+            "required": false
+          },
+          "reason_for_cash_flow_software": {
+            "type": "string",
+            "required": false
+          },
+          "source": {
+            "type": "string",
+            "required": false
+          },
+          "status": {
+            "type": "string",
+            "required": false
+          }
+        },
+        "insert": {
+          "accounting_system": {
+            "type": "string",
+            "required": true
+          },
+          "accounting_system_other": {
+            "type": "string | null",
+            "required": false
+          },
+          "company_name": {
+            "type": "string",
+            "required": true
+          },
+          "created_at": {
+            "type": "string",
+            "required": false
+          },
+          "email": {
+            "type": "string",
+            "required": true
+          },
+          "first_name": {
+            "type": "string",
+            "required": true
+          },
+          "id": {
+            "type": "string",
+            "required": false
+          },
+          "last_name": {
+            "type": "string",
+            "required": true
+          },
+          "mobile_phone": {
+            "type": "string",
+            "required": true
+          },
+          "notes": {
+            "type": "string | null",
+            "required": false
+          },
+          "phone": {
+            "type": "string | null",
+            "required": false
+          },
+          "physical_address": {
+            "type": "string | null",
+            "required": false
+          },
+          "reason_for_cash_flow_software": {
+            "type": "string",
+            "required": true
+          },
+          "source": {
+            "type": "string",
+            "required": false
+          },
+          "status": {
+            "type": "string",
+            "required": false
+          }
+        },
+        "update": {
+          "accounting_system": {
+            "type": "string",
+            "required": false
+          },
+          "accounting_system_other": {
+            "type": "string | null",
+            "required": false
+          },
+          "company_name": {
+            "type": "string",
+            "required": false
+          },
+          "created_at": {
+            "type": "string",
+            "required": false
+          },
+          "email": {
+            "type": "string",
+            "required": false
+          },
+          "first_name": {
+            "type": "string",
+            "required": false
+          },
+          "id": {
+            "type": "string",
+            "required": false
+          },
+          "last_name": {
+            "type": "string",
+            "required": false
+          },
+          "mobile_phone": {
+            "type": "string",
+            "required": false
+          },
+          "notes": {
+            "type": "string | null",
+            "required": false
+          },
+          "phone": {
+            "type": "string | null",
+            "required": false
+          },
+          "physical_address": {
+            "type": "string | null",
+            "required": false
+          },
+          "reason_for_cash_flow_software": {
+            "type": "string",
+            "required": false
+          },
+          "source": {
+            "type": "string",
+            "required": false
+          },
+          "status": {
+            "type": "string",
+            "required": false
+          }
+        },
+        "relationships": []
       },
       {
         "name": "change_requests",
@@ -16498,6 +16694,7 @@
         "registration_settings"
       ],
       "crm_and_leads": [
+        "cash_flow_leads",
         "clients",
         "contact_notes",
         "crm_leads",
@@ -16735,6 +16932,21 @@
           "create",
           "read",
           "update"
+        ],
+        "client": [],
+        "supplier": []
+      },
+      {
+        "table": "cash_flow_leads",
+        "domain": "crm_and_leads",
+        "dataClass": "business",
+        "mutationMode": "direct_crud_with_policy",
+        "deleteMode": "guarded_admin_delete",
+        "agency_admin": [
+          "create",
+          "read",
+          "update",
+          "delete_guarded"
         ],
         "client": [],
         "supplier": []

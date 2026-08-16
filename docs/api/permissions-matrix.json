@@ -68,6 +68,7 @@
       "registration_settings"
     ],
     "crm_and_leads": [
+      "cash_flow_leads",
       "clients",
       "contact_notes",
       "crm_leads",
@@ -305,6 +306,21 @@
         "create",
         "read",
         "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "cash_flow_leads",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
       ],
       "client": [],
       "supplier": []
