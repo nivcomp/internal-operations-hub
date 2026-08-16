@@ -46,4 +46,5 @@ export const advancedTargets = {
   dashboard: "dashboard",
   actionQueue: "action-queue",
   leadConversations: "lead-conversations",
+  apiIntegrations: "api-integrations",
 } satisfies Record<string, ViewKey>;

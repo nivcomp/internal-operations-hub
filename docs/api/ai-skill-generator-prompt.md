@@ -14,8 +14,8 @@ Deliver:
 4. Contract tests that use non-production fixtures and cover agency_admin, client, and supplier boundaries.
 
 Connection rules:
-- Use OAuth 2.0 client credentials with least-privilege scopes.
-- Read API_BASE_URL, CLIENT_ID, and CLIENT_SECRET only from environment variables or a secret manager.
+- Use the agency-issued X-API-Key with least-privilege scopes.
+- Read API_BASE_URL and API_KEY only from environment variables or a secret manager.
 - Never request, store, log, or expose a Supabase service_role key.
 - At startup call GET /v1/me and GET /v1/schema/tables. Refuse operations not returned as effective capabilities.
 
@@ -25,7 +25,8 @@ Behavior rules:
 - Before destructive or high-impact operations, show the target, current state, proposed change, side effects, and required confirmation. Never infer approval from silence.
 - Respect client/supplier row ownership and visibility. Never broaden access after a 403 or attempt to bypass RLS or gateway policy.
 - Do not invent endpoints, columns, actions, scopes, or permissions not present in the package.
-- Clearly state in setup that this package is a design contract and requires the described API gateway to be implemented and deployed before the Skill can connect.
+- Use the deployed Supabase Edge Function URL from openapi.json unless the operator supplies another API_BASE_URL.
+- Guarded business actions additionally require a short-lived X-User-Access-Token for the active agency admin; never persist that session token.
 
 Include copy-ready setup instructions, common command examples, troubleshooting, and an end-to-end smoke test that reads identity, discovers capabilities, reads one safe table, creates and updates a disposable fixture, executes one non-destructive business action, and cleans up only when guarded delete is permitted.
 ```

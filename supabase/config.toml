@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.project-prototype]
 verify_jwt = true
+
+[functions.api-admin]
+verify_jwt = true
+
+[functions.external-api]
+verify_jwt = false

@@ -266,4 +266,4 @@ The system contains client isolation, supplier isolation, commercial state, paym
 Giving each connector a service-role key, exposing Supabase PostgREST directly with broad grants, or documenting only read access.
 
 **Consequences**
-The API design exposes permission-aware CRUD for every catalogued table and guarded business actions for high-impact workflows. Hard delete is unavailable for append-only or protected records and is confirmation/audit-gated elsewhere. `docs/api/ai-skill-input.json` is the single-file generation source, but no connector is operational until the gateway and OAuth issuer are implemented and deployed.
+The API exposes permission-aware CRUD for every catalogued table and guarded business actions for high-impact workflows. Hard delete is unavailable for append-only or protected records and is confirmation/audit-gated elsewhere. `docs/api/ai-skill-input.json` is the single-file generation source. The first-party gateway uses agency-issued scoped API keys; delegated OAuth may be added later without distributing the service-role key.

@@ -1,17 +1,21 @@
 {
   "packageFormat": "client-to-scope-ai-skill-input/v1",
-  "purpose": "Single-file source package for generating an API connector or AI Skill after the gateway described by the OpenAPI contract is implemented.",
-  "status": "design_contract_not_live_api",
-  "generationPrompt": "Create a production-quality AI Skill/connector for the API contract in this package.\nTreat openapi as the protocol contract, tableCatalog as the exact public database schema, permissions as mandatory policy, and businessActions as the preferred interface for guarded business mutations.\nGenerate a concise SKILL.md, detailed reference files, and small deterministic scripts only where useful.\nUse OAuth 2.0 client credentials with least-privilege scopes. Keep API_BASE_URL, CLIENT_ID, and CLIENT_SECRET in environment variables or a secret manager. Never request, store, print, or expose a Supabase service_role key.\nAt startup call GET /v1/me and GET /v1/schema/tables. Refuse any operation not returned as an effective capability.\nSupport paginated reads, safe field selection, filter ASTs, create, optimistic-concurrency patch, guarded delete, business actions, idempotency keys, rate-limit retries, and structured errors.\nBefore destructive or high-impact operations, show the target, proposed change, side effects, and confirmation requirement. Never infer approval from silence.\nUse business actions instead of raw table writes for scope/pricing publication, supplier assignment, lead promotion, payment overrides, MVP/prototype decisions, proposals, execution start, approvals, signatures, and protected deletes.\nRespect client/supplier row boundaries and visibility. Never broaden access after a 403 or attempt to bypass RLS/gateway policy.\nInclude connection setup, command examples, troubleshooting, and contract tests using non-production fixtures. Do not invent endpoints, columns, actions, or permissions not present in this package.\nClearly state that this package describes a gateway that must be deployed before the generated Skill can connect.",
+  "purpose": "Single-file source package for generating an API connector or AI Skill for the deployed scoped gateway.",
+  "status": "runtime_gateway_contract",
+  "generationPrompt": "Create a production-quality AI Skill/connector for the API contract in this package.\nTreat openapi as the protocol contract, tableCatalog as the exact public database schema, permissions as mandatory policy, and businessActions as the preferred interface for guarded business mutations.\nGenerate a concise SKILL.md, detailed reference files, and small deterministic scripts only where useful.\nUse the agency-issued X-API-Key with least-privilege scopes. Keep API_BASE_URL and API_KEY in environment variables or a secret manager. Never request, store, print, or expose a Supabase service_role key.\nAt startup call GET /v1/me and GET /v1/schema/tables. Refuse any operation not returned as an effective capability.\nSupport paginated reads, safe field selection, filter ASTs, create, optimistic-concurrency patch, guarded delete, business actions, idempotency keys, rate-limit retries, and structured errors.\nBefore destructive or high-impact operations, show the target, proposed change, side effects, and confirmation requirement. Never infer approval from silence.\nUse business actions instead of raw table writes for scope/pricing publication, supplier assignment, lead promotion, payment overrides, MVP/prototype decisions, proposals, execution start, approvals, signatures, and protected deletes.\nRespect client/supplier row boundaries and visibility. Never broaden access after a 403 or attempt to bypass RLS/gateway policy.\nInclude connection setup, command examples, troubleshooting, and contract tests using non-production fixtures. Do not invent endpoints, columns, actions, or permissions not present in this package.\nUse the deployed Supabase Edge Function server from the OpenAPI document unless the operator provides another API_BASE_URL.",
   "openapi": {
     "openapi": "3.1.0",
     "info": {
       "title": "Client-to-Scope AI External Automation API",
       "version": "0.1.0-design",
       "summary": "Scoped CRUD and business-action contract for external tools and AI Skills.",
-      "description": "Design contract for a gateway that is not implemented yet. Do not point third-party agents at the Supabase service_role. The gateway must enforce scopes, application roles, tenant/row boundaries, RLS-equivalent checks, confirmations, idempotency, and audit logs."
+      "description": "Contract for the first-party Supabase Edge Function gateway. Agency-issued keys are scoped and stored only as SHA-256 hashes. Do not point third-party agents at the Supabase service_role. The gateway enforces table policy, confirmations, idempotency, optimistic concurrency, rate limits, and audit logs."
     },
     "servers": [
+      {
+        "url": "https://jvluliwmugamojdqstha.supabase.co/functions/v1/external-api",
+        "description": "Deployed Supabase Edge Function gateway"
+      },
       {
         "url": "https://api.{domain}",
         "variables": {
@@ -45,12 +49,7 @@
     ],
     "security": [
       {
-        "oauth2": [
-          "data.read"
-        ]
-      },
-      {
-        "bearerAuth": []
+        "apiKeyAuth": []
       }
     ],
     "paths": {
@@ -102,9 +101,7 @@
           "summary": "List accessible tables and capabilities",
           "security": [
             {
-              "oauth2": [
-                "schema.read"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "responses": {
@@ -159,9 +156,7 @@
           "summary": "Get fields, relations, and permitted operations for one table",
           "security": [
             {
-              "oauth2": [
-                "schema.read"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -303,9 +298,7 @@
           "summary": "List row-scoped records",
           "security": [
             {
-              "oauth2": [
-                "data.read"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -483,9 +476,7 @@
           "summary": "Create a record when direct creation is permitted",
           "security": [
             {
-              "oauth2": [
-                "data.write"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -644,9 +635,7 @@
           "summary": "Read one row-scoped record",
           "security": [
             {
-              "oauth2": [
-                "data.read"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -801,9 +790,7 @@
           "summary": "Patch a permitted record",
           "security": [
             {
-              "oauth2": [
-                "data.write"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -970,9 +957,7 @@
           "summary": "Guarded delete; unavailable for append-only or protected business records",
           "security": [
             {
-              "oauth2": [
-                "data.delete"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -1161,9 +1146,7 @@
           "summary": "Execute a guarded business operation",
           "security": [
             {
-              "oauth2": [
-                "actions.execute"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -1200,6 +1183,15 @@
             },
             {
               "$ref": "#/components/parameters/IdempotencyKey"
+            },
+            {
+              "name": "X-User-Access-Token",
+              "in": "header",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Short-lived Supabase access token for the active agency admin who confirms the guarded business action."
             }
           ],
           "requestBody": {
@@ -1285,9 +1277,7 @@
           "summary": "List immutable integration audit events",
           "security": [
             {
-              "oauth2": [
-                "audit.read"
-              ]
+              "apiKeyAuth": []
             }
           ],
           "parameters": [
@@ -1344,9 +1334,15 @@
     },
     "components": {
       "securitySchemes": {
+        "apiKeyAuth": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "X-API-Key",
+          "description": "Agency-issued scoped key. The full value is shown once in API & Integrations and stored only as a SHA-256 hash."
+        },
         "oauth2": {
           "type": "oauth2",
-          "description": "Preferred for server-to-server Skills. Issue short-lived, scoped tokens.",
+          "description": "Reserved for a future delegated flow. The deployed first-party gateway currently issues scoped API keys.",
           "flows": {
             "clientCredentials": {
               "tokenUrl": "https://api.YOUR_DOMAIN.example/oauth/token",

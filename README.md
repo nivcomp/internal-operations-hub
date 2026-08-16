@@ -77,7 +77,7 @@ pnpm run build
 
 ## External API design package
 
-`docs/api/` contains the machine-readable design for a future scoped external API and AI Skill connector. `docs/api/ai-skill-input.json` is the single-file package for an AI Skill generator; it embeds the OpenAPI 3.1 contract, the generated catalog of all 82 public tables and 9 RPC functions, the per-table permission matrix and the existing guarded business-action inventory.
+`docs/api/` contains the machine-readable contract for the scoped external API and AI Skill connector. `docs/api/ai-skill-input.json` is the single-file package for an AI Skill generator; it embeds the OpenAPI 3.1 contract, the generated catalog of all 82 public tables and 9 domain RPC functions, the per-table permission matrix and the guarded business-action inventory.
 
 Regenerate the schema-derived package after database type changes:
 
@@ -85,7 +85,7 @@ Regenerate the schema-derived package after database type changes:
 pnpm run api:docs
 ```
 
-The package is a design contract, not a deployed API. External integrations must use the proposed authenticated/audited gateway and must never receive a Supabase `service_role` key.
+Agency admins manage scoped keys and read the live documents inside **API & Integrations**. The complete key is shown only once and stored server-side only as a SHA-256 hash. External integrations use the authenticated/audited `external-api` Edge Function and must never receive a Supabase `service_role` key.
 
 ## Security invariants
 

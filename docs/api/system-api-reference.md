@@ -10,7 +10,7 @@
 - מלאי 12 Edge Functions והפעולות העסקיות הקיימות בהן.
 - קובץ יחיד שאפשר למסור למנוע AI כדי שייצר Connector/Skill.
 
-חשוב: זהו **חוזה תכנון**, לא כתובת API חיה. המערכת היום משתמשת ישירות ב־Supabase מהאפליקציה וב־Edge Functions. לפני שמחברים גורם חיצוני יש לממש Gateway לפי `openapi.json`, לפרוס אותו, ולהנפיק לו הרשאות מצומצמות. אין למסור ל־Skill את מפתח `service_role` של Supabase.
+החוזה ממומש ב־Supabase Edge Function בשם `external-api`. מנהל הסוכנות יוצר מפתח מצומצם במסך **API ואינטגרציות**; המפתח המלא מוצג פעם אחת בלבד ונשמר במסד רק כ־SHA-256 hash. אין למסור ל־Skill את מפתח `service_role` של Supabase.
 
 ## קבצי החבילה
 
@@ -30,7 +30,7 @@
 ```text
 AI Skill / Connector
         |
-        | OAuth2 token with narrow scopes
+        | X-API-Key with narrow scopes
         v
 External API Gateway
   - validates schema and fields
@@ -48,11 +48,10 @@ External API Gateway
 
 ## התחברות והרשאות
 
-הדרך המועדפת לחיבור שרת או Skill היא OAuth 2.0 Client Credentials עם access token קצר־חיים. לכל אינטגרציה מגדירים:
+הדרך לחיבור שרת או Skill היא מפתח `X-API-Key` שנוצר במסך הניהול עם scopes מצומצמים. לכל אינטגרציה מגדירים:
 
 - `API_BASE_URL`
-- `CLIENT_ID`
-- `CLIENT_SECRET` בתוך secret manager בלבד
+- `API_KEY` בתוך secret manager בלבד
 - scopes מינימליים: `schema.read`, `data.read`, `data.write`, `data.delete`, `actions.execute`, `audit.read`
 - תפקיד אפליקטיבי וגבול שורות: `agency_admin`, לקוח מסוים, ספק מסוים, או service account מצומצם
 
@@ -118,14 +117,12 @@ External API Gateway
 
 ## סדר מימוש מומלץ
 
-1. להקים Gateway מאומת ולממש `GET /v1/me` וגילוי סכימה.
-2. לממש קריאה עם RLS/גבולות tenant ו־field allowlist.
-3. לממש create/patch עם validation, idempotency ו־ETag.
-4. לעטוף את הפעולות העסקיות הקיימות ולחבר audit מלא.
-5. להוסיף guarded delete רק לטבלאות שמפת ההרשאות מאפשרת.
-6. להריץ בדיקות חוזה עם חשבונות admin, client ו־supplier ונתוני בדיקה בלבד.
-7. רק לאחר מכן לייצר Skill מ־`ai-skill-input.json` ולהנפיק לו credentials מצומצמים.
+1. ליצור מפתח במסך **API ואינטגרציות** ולשמור אותו ב־secret manager.
+2. לבדוק `GET /v1/me` ו־`GET /v1/schema/tables` לפני פעולה ראשונה.
+3. לייצר Skill מ־`ai-skill-input.json` ולתת לו רק את ה־scopes הדרושים.
+4. להריץ בדיקות חוזה עם נתוני בדיקה לפני שימוש בכתיבה או מחיקה.
+5. לבטל מיד מפתח שאינו בשימוש או שנחשף, וליצור חדש.
 
 ## מה נדרש כדי להפוך את החוזה לחיבור עובד
 
-ה־Skill שייווצר אינו יכול להתחבר עד שיש כתובת Gateway חיה, מנפיק OAuth, אחסון secrets, audit storage ומימוש endpoints בהתאם ל־OpenAPI. אין כאן secrets, מפתחות ייצור או נתוני לקוחות — בכוונה.
+ה־Skill יכול להתחבר לכתובת ה־Gateway שמופיעה ב־OpenAPI לאחר יצירת מפתח במסך הניהול. קובצי התיעוד אינם מכילים את המפתח עצמו, מפתח `service_role` או נתוני לקוחות — בכוונה. פעולות עסקיות מוגנות דורשות בנוסף `X-User-Access-Token` קצר־חיים של מנהל פעיל ואסור לשמור אותו לצמיתות.

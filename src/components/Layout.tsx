@@ -22,7 +22,7 @@ const navGroups: NavGroup[] = [
   { label: "Suppliers", keys: ["suppliers", "supplier-detail", "supplier-time", "supplier-portal"] },
   { label: "Finance", keys: ["pricing-margin", "payments-hours"] },
   { label: "Tools", keys: ["ai-workbench"] },
-  { label: "Admin", keys: ["ai-usage", "access-management"] },
+  { label: "Admin", keys: ["ai-usage", "access-management", "api-integrations"] },
 ];
 
 const labelFor = (key: ViewKey) =>

@@ -16,7 +16,7 @@ type Props = {
 
 /** Hebrew-first RTL shell for Simple Mode. */
 export function SimpleLayout({ accountLabel, onSignOut, children }: Props) {
-  const { simpleView, setSimpleView, setMode } = useMode();
+  const { simpleView, setSimpleView, setMode, openAdvanced } = useMode();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -50,6 +50,7 @@ export function SimpleLayout({ accountLabel, onSignOut, children }: Props) {
           </button>
           {menuOpen ? (
             <div className="simple-menu">
+              <button type="button" onClick={() => { setMenuOpen(false); openAdvanced("api-integrations"); }}>API ואינטגרציות</button>
               <button type="button" onClick={onSignOut}>התנתקות</button>
             </div>
           ) : null}
