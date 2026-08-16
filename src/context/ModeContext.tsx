@@ -47,4 +47,5 @@ export const advancedTargets = {
   actionQueue: "action-queue",
   leadConversations: "lead-conversations",
   cashFlowLeads: "cash-flow-leads",
+  apiIntegrations: "api-integrations",
 } satisfies Record<string, ViewKey>;
