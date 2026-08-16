@@ -5052,6 +5052,100 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      api_audit_append: {
+        Args: {
+          p_api_client_id: string
+          p_detail?: Json
+          p_http_status: number
+          p_operation: string
+          p_reason?: string
+          p_record_id?: string
+          p_request_id: string
+          p_table_name?: string
+        }
+        Returns: string
+      }
+      api_audit_list: {
+        Args: { p_api_client_id: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          created_at: string
+          detail: Json
+          http_status: number
+          id: string
+          operation: string
+          reason: string
+          record_id: string
+          request_id: string
+          table_name: string
+        }[]
+      }
+      api_idempotency_get: {
+        Args: { p_api_client_id: string; p_idempotency_key: string }
+        Returns: {
+          request_hash: string
+          response_body: Json
+          response_status: number
+        }[]
+      }
+      api_idempotency_save: {
+        Args: {
+          p_api_client_id: string
+          p_idempotency_key: string
+          p_request_hash: string
+          p_response_body: Json
+          p_response_status: number
+        }
+        Returns: boolean
+      }
+      api_key_authenticate: {
+        Args: { p_key_hash: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          key_prefix: string
+          last_used_at: string
+          name: string
+          scopes: string[]
+        }[]
+      }
+      api_key_create: {
+        Args: {
+          p_created_by: string
+          p_expires_at?: string
+          p_key_hash: string
+          p_key_prefix: string
+          p_name: string
+          p_scopes: string[]
+        }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          key_prefix: string
+          last_used_at: string
+          name: string
+          revoked_at: string
+          scopes: string[]
+        }[]
+      }
+      api_key_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          key_prefix: string
+          last_used_at: string
+          name: string
+          revoked_at: string
+          scopes: string[]
+        }[]
+      }
+      api_key_revoke: {
+        Args: { p_id: string; p_revoked_by: string }
+        Returns: boolean
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
