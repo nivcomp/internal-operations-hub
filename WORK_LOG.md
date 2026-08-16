@@ -2735,3 +2735,28 @@ Add the public Hebrew "אמיר תזרים מזומנים" lead form, its databa
 
 **Next**
 - Synchronize `main` through Lovable, apply the migration to the connected Supabase project, publish, and run one public-submit/admin-status production smoke test.
+
+---
+
+### 2026-08-16 — Cash-flow lead mobile operations
+
+**Work unit**
+Make the Simple Mode cash-flow lead list practical on phones while preserving the full desktop view.
+
+**Changes**
+- Replaced the wide table on small screens with Hebrew RTL lead cards.
+- Added a prominent direct-call action and clickable phone/email details for every lead.
+- Kept the requested lead fields and status controls available in both mobile and desktop layouts.
+- Renamed the internal heading to the Hebrew **לידים תזרים** used in Simple Mode navigation.
+
+**Tests**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; the existing large App chunk warning remains.
+
+**Files**
+- `src/pages/CashFlowLeadsPage.tsx`
+- `src/styles.css`
+- `README.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Next**
+- Synchronize and publish `main` in Lovable, apply the Supabase migration, then verify the public form and direct calling on the production domain.

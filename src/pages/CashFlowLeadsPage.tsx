@@ -28,6 +28,11 @@ function accountingSystemLabel(lead: CashFlowLead) {
   return lead.accounting_system_other ? `אחר — ${lead.accounting_system_other}` : "אחר";
 }
 
+function phoneHref(value: string) {
+  const normalized = value.trim().replace(/(?!^\+)[^\d]/g, "");
+  return `tel:${normalized}`;
+}
+
 export function CashFlowLeadsPage() {
   const [leads, setLeads] = useState<CashFlowLead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +88,7 @@ export function CashFlowLeadsPage() {
       <header className="page-header">
         <div>
           <p className="eyebrow">נעים מחשבים</p>
-          <h1>Cash Flow Leads</h1>
+          <h1>לידים תזרים</h1>
           <p>לידים שהתקבלו מטופס אמיר תזרים מזומנים.</p>
         </div>
         <div className="control-note">הרשימה והסטטוסים זמינים למנהלי הסוכנות בלבד.</div>
@@ -121,8 +126,60 @@ export function CashFlowLeadsPage() {
           {filteredLeads.length === 0 ? (
             <p className="muted-text">לא נמצאו לידים שמתאימים לחיפוש.</p>
           ) : (
-            <div className="table-scroll">
-              <table>
+            <>
+              <div className="cashflow-leads-mobile" aria-label="רשימת לידים">
+              {filteredLeads.map((lead) => (
+                <article className="cashflow-lead-mobile-card" key={lead.id}>
+                  <div className="cashflow-lead-mobile-heading">
+                    <div>
+                      <strong>{lead.first_name} {lead.last_name}</strong>
+                      <span>{lead.company_name}</span>
+                    </div>
+                    <time dateTime={lead.created_at}>{formatDate(lead.created_at)}</time>
+                  </div>
+
+                  <div className="cashflow-lead-contact-actions">
+                    <a className="cashflow-call-button" href={phoneHref(lead.mobile_phone)}>
+                      התקשר עכשיו
+                    </a>
+                    <a className="cashflow-phone-link" href={phoneHref(lead.mobile_phone)} dir="ltr">
+                      {lead.mobile_phone}
+                    </a>
+                    <a className="cashflow-email-link" href={`mailto:${lead.email}`} dir="ltr">
+                      {lead.email}
+                    </a>
+                  </div>
+
+                  <dl className="cashflow-lead-mobile-details">
+                    <div>
+                      <dt>מערכת הנהלת חשבונות</dt>
+                      <dd>{accountingSystemLabel(lead)}</dd>
+                    </div>
+                    <div>
+                      <dt>סיבת הפנייה</dt>
+                      <dd>{lead.reason_for_cash_flow_software}</dd>
+                    </div>
+                  </dl>
+
+                  <label className="cashflow-mobile-status">
+                    <span>סטטוס</span>
+                    <select
+                      value={lead.status}
+                      disabled={updatingId === lead.id}
+                      aria-label={`סטטוס ליד ${lead.first_name} ${lead.last_name}`}
+                      onChange={(event) => void changeStatus(lead, event.target.value as CashFlowLeadStatus)}
+                    >
+                      {CASH_FLOW_LEAD_STATUSES.map((status) => (
+                        <option key={status} value={status}>{STATUS_LABELS[status]}</option>
+                      ))}
+                    </select>
+                  </label>
+                </article>
+              ))}
+              </div>
+
+              <div className="table-scroll cashflow-leads-desktop">
+                <table>
                 <thead>
                   <tr>
                     <th>תאריך יצירה</th>
@@ -141,7 +198,14 @@ export function CashFlowLeadsPage() {
                       <td><time dateTime={lead.created_at}>{formatDate(lead.created_at)}</time></td>
                       <td><strong>{lead.first_name} {lead.last_name}</strong></td>
                       <td>{lead.company_name}</td>
-                      <td dir="ltr"><a href={`tel:${lead.mobile_phone}`}>{lead.mobile_phone}</a></td>
+                      <td>
+                        <div className="cashflow-table-phone">
+                          <a href={phoneHref(lead.mobile_phone)} dir="ltr">{lead.mobile_phone}</a>
+                          <a className="cashflow-call-button cashflow-call-button-compact" href={phoneHref(lead.mobile_phone)}>
+                            התקשר
+                          </a>
+                        </div>
+                      </td>
                       <td dir="ltr"><a href={`mailto:${lead.email}`}>{lead.email}</a></td>
                       <td>{accountingSystemLabel(lead)}</td>
                       <td className="cashflow-reason-cell">{lead.reason_for_cash_flow_software}</td>
@@ -160,8 +224,9 @@ export function CashFlowLeadsPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+            </>
           )}
         </section>
       )}

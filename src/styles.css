@@ -3320,6 +3320,40 @@ html, body, #root { max-width: 100%; }
   white-space: pre-wrap;
 }
 
+.cashflow-leads-mobile {
+  display: none;
+}
+
+.cashflow-table-phone {
+  display: grid;
+  justify-items: start;
+  gap: .4rem;
+}
+
+.cashflow-call-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: .65rem 1rem;
+  border-radius: 10px;
+  background: var(--brand);
+  color: white;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.cashflow-call-button:hover {
+  color: white;
+  filter: brightness(.94);
+}
+
+.cashflow-call-button-compact {
+  min-height: 34px;
+  padding: .35rem .7rem;
+  font-size: .78rem;
+}
+
 @media (max-width: 700px) {
   .cashflow-public-page {
     padding: 1rem .75rem 2rem;
@@ -3342,6 +3376,120 @@ html, body, #root { max-width: 100%; }
 
   .cashflow-form-grid .span-2 {
     grid-column: auto;
+  }
+
+  .cashflow-leads-card {
+    padding: .8rem;
+  }
+
+  .cashflow-leads-desktop {
+    display: none;
+  }
+
+  .cashflow-leads-mobile {
+    display: grid;
+    gap: .8rem;
+  }
+
+  .cashflow-lead-mobile-card {
+    display: grid;
+    gap: .9rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+
+  .cashflow-lead-mobile-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .8rem;
+  }
+
+  .cashflow-lead-mobile-heading > div {
+    min-width: 0;
+  }
+
+  .cashflow-lead-mobile-heading strong,
+  .cashflow-lead-mobile-heading span {
+    display: block;
+  }
+
+  .cashflow-lead-mobile-heading strong {
+    font-size: 1.05rem;
+  }
+
+  .cashflow-lead-mobile-heading span,
+  .cashflow-lead-mobile-heading time {
+    color: var(--ink-3);
+    font-size: .78rem;
+  }
+
+  .cashflow-lead-mobile-heading time {
+    flex: none;
+    text-align: left;
+  }
+
+  .cashflow-lead-contact-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .55rem;
+  }
+
+  .cashflow-call-button {
+    grid-column: 1 / -1;
+    font-size: 1rem;
+  }
+
+  .cashflow-phone-link,
+  .cashflow-email-link {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cashflow-phone-link {
+    font-weight: 800;
+  }
+
+  .cashflow-lead-mobile-details {
+    display: grid;
+    gap: .65rem;
+    margin: 0;
+  }
+
+  .cashflow-lead-mobile-details div {
+    padding: .7rem;
+    border-radius: 10px;
+    background: var(--surface-sunken);
+  }
+
+  .cashflow-lead-mobile-details dt {
+    margin-bottom: .25rem;
+    color: var(--ink-3);
+    font-size: .72rem;
+    font-weight: 800;
+  }
+
+  .cashflow-lead-mobile-details dd {
+    margin: 0;
+    white-space: pre-wrap;
+    line-height: 1.45;
+  }
+
+  .cashflow-mobile-status {
+    display: grid;
+    gap: .35rem;
+    color: var(--ink-2);
+    font-size: .8rem;
+    font-weight: 800;
+  }
+
+  .cashflow-mobile-status select {
+    width: 100%;
+    min-height: 44px;
   }
 }
 

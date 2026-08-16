@@ -44,7 +44,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 
 The public route `/amir-cashflow` is a Hebrew, RTL lead form branded as "נעים מחשבים". It collects the business contact, cash-flow need and accounting system, requires explicit contact consent, and writes directly to the configured Supabase project.
 
-The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read the table. Authenticated agency admins can read leads and update their status from **Cash Flow Leads** / **לידים תזרים** in the internal navigation.
+The migration `supabase/migrations/20260816090000_cash_flow_leads.sql` creates `public.cash_flow_leads`. New submissions use `source = 'amir_cashflow_form'` and `status = 'new'`. Anonymous visitors receive insert-only access for those fixed values; they cannot read the table. Authenticated agency admins can search all campaign leads, call or email them and update their status from **Cash Flow Leads** / **לידים תזרים** in the internal navigation. Mobile uses practical lead cards with direct calling; desktop keeps the full table view.
 
 ## Pricing rule
 
