@@ -253,3 +253,17 @@ Creating projects immediately and checking payment later, or blocking every unpa
 
 **Consequences**
 A paid choice opens the project with a paid payment gate. An unpaid override opens the project with a blocked payment gate, records the choice in the activity history (and in decision history for lead promotion), and does not make supplier work ready to start. The client remains in the simple client workspace; the override does not expose Advanced Mode.
+
+### 2026-08-16 — External AI integrations use a scoped gateway
+
+**Decision**
+External tools and generated AI Skills connect through a dedicated API gateway with short-lived scoped credentials, application-role and tenant resolution, field validation, RLS-equivalent row checks, idempotency, confirmations and immutable audit events. They never receive the Supabase `service_role` key or unrestricted raw database access.
+
+**Reason**
+The system contains client isolation, supplier isolation, commercial state, payment gates, approvals, signatures and append-only history. A generic database key would allow an integration to bypass business actions and erase or expose protected records.
+
+**Alternatives considered**
+Giving each connector a service-role key, exposing Supabase PostgREST directly with broad grants, or documenting only read access.
+
+**Consequences**
+The API design exposes permission-aware CRUD for every catalogued table and guarded business actions for high-impact workflows. Hard delete is unavailable for append-only or protected records and is confirmation/audit-gated elsewhere. `docs/api/ai-skill-input.json` is the single-file generation source, but no connector is operational until the gateway and OAuth issuer are implemented and deployed.

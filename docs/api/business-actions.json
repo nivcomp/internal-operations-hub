@@ -1,0 +1,205 @@
+{
+  "formatVersion": 1,
+  "note": "Existing Supabase Edge Function/RPC inventory. A production external API gateway should wrap these operations and preserve their current authorization checks.",
+  "edgeFunctions": [
+    {
+      "service": "access-admin",
+      "audience": "agency_admin",
+      "actions": [
+        "list",
+        "invite",
+        "link",
+        "setActive",
+        "quickInviteClient",
+        "quickInviteSupplier",
+        "listInvitations",
+        "registrationSettings",
+        "setRegistrationSettings",
+        "listRegistrations",
+        "markRegistrationsSeen",
+        "reviewRegistration",
+        "projectContinuationLink"
+      ]
+    },
+    {
+      "service": "public-registration",
+      "audience": "public_or_authenticated_claim",
+      "actions": [
+        "info",
+        "register",
+        "submit",
+        "claim",
+        "continueInfo",
+        "continueActivate"
+      ]
+    },
+    {
+      "service": "onboarding-chat",
+      "audience": "client_or_supplier",
+      "actions": [
+        "state",
+        "send",
+        "patch",
+        "submitForReview"
+      ]
+    },
+    {
+      "service": "lead-conversations",
+      "audience": "agency_admin",
+      "actions": [
+        "list",
+        "detail",
+        "markRead",
+        "message",
+        "setStatus",
+        "promote"
+      ]
+    },
+    {
+      "service": "project-chat",
+      "audience": "authenticated_project_participant",
+      "actions": [
+        "history",
+        "send",
+        "confirm_action",
+        "cancel_action"
+      ]
+    },
+    {
+      "service": "copilot",
+      "audience": "agency_admin",
+      "actions": [
+        "history",
+        "send",
+        "operator_queue",
+        "operator_confirm",
+        "operator_retry",
+        "operator_cancel",
+        "clear_slot",
+        "confirm_action",
+        "cancel_action",
+        "clear",
+        "save_preferences"
+      ]
+    },
+    {
+      "service": "copilot-voice",
+      "audience": "agency_admin",
+      "actions": [
+        "transcribe",
+        "speak"
+      ]
+    },
+    {
+      "service": "crm-import",
+      "audience": "agency_admin",
+      "actions": [
+        "preview",
+        "createBatch",
+        "executeChunk",
+        "finishBatch",
+        "retryFailed"
+      ]
+    },
+    {
+      "service": "crm-ai-map",
+      "audience": "agency_admin",
+      "actions": [
+        "suggestMapping",
+        "enrichLead"
+      ]
+    },
+    {
+      "service": "project-documents",
+      "audience": "agency_admin",
+      "actions": [
+        "generate"
+      ]
+    },
+    {
+      "service": "project-prototype",
+      "audience": "agency_admin",
+      "actions": [
+        "generate",
+        "share"
+      ]
+    },
+    {
+      "service": "project-workflow",
+      "audience": "authenticated_by_action",
+      "actions": [
+        "publish_proposal",
+        "sign_proposal",
+        "generate_execution_package"
+      ]
+    }
+  ],
+  "databaseFunctions": [
+    {
+      "name": "delete_email",
+      "exposure": "internal_server_only",
+      "signature": "delete_email: { Args: { message_id: number; queue_name: string } Returns: boolean }"
+    },
+    {
+      "name": "email_queue_dispatch",
+      "exposure": "internal_server_only",
+      "signature": {
+        "args": "never",
+        "returns": "undefined"
+      }
+    },
+    {
+      "name": "enqueue_email",
+      "exposure": "internal_server_only",
+      "signature": "enqueue_email: { Args: { payload: Json; queue_name: string } Returns: number }"
+    },
+    {
+      "name": "finish_client_meeting",
+      "exposure": "business_action_only",
+      "signature": "finish_client_meeting: { Args: { p_billable_hours?: number p_meeting_id: string p_paid_hours_id?: string } Returns: { conversation_id: string | null created_at: string duration_minutes: number | null ended_at: string | null id: string language: string lead_id: string | null project_id: string started_at: string started_by: string | null status: string title: string updated_at: string } SetofOptions: { from: \"*\" to: \"client_meetings\" isOneToOne: true isSetofReturn: false } }"
+    },
+    {
+      "name": "move_to_dlq",
+      "exposure": "internal_server_only",
+      "signature": "move_to_dlq: { Args: { dlq_name: string message_id: number payload: Json source_queue: string } Returns: number }"
+    },
+    {
+      "name": "promote_client_onboarding",
+      "exposure": "business_action_only",
+      "signature": "promote_client_onboarding: { Args: { _profile_id: string; _project_name?: string } Returns: string }"
+    },
+    {
+      "name": "read_email_batch",
+      "exposure": "internal_server_only",
+      "signature": "read_email_batch: { Args: { batch_size: number; queue_name: string; vt: number } Returns: { message: Json msg_id: number read_ct: number }[] }"
+    },
+    {
+      "name": "submit_client_onboarding",
+      "exposure": "business_action_only",
+      "signature": {
+        "args": "{ _answers: Json }",
+        "returns": "string"
+      }
+    },
+    {
+      "name": "submit_supplier_onboarding",
+      "exposure": "business_action_only",
+      "signature": {
+        "args": "{ _answers: Json }",
+        "returns": "string"
+      }
+    }
+  ],
+  "guardedDecisions": [
+    "promote lead to project",
+    "publish or approve scope",
+    "publish pricing",
+    "assign supplier",
+    "publish/share MVP or prototype",
+    "approve/reopen MVP",
+    "record payment or override payment gate",
+    "publish/sign proposal",
+    "start delivery",
+    "hard delete business data"
+  ]
+}

@@ -1,0 +1,1736 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Client-to-Scope AI External Automation API",
+    "version": "0.1.0-design",
+    "summary": "Scoped CRUD and business-action contract for external tools and AI Skills.",
+    "description": "Design contract for a gateway that is not implemented yet. Do not point third-party agents at the Supabase service_role. The gateway must enforce scopes, application roles, tenant/row boundaries, RLS-equivalent checks, confirmations, idempotency, and audit logs."
+  },
+  "servers": [
+    {
+      "url": "https://api.{domain}",
+      "variables": {
+        "domain": {
+          "default": "YOUR_DOMAIN.example"
+        }
+      },
+      "description": "Production gateway after implementation"
+    },
+    {
+      "url": "http://localhost:8787",
+      "description": "Local gateway development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Identity"
+    },
+    {
+      "name": "Schema"
+    },
+    {
+      "name": "Data"
+    },
+    {
+      "name": "Actions"
+    },
+    {
+      "name": "Audit"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": [
+        "data.read"
+      ]
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Identity"
+        ],
+        "operationId": "getCurrentIdentity",
+        "summary": "Return the authenticated integration and application identity",
+        "responses": {
+          "200": {
+            "description": "Identity and effective scopes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/v1/schema/tables": {
+      "get": {
+        "tags": [
+          "Schema"
+        ],
+        "operationId": "listTables",
+        "summary": "List accessible tables and capabilities",
+        "security": [
+          {
+            "oauth2": [
+              "schema.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tables filtered to the caller's effective permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TableSummary"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/v1/schema/tables/{table}": {
+      "get": {
+        "tags": [
+          "Schema"
+        ],
+        "operationId": "getTableSchema",
+        "summary": "Get fields, relations, and permitted operations for one table",
+        "security": [
+          {
+            "oauth2": [
+              "schema.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "A table from the generated public-schema catalog. Authorization is evaluated per table and row.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity_logs",
+                "ai_generated_drafts",
+                "ai_project_summaries",
+                "ai_request_classifications",
+                "ai_response_cache",
+                "ai_runs",
+                "ai_sessions",
+                "ai_usage_alerts",
+                "ai_usage_events",
+                "ai_usage_limits",
+                "approvals",
+                "change_requests",
+                "chat_messages",
+                "client_meetings",
+                "clients",
+                "contact_notes",
+                "conversation_participants",
+                "copilot_audit_log",
+                "copilot_entity_facts",
+                "copilot_messages",
+                "copilot_operator_actions",
+                "copilot_slot_memory",
+                "copilot_state",
+                "crm_ai_suggestions",
+                "crm_leads",
+                "decision_logs",
+                "email_send_log",
+                "email_send_state",
+                "email_unsubscribe_tokens",
+                "estimate_adjustments",
+                "estimate_items",
+                "estimate_role_allocations",
+                "estimate_scenarios",
+                "estimate_supplier_reviews",
+                "estimate_versions",
+                "execution_packages",
+                "files",
+                "import_batches",
+                "import_rows",
+                "lead_conversation_messages",
+                "lead_conversations",
+                "meeting_sources",
+                "meeting_time_charges",
+                "onboarding_invitations",
+                "onboarding_state",
+                "paid_hours",
+                "past_projects",
+                "payments",
+                "phase_pricing",
+                "profiles",
+                "project_assumptions",
+                "project_briefs",
+                "project_conversations",
+                "project_documents",
+                "project_estimates",
+                "project_messages",
+                "project_pricing",
+                "project_progress_updates",
+                "project_prototypes",
+                "project_questions",
+                "project_requirements",
+                "project_schedule",
+                "project_supplier_assignments",
+                "projects",
+                "proposal_signatures",
+                "proposal_versions",
+                "prototype_approvals",
+                "prototype_versions",
+                "public_registrations",
+                "registration_audit_log",
+                "registration_settings",
+                "scope_items",
+                "scopes",
+                "specification_section_sources",
+                "specification_sections",
+                "specification_versions",
+                "supplier_payments",
+                "supplier_profiles",
+                "supplier_skill_suggestions",
+                "supplier_time_entries",
+                "suppliers",
+                "suppressed_emails"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Table schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/v1/data/{table}": {
+      "get": {
+        "tags": [
+          "Data"
+        ],
+        "operationId": "listRecords",
+        "summary": "List row-scoped records",
+        "security": [
+          {
+            "oauth2": [
+              "data.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "A table from the generated public-schema catalog. Authorization is evaluated per table and row.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity_logs",
+                "ai_generated_drafts",
+                "ai_project_summaries",
+                "ai_request_classifications",
+                "ai_response_cache",
+                "ai_runs",
+                "ai_sessions",
+                "ai_usage_alerts",
+                "ai_usage_events",
+                "ai_usage_limits",
+                "approvals",
+                "change_requests",
+                "chat_messages",
+                "client_meetings",
+                "clients",
+                "contact_notes",
+                "conversation_participants",
+                "copilot_audit_log",
+                "copilot_entity_facts",
+                "copilot_messages",
+                "copilot_operator_actions",
+                "copilot_slot_memory",
+                "copilot_state",
+                "crm_ai_suggestions",
+                "crm_leads",
+                "decision_logs",
+                "email_send_log",
+                "email_send_state",
+                "email_unsubscribe_tokens",
+                "estimate_adjustments",
+                "estimate_items",
+                "estimate_role_allocations",
+                "estimate_scenarios",
+                "estimate_supplier_reviews",
+                "estimate_versions",
+                "execution_packages",
+                "files",
+                "import_batches",
+                "import_rows",
+                "lead_conversation_messages",
+                "lead_conversations",
+                "meeting_sources",
+                "meeting_time_charges",
+                "onboarding_invitations",
+                "onboarding_state",
+                "paid_hours",
+                "past_projects",
+                "payments",
+                "phase_pricing",
+                "profiles",
+                "project_assumptions",
+                "project_briefs",
+                "project_conversations",
+                "project_documents",
+                "project_estimates",
+                "project_messages",
+                "project_pricing",
+                "project_progress_updates",
+                "project_prototypes",
+                "project_questions",
+                "project_requirements",
+                "project_schedule",
+                "project_supplier_assignments",
+                "projects",
+                "proposal_signatures",
+                "proposal_versions",
+                "prototype_approvals",
+                "prototype_versions",
+                "public_registrations",
+                "registration_audit_log",
+                "registration_settings",
+                "scope_items",
+                "scopes",
+                "specification_section_sources",
+                "specification_sections",
+                "specification_versions",
+                "supplier_payments",
+                "supplier_profiles",
+                "supplier_skill_suggestions",
+                "supplier_time_entries",
+                "suppliers",
+                "suppressed_emails"
+              ]
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated allowlisted columns; defaults to safe fields."
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "URL-encoded JSON filter AST; no raw SQL."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated column.direction values."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Data"
+        ],
+        "operationId": "createRecord",
+        "summary": "Create a record when direct creation is permitted",
+        "security": [
+          {
+            "oauth2": [
+              "data.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "A table from the generated public-schema catalog. Authorization is evaluated per table and row.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity_logs",
+                "ai_generated_drafts",
+                "ai_project_summaries",
+                "ai_request_classifications",
+                "ai_response_cache",
+                "ai_runs",
+                "ai_sessions",
+                "ai_usage_alerts",
+                "ai_usage_events",
+                "ai_usage_limits",
+                "approvals",
+                "change_requests",
+                "chat_messages",
+                "client_meetings",
+                "clients",
+                "contact_notes",
+                "conversation_participants",
+                "copilot_audit_log",
+                "copilot_entity_facts",
+                "copilot_messages",
+                "copilot_operator_actions",
+                "copilot_slot_memory",
+                "copilot_state",
+                "crm_ai_suggestions",
+                "crm_leads",
+                "decision_logs",
+                "email_send_log",
+                "email_send_state",
+                "email_unsubscribe_tokens",
+                "estimate_adjustments",
+                "estimate_items",
+                "estimate_role_allocations",
+                "estimate_scenarios",
+                "estimate_supplier_reviews",
+                "estimate_versions",
+                "execution_packages",
+                "files",
+                "import_batches",
+                "import_rows",
+                "lead_conversation_messages",
+                "lead_conversations",
+                "meeting_sources",
+                "meeting_time_charges",
+                "onboarding_invitations",
+                "onboarding_state",
+                "paid_hours",
+                "past_projects",
+                "payments",
+                "phase_pricing",
+                "profiles",
+                "project_assumptions",
+                "project_briefs",
+                "project_conversations",
+                "project_documents",
+                "project_estimates",
+                "project_messages",
+                "project_pricing",
+                "project_progress_updates",
+                "project_prototypes",
+                "project_questions",
+                "project_requirements",
+                "project_schedule",
+                "project_supplier_assignments",
+                "projects",
+                "proposal_signatures",
+                "proposal_versions",
+                "prototype_approvals",
+                "prototype_versions",
+                "public_registrations",
+                "registration_audit_log",
+                "registration_settings",
+                "scope_items",
+                "scopes",
+                "specification_section_sources",
+                "specification_sections",
+                "specification_versions",
+                "supplier_payments",
+                "supplier_profiles",
+                "supplier_skill_suggestions",
+                "supplier_time_entries",
+                "suppliers",
+                "suppressed_emails"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/v1/data/{table}/{recordId}": {
+      "get": {
+        "tags": [
+          "Data"
+        ],
+        "operationId": "getRecord",
+        "summary": "Read one row-scoped record",
+        "security": [
+          {
+            "oauth2": [
+              "data.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "A table from the generated public-schema catalog. Authorization is evaluated per table and row.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity_logs",
+                "ai_generated_drafts",
+                "ai_project_summaries",
+                "ai_request_classifications",
+                "ai_response_cache",
+                "ai_runs",
+                "ai_sessions",
+                "ai_usage_alerts",
+                "ai_usage_events",
+                "ai_usage_limits",
+                "approvals",
+                "change_requests",
+                "chat_messages",
+                "client_meetings",
+                "clients",
+                "contact_notes",
+                "conversation_participants",
+                "copilot_audit_log",
+                "copilot_entity_facts",
+                "copilot_messages",
+                "copilot_operator_actions",
+                "copilot_slot_memory",
+                "copilot_state",
+                "crm_ai_suggestions",
+                "crm_leads",
+                "decision_logs",
+                "email_send_log",
+                "email_send_state",
+                "email_unsubscribe_tokens",
+                "estimate_adjustments",
+                "estimate_items",
+                "estimate_role_allocations",
+                "estimate_scenarios",
+                "estimate_supplier_reviews",
+                "estimate_versions",
+                "execution_packages",
+                "files",
+                "import_batches",
+                "import_rows",
+                "lead_conversation_messages",
+                "lead_conversations",
+                "meeting_sources",
+                "meeting_time_charges",
+                "onboarding_invitations",
+                "onboarding_state",
+                "paid_hours",
+                "past_projects",
+                "payments",
+                "phase_pricing",
+                "profiles",
+                "project_assumptions",
+                "project_briefs",
+                "project_conversations",
+                "project_documents",
+                "project_estimates",
+                "project_messages",
+                "project_pricing",
+                "project_progress_updates",
+                "project_prototypes",
+                "project_questions",
+                "project_requirements",
+                "project_schedule",
+                "project_supplier_assignments",
+                "projects",
+                "proposal_signatures",
+                "proposal_versions",
+                "prototype_approvals",
+                "prototype_versions",
+                "public_registrations",
+                "registration_audit_log",
+                "registration_settings",
+                "scope_items",
+                "scopes",
+                "specification_section_sources",
+                "specification_sections",
+                "specification_versions",
+                "supplier_payments",
+                "supplier_profiles",
+                "supplier_skill_suggestions",
+                "supplier_time_entries",
+                "suppliers",
+                "suppressed_emails"
+              ]
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Data"
+        ],
+        "operationId": "updateRecord",
+        "summary": "Patch a permitted record",
+        "security": [
+          {
+            "oauth2": [
+              "data.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "A table from the generated public-schema catalog. Authorization is evaluated per table and row.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity_logs",
+                "ai_generated_drafts",
+                "ai_project_summaries",
+                "ai_request_classifications",
+                "ai_response_cache",
+                "ai_runs",
+                "ai_sessions",
+                "ai_usage_alerts",
+                "ai_usage_events",
+                "ai_usage_limits",
+                "approvals",
+                "change_requests",
+                "chat_messages",
+                "client_meetings",
+                "clients",
+                "contact_notes",
+                "conversation_participants",
+                "copilot_audit_log",
+                "copilot_entity_facts",
+                "copilot_messages",
+                "copilot_operator_actions",
+                "copilot_slot_memory",
+                "copilot_state",
+                "crm_ai_suggestions",
+                "crm_leads",
+                "decision_logs",
+                "email_send_log",
+                "email_send_state",
+                "email_unsubscribe_tokens",
+                "estimate_adjustments",
+                "estimate_items",
+                "estimate_role_allocations",
+                "estimate_scenarios",
+                "estimate_supplier_reviews",
+                "estimate_versions",
+                "execution_packages",
+                "files",
+                "import_batches",
+                "import_rows",
+                "lead_conversation_messages",
+                "lead_conversations",
+                "meeting_sources",
+                "meeting_time_charges",
+                "onboarding_invitations",
+                "onboarding_state",
+                "paid_hours",
+                "past_projects",
+                "payments",
+                "phase_pricing",
+                "profiles",
+                "project_assumptions",
+                "project_briefs",
+                "project_conversations",
+                "project_documents",
+                "project_estimates",
+                "project_messages",
+                "project_pricing",
+                "project_progress_updates",
+                "project_prototypes",
+                "project_questions",
+                "project_requirements",
+                "project_schedule",
+                "project_supplier_assignments",
+                "projects",
+                "proposal_signatures",
+                "proposal_versions",
+                "prototype_approvals",
+                "prototype_versions",
+                "public_registrations",
+                "registration_audit_log",
+                "registration_settings",
+                "scope_items",
+                "scopes",
+                "specification_section_sources",
+                "specification_sections",
+                "specification_versions",
+                "supplier_payments",
+                "supplier_profiles",
+                "supplier_skill_suggestions",
+                "supplier_time_entries",
+                "suppliers",
+                "suppressed_emails"
+              ]
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/merge-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Data"
+        ],
+        "operationId": "deleteRecord",
+        "summary": "Guarded delete; unavailable for append-only or protected business records",
+        "security": [
+          {
+            "oauth2": [
+              "data.delete"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "description": "A table from the generated public-schema catalog. Authorization is evaluated per table and row.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activity_logs",
+                "ai_generated_drafts",
+                "ai_project_summaries",
+                "ai_request_classifications",
+                "ai_response_cache",
+                "ai_runs",
+                "ai_sessions",
+                "ai_usage_alerts",
+                "ai_usage_events",
+                "ai_usage_limits",
+                "approvals",
+                "change_requests",
+                "chat_messages",
+                "client_meetings",
+                "clients",
+                "contact_notes",
+                "conversation_participants",
+                "copilot_audit_log",
+                "copilot_entity_facts",
+                "copilot_messages",
+                "copilot_operator_actions",
+                "copilot_slot_memory",
+                "copilot_state",
+                "crm_ai_suggestions",
+                "crm_leads",
+                "decision_logs",
+                "email_send_log",
+                "email_send_state",
+                "email_unsubscribe_tokens",
+                "estimate_adjustments",
+                "estimate_items",
+                "estimate_role_allocations",
+                "estimate_scenarios",
+                "estimate_supplier_reviews",
+                "estimate_versions",
+                "execution_packages",
+                "files",
+                "import_batches",
+                "import_rows",
+                "lead_conversation_messages",
+                "lead_conversations",
+                "meeting_sources",
+                "meeting_time_charges",
+                "onboarding_invitations",
+                "onboarding_state",
+                "paid_hours",
+                "past_projects",
+                "payments",
+                "phase_pricing",
+                "profiles",
+                "project_assumptions",
+                "project_briefs",
+                "project_conversations",
+                "project_documents",
+                "project_estimates",
+                "project_messages",
+                "project_pricing",
+                "project_progress_updates",
+                "project_prototypes",
+                "project_questions",
+                "project_requirements",
+                "project_schedule",
+                "project_supplier_assignments",
+                "projects",
+                "proposal_signatures",
+                "proposal_versions",
+                "prototype_approvals",
+                "prototype_versions",
+                "public_registrations",
+                "registration_audit_log",
+                "registration_settings",
+                "scope_items",
+                "scopes",
+                "specification_section_sources",
+                "specification_sections",
+                "specification_versions",
+                "supplier_payments",
+                "supplier_profiles",
+                "supplier_skill_suggestions",
+                "supplier_time_entries",
+                "suppliers",
+                "suppressed_emails"
+              ]
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "X-Confirm-Delete",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "DELETE"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "soft",
+                      "hard"
+                    ],
+                    "default": "soft"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Deleted or archived"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/v1/actions/{service}/{action}": {
+      "post": {
+        "tags": [
+          "Actions"
+        ],
+        "operationId": "executeBusinessAction",
+        "summary": "Execute a guarded business operation",
+        "security": [
+          {
+            "oauth2": [
+              "actions.execute"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "service",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "access-admin",
+                "public-registration",
+                "onboarding-chat",
+                "lead-conversations",
+                "project-chat",
+                "copilot",
+                "copilot-voice",
+                "crm-import",
+                "crm-ai-map",
+                "project-documents",
+                "project-prototype",
+                "project-workflow"
+              ]
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Must be an action listed for the selected service in business-actions.json."
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "confirmation": {
+                    "type": "object",
+                    "properties": {
+                      "confirmed": {
+                        "type": "boolean"
+                      },
+                      "reason": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "input"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Confirmation or asynchronous completion required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/v1/audit-events": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "operationId": "listAuditEvents",
+        "summary": "List immutable integration audit events",
+        "security": [
+          {
+            "oauth2": [
+              "audit.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "Preferred for server-to-server Skills. Issue short-lived, scoped tokens.",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.YOUR_DOMAIN.example/oauth/token",
+            "scopes": {
+              "schema.read": "Read schema metadata",
+              "data.read": "Read permitted rows",
+              "data.write": "Create/update permitted rows",
+              "data.delete": "Request guarded deletes",
+              "actions.execute": "Execute permitted business actions",
+              "audit.read": "Read integration audit events"
+            }
+          }
+        }
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Interactive Supabase user JWT routed through the gateway; never a service_role JWT."
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 200
+        },
+        "description": "Unique per logical mutation; retain results for safe retries."
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "ETag from the last read; prevents lost updates."
+      }
+    },
+    "schemas": {
+      "Identity": {
+        "type": "object",
+        "properties": {
+          "integrationId": {
+            "type": "string"
+          },
+          "profileId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "applicationRole": {
+            "type": "string",
+            "enum": [
+              "agency_admin",
+              "client",
+              "supplier",
+              "service"
+            ]
+          },
+          "clientId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplierId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "integrationId",
+          "applicationRole",
+          "scopes"
+        ]
+      },
+      "TableSummary": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "create",
+                "read",
+                "update",
+                "delete"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "capabilities"
+        ]
+      },
+      "TableSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "row": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "insert": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "update": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "effectiveCapabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "row",
+          "insert",
+          "update",
+          "relationships",
+          "effectiveCapabilities"
+        ]
+      },
+      "RecordWrite": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Validated against table-catalog.json and field-level policy. Unknown, immutable, tenant, role, and server-managed fields are rejected."
+      },
+      "RecordResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string"
+              },
+              "auditEventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "requestId"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "RecordPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "limit": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "limit"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "page"
+        ]
+      },
+      "ActionResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "pending_confirmation",
+              "accepted",
+              "rejected",
+              "failed"
+            ]
+          },
+          "data": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "confirmation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "auditEventId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "requestId"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": true
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "retryable": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "requestId",
+              "retryable"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "400 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "401 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "403 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "404 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "409 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PreconditionFailed": {
+        "description": "412 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unprocessable": {
+        "description": "422 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "429 error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

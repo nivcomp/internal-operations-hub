@@ -1,0 +1,1482 @@
+{
+  "formatVersion": 1,
+  "authority": "Runtime authorization is the intersection of integration scopes, application role, row ownership/RLS, and table policy. This file never grants access by itself.",
+  "integrationRoles": {
+    "integration_reader": [
+      "schema.read",
+      "data.read"
+    ],
+    "integration_writer": [
+      "schema.read",
+      "data.read",
+      "data.write",
+      "actions.execute"
+    ],
+    "integration_admin": [
+      "schema.read",
+      "data.read",
+      "data.write",
+      "data.delete",
+      "actions.execute",
+      "audit.read"
+    ]
+  },
+  "applicationRoles": {
+    "agency_admin": "Internal agency operator. Broadest row access, still constrained by guarded business actions and audit requirements.",
+    "client": "Only the linked client and that client's projects; only client-visible records.",
+    "supplier": "Only the linked supplier, assigned projects, supplier-visible records, and own time/cost records."
+  },
+  "globalRules": [
+    "Anonymous tokens cannot access operational table endpoints.",
+    "Never expose a Supabase service_role key to a browser, generated Skill, desktop client, or third party.",
+    "Final scope, pricing, supplier assignment, supplier cost, visibility, readiness, lead promotion, and payment overrides require a guarded business action.",
+    "A project may not start without approved scope, paid payment or hour bank (or an explicit audited agency override), and an assigned supplier.",
+    "Hard delete requires integration_admin, data.delete, an application role permitted below, a reason, an idempotency key, and explicit confirmation. Append-only records use correction/reversal events instead.",
+    "RLS and gateway authorization remain authoritative even when this catalog says a role may access a table."
+  ],
+  "domains": {
+    "governance_and_audit": [
+      "activity_logs",
+      "approvals",
+      "decision_logs",
+      "registration_audit_log",
+      "copilot_audit_log"
+    ],
+    "ai_and_copilot": [
+      "ai_generated_drafts",
+      "ai_project_summaries",
+      "ai_request_classifications",
+      "ai_response_cache",
+      "ai_runs",
+      "ai_sessions",
+      "ai_usage_alerts",
+      "ai_usage_events",
+      "ai_usage_limits",
+      "copilot_entity_facts",
+      "copilot_messages",
+      "copilot_operator_actions",
+      "copilot_slot_memory",
+      "copilot_state",
+      "crm_ai_suggestions",
+      "supplier_skill_suggestions"
+    ],
+    "identity_registration_and_onboarding": [
+      "profiles",
+      "onboarding_invitations",
+      "onboarding_state",
+      "public_registrations",
+      "registration_settings"
+    ],
+    "crm_and_leads": [
+      "clients",
+      "contact_notes",
+      "crm_leads",
+      "lead_conversation_messages",
+      "lead_conversations",
+      "past_projects"
+    ],
+    "projects_and_delivery": [
+      "change_requests",
+      "files",
+      "project_assumptions",
+      "project_briefs",
+      "project_progress_updates",
+      "project_questions",
+      "project_requirements",
+      "project_schedule",
+      "projects"
+    ],
+    "scope": [
+      "scope_items",
+      "scopes"
+    ],
+    "estimates_and_pricing": [
+      "estimate_adjustments",
+      "estimate_items",
+      "estimate_role_allocations",
+      "estimate_scenarios",
+      "estimate_supplier_reviews",
+      "estimate_versions",
+      "phase_pricing",
+      "project_estimates",
+      "project_pricing"
+    ],
+    "suppliers": [
+      "project_supplier_assignments",
+      "supplier_payments",
+      "supplier_profiles",
+      "supplier_time_entries",
+      "suppliers"
+    ],
+    "billing_and_hours": [
+      "meeting_time_charges",
+      "paid_hours",
+      "payments"
+    ],
+    "conversations": [
+      "chat_messages",
+      "conversation_participants",
+      "project_conversations",
+      "project_messages"
+    ],
+    "specification_and_meetings": [
+      "client_meetings",
+      "meeting_sources",
+      "specification_section_sources",
+      "specification_sections",
+      "specification_versions"
+    ],
+    "prototypes": [
+      "project_prototypes",
+      "prototype_approvals",
+      "prototype_versions"
+    ],
+    "proposals_documents_and_execution": [
+      "execution_packages",
+      "project_documents",
+      "proposal_signatures",
+      "proposal_versions"
+    ],
+    "imports_and_email_operations": [
+      "email_send_log",
+      "email_send_state",
+      "email_unsubscribe_tokens",
+      "import_batches",
+      "import_rows",
+      "suppressed_emails"
+    ]
+  },
+  "tablePolicies": [
+    {
+      "table": "activity_logs",
+      "domain": "governance_and_audit",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_generated_drafts",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_project_summaries",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_request_classifications",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_response_cache",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_runs",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_sessions",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_usage_alerts",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_usage_events",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "ai_usage_limits",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "approvals",
+      "domain": "governance_and_audit",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "change_requests",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "chat_messages",
+      "domain": "conversations",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own",
+        "create_or_update_own"
+      ]
+    },
+    {
+      "table": "client_meetings",
+      "domain": "specification_and_meetings",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "clients",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "contact_notes",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "conversation_participants",
+      "domain": "conversations",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "copilot_audit_log",
+      "domain": "governance_and_audit",
+      "dataClass": "confidential_internal",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "copilot_entity_facts",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "copilot_messages",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "copilot_operator_actions",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "copilot_slot_memory",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "copilot_state",
+      "domain": "ai_and_copilot",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "crm_ai_suggestions",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "crm_leads",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "decision_logs",
+      "domain": "governance_and_audit",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "email_send_log",
+      "domain": "imports_and_email_operations",
+      "dataClass": "confidential_internal",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "email_send_state",
+      "domain": "imports_and_email_operations",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "email_unsubscribe_tokens",
+      "domain": "imports_and_email_operations",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "estimate_adjustments",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "estimate_items",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "estimate_role_allocations",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "estimate_scenarios",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "estimate_supplier_reviews",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "estimate_versions",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "execution_packages",
+      "domain": "proposals_documents_and_execution",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "files",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own",
+        "create_or_update_own"
+      ]
+    },
+    {
+      "table": "import_batches",
+      "domain": "imports_and_email_operations",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "import_rows",
+      "domain": "imports_and_email_operations",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "lead_conversation_messages",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "lead_conversations",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "meeting_sources",
+      "domain": "specification_and_meetings",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "meeting_time_charges",
+      "domain": "billing_and_hours",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "onboarding_invitations",
+      "domain": "identity_registration_and_onboarding",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "onboarding_state",
+      "domain": "identity_registration_and_onboarding",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "paid_hours",
+      "domain": "billing_and_hours",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "past_projects",
+      "domain": "crm_and_leads",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "payments",
+      "domain": "billing_and_hours",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "phase_pricing",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "read_only_legacy",
+      "deleteMode": "forbidden",
+      "agency_admin": [
+        "read"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "profiles",
+      "domain": "identity_registration_and_onboarding",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "project_assumptions",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_briefs",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_conversations",
+      "domain": "conversations",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_documents",
+      "domain": "proposals_documents_and_execution",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "project_estimates",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "project_messages",
+      "domain": "conversations",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own",
+        "create_or_update_own"
+      ]
+    },
+    {
+      "table": "project_pricing",
+      "domain": "estimates_and_pricing",
+      "dataClass": "business",
+      "mutationMode": "read_only_legacy",
+      "deleteMode": "forbidden",
+      "agency_admin": [
+        "read"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "project_progress_updates",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_prototypes",
+      "domain": "prototypes",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "project_questions",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_requirements",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own",
+        "create_or_update_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_schedule",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "project_supplier_assignments",
+      "domain": "suppliers",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "projects",
+      "domain": "projects_and_delivery",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "proposal_signatures",
+      "domain": "proposals_documents_and_execution",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own",
+        "write_own_via_action"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "proposal_versions",
+      "domain": "proposals_documents_and_execution",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "prototype_approvals",
+      "domain": "prototypes",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [
+        "read_own",
+        "write_own_via_action"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "prototype_versions",
+      "domain": "prototypes",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": []
+    },
+    {
+      "table": "public_registrations",
+      "domain": "identity_registration_and_onboarding",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "registration_audit_log",
+      "domain": "governance_and_audit",
+      "dataClass": "confidential_internal",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "registration_settings",
+      "domain": "identity_registration_and_onboarding",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "scope_items",
+      "domain": "scope",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "scopes",
+      "domain": "scope",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "specification_section_sources",
+      "domain": "specification_and_meetings",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "specification_sections",
+      "domain": "specification_and_meetings",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "specification_versions",
+      "domain": "specification_and_meetings",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [
+        "read_own"
+      ],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "supplier_payments",
+      "domain": "suppliers",
+      "dataClass": "business",
+      "mutationMode": "business_action_preferred",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": [
+        "read_assigned_or_own"
+      ]
+    },
+    {
+      "table": "supplier_profiles",
+      "domain": "suppliers",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": [
+        "read_assigned_or_own",
+        "create_or_update_own"
+      ]
+    },
+    {
+      "table": "supplier_skill_suggestions",
+      "domain": "ai_and_copilot",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    },
+    {
+      "table": "supplier_time_entries",
+      "domain": "suppliers",
+      "dataClass": "business",
+      "mutationMode": "append_only",
+      "deleteMode": "correction_or_reversal_only",
+      "agency_admin": [
+        "create",
+        "read",
+        "update"
+      ],
+      "client": [],
+      "supplier": [
+        "read_assigned_or_own",
+        "create_or_update_own"
+      ]
+    },
+    {
+      "table": "suppliers",
+      "domain": "suppliers",
+      "dataClass": "business",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": [
+        "read_assigned_or_own",
+        "create_or_update_own"
+      ]
+    },
+    {
+      "table": "suppressed_emails",
+      "domain": "imports_and_email_operations",
+      "dataClass": "confidential_internal",
+      "mutationMode": "direct_crud_with_policy",
+      "deleteMode": "guarded_admin_delete",
+      "agency_admin": [
+        "create",
+        "read",
+        "update",
+        "delete_guarded"
+      ],
+      "client": [],
+      "supplier": []
+    }
+  ]
+}

@@ -75,6 +75,18 @@ pnpm run build
 
 `pnpm run build` includes TypeScript compilation. No lint or automated test script is currently configured.
 
+## External API design package
+
+`docs/api/` contains the machine-readable design for a future scoped external API and AI Skill connector. `docs/api/ai-skill-input.json` is the single-file package for an AI Skill generator; it embeds the OpenAPI 3.1 contract, the generated catalog of all 82 public tables and 9 RPC functions, the per-table permission matrix and the existing guarded business-action inventory.
+
+Regenerate the schema-derived package after database type changes:
+
+```bash
+pnpm run api:docs
+```
+
+The package is a design contract, not a deployed API. External integrations must use the proposed authenticated/audited gateway and must never receive a Supabase `service_role` key.
+
 ## Security invariants
 
 - Agency admin owns final scope, pricing, supplier assignment and work readiness.
