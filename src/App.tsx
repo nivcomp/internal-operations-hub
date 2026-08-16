@@ -261,8 +261,12 @@ function AppShell() {
     openClientDetail(persisted.id);
     return persisted;
   }
-  async function handleCreateProject(clientId: string, input: Parameters<typeof createProject>[1]) {
-    const persisted = await createProject(clientId, input);
+  async function handleCreateProject(
+    clientId: string,
+    input: Parameters<typeof createProject>[1],
+    paymentDecision: Parameters<typeof createProject>[2],
+  ) {
+    const persisted = await createProject(clientId, input, paymentDecision);
     openProjectDetail(persisted.id);
     return persisted;
   }
@@ -272,7 +276,6 @@ function AppShell() {
       role === "client" ? (
         <ClientHomePage
           clientId={profile?.clientId}
-          onNavigate={navigate}
           onRestartWizard={() => void restartOnboarding()}
         />
       ) : role === "supplier" ? (
@@ -396,7 +399,7 @@ function AppShell() {
   } satisfies Record<ViewKey, JSX.Element>;
 
   const simplePage: Record<SimpleView, JSX.Element> = {
-    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} onMeetingStarted={openSimpleMeeting} />,
+    home: <SimpleHomePage onSearch={() => setPaletteOpen(true)} onMeetingStarted={openSimpleMeeting} onOpenLeadConversations={() => openAdvanced("lead-conversations")} />,
     crm: (
       <CrmWorkspace
         onClientSelect={(clientId) => openAdvanced("client-detail", { clientId })}
