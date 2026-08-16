@@ -39,6 +39,8 @@ export function CashFlowLeadsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,6 +85,46 @@ export function CashFlowLeadsPage() {
     }
   }
 
+  async function exportAllLeads() {
+    if (leads.length === 0 || exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const XLSX = await import("xlsx");
+      const rows = leads.map((lead) => ({
+        "תאריך קליטה": formatDate(lead.created_at),
+        "שם פרטי": lead.first_name,
+        "שם משפחה": lead.last_name,
+        "שם מלא": `${lead.first_name} ${lead.last_name}`,
+        "שם חברה": lead.company_name,
+        "טלפון": lead.phone ?? "",
+        "טלפון סלולרי": lead.mobile_phone,
+        "אימייל": lead.email,
+        "כתובת פיזית": lead.physical_address ?? "",
+        "סיבת הפנייה": lead.reason_for_cash_flow_software,
+        "מערכת הנהלת חשבונות": lead.accounting_system,
+        "מערכת אחרת": lead.accounting_system_other ?? "",
+        "הערות": lead.notes ?? "",
+        "מקור": lead.source,
+        "סטטוס": STATUS_LABELS[lead.status as CashFlowLeadStatus],
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      worksheet["!cols"] = [
+        { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 24 }, { wch: 24 },
+        { wch: 16 }, { wch: 18 }, { wch: 28 }, { wch: 30 }, { wch: 45 },
+        { wch: 24 }, { wch: 24 }, { wch: 40 }, { wch: 22 }, { wch: 16 },
+      ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "לידים תזרים");
+      const date = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `amir-cashflow-leads-${date}.xlsx`, { compression: true });
+    } catch {
+      setExportError("לא הצלחנו ליצור את קובץ האקסל. נסו שוב.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="cashflow-admin-page" dir="rtl" lang="he">
       <header className="page-header">
@@ -120,8 +162,14 @@ export function CashFlowLeadsPage() {
                 placeholder="שם, חברה, טלפון, אימייל או מערכת"
               />
             </label>
-            <span>{filteredLeads.length} מתוך {leads.length} לידים</span>
+            <div className="cashflow-leads-toolbar-actions">
+              <span>{filteredLeads.length} מתוך {leads.length} לידים</span>
+              <button type="button" onClick={() => void exportAllLeads()} disabled={exporting || leads.length === 0}>
+                {exporting ? "מכין קובץ…" : "הורדת כל הלידים לאקסל"}
+              </button>
+            </div>
           </div>
+          {exportError ? <p className="cashflow-export-error" role="alert">{exportError}</p> : null}
 
           {filteredLeads.length === 0 ? (
             <p className="muted-text">לא נמצאו לידים שמתאימים לחיפוש.</p>
