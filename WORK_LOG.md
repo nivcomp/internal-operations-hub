@@ -1,5 +1,34 @@
 # Work Log
 
+### 2026-08-16 — Managed external API production release
+
+**Work unit**
+Implement, expose in the application and deploy the scoped external API gateway and AI Skill documentation package.
+
+**Changes**
+- Added service-role-only private storage for hashed API keys, immutable audit events and idempotency records.
+- Added `api-admin` for agency-admin key lifecycle management and `external-api` for scoped discovery, CRUD, guarded business actions and audit reads.
+- Added the agency-admin-only `API ואינטגרציות` screen, including one-time full-key display, masked key inventory, revocation, embedded documentation and direct OpenAPI/AI Skill downloads.
+- Generated and bundled an exact runtime contract for 83 public tables, including `cash_flow_leads`, while preserving the newer cash-flow, payment-gate, client-space and MVP-reconsideration features in Lovable.
+- Applied `20260816170000_external_api_gateway.sql` once to the connected production database and deployed both Edge Functions.
+- Published the matching frontend to `https://project.stat.ninja/`.
+
+**Verification**
+- `pnpm run api:docs` generated 83 tables, 12 service families and 9 domain RPC functions.
+- `npx -y deno-bin check supabase/functions/api-admin/index.ts supabase/functions/external-api/index.ts` passed.
+- `pnpm run build` passed with 289 modules; the existing large-chunk warning remains.
+- Production `/external-api/docs` returned 200; `/openapi.json` reported OpenAPI 3.1.0; the AI Skill package contained 83 tables.
+- Production `/external-api/v1/me` without `X-API-Key` and `/api-admin` without JWT both returned 401.
+- The published `App` asset contains the `api-integrations` view, Hebrew menu label and API screen styles.
+- No API key was created automatically and no secret was logged or committed.
+
+**Commits**
+- `0772bb5 Add managed external API gateway`
+- `b942955 Include cash-flow leads in API catalog`
+
+**Next**
+- Run the short-lived authenticated key creation/read/revocation smoke test recorded in `NEXT_TASK.md`.
+
 ### 2026-08-16 — External API and AI Skill design package
 
 **Work unit**
