@@ -11,7 +11,7 @@ It contains one React 18 + TypeScript + Vite application. `simple` and `advanced
 - The same Supabase client and project (`jvluliwmugamojdqstha`).
 - The same authentication, RLS policies, migrations, storage buckets and Edge Functions.
 
-Do not split the modes into different repositories, applications, deployments or databases.
+Do not split the modes into different repositories, applications, deployments or databases. The separate `nivcomp/chashflow` repository is not a remote or deployment source for this application.
 
 ## Runtime architecture
 
@@ -21,9 +21,10 @@ Do not split the modes into different repositories, applications, deployments or
 - State: `AppDataProvider` loads shared operational records from Supabase. Simple and advanced screens consume the same provider state; neither owns a parallel data model.
 - Simple meeting navigation remembers only the selected project id locally so a refresh can restore the view; durable meeting, source, specification, conversation and estimate state remains in Supabase, and `startMeeting` is idempotent for active meetings.
 - Simple meeting sessions are intentionally client-safe even when an agency admin is signed in: they use the `project_guide` conversation/context and show only estimates explicitly marked `client_visible`. Internal rate, cost and margin controls exist only in Advanced Mode.
-- Simple agency navigation exposes Home, CRM, Projects and Suppliers. A selected project opens one four-area daily workspace (Discovery, Pricing & Proposal, Execution & Supplier, Status); the detailed estimate, commercial, payment, change, document and administration screens remain in Advanced Mode or contextual disclosure.
+- Simple agency navigation keeps the project workflow compact while exposing the existing tasks, finance and Amir campaign lead tools. A selected project opens one four-area daily workspace (Discovery, Pricing & Proposal, Execution & Supplier, Status); detailed commercial, payment, change, document and administration screens remain in Advanced Mode or contextual disclosure.
 - The daily pricing area reuses `project_estimates` and related canonical tables. The supplier area reuses supplier-audience `supplier_brief` rows in `project_documents`; its dedicated print route is authenticated and rechecks document type/audience before rendering.
 - Public registration is bundled separately at startup to avoid authenticated-client boot failures, but writes to the same Supabase project.
+- The public `/amir-cashflow` campaign form is an isolated route inside this repository. It stores only campaign leads in `cash_flow_leads`; it is not the separate `nivcomp/chashflow` product.
 - The external automation API runs in the `external-api` Supabase Edge Function and is administered through `api-admin`. Generated OpenAPI/schema artifacts under `docs/api/` are compiled into the function and exposed as live documentation. Agency-issued keys are stored only as hashes in the private schema; the gateway enforces scopes, table policy, field validation, idempotency, optimistic concurrency, guarded deletion, rate limits and immutable audit events. Guarded business actions additionally require a current agency-admin session. Third-party agents never receive the Supabase `service_role` key or unrestricted raw database access.
 - New-client AI onboarding is initially bound to the authenticated profile. The onboarding Edge Function resolves the linked client record server-side and gives the AI the authoritative client and business names, while the activity, need and project scope still come only from what the client shares. Submission creates or updates a pre-project lead conversation and does not create a project. Only an agency-admin promotion creates the exact project, retry-safely transfers the complete transcript, internal notes, structured brief, flow and specification drafts, and binds subsequent project/MVP work to that project. Full agency MVP generation and handoff remain agency-only; after promotion, an authenticated client may explicitly generate a bounded visual-only preview from client-safe project context.
 - Every agency UI route that creates a project requires an explicit payment choice. Lead promotion repeats this validation at the Edge Function and database RPC boundary. A paid choice sets the project payment gate to `paid`; an intentional unpaid override keeps it `blocked` and records the exception, so work cannot silently become ready.
@@ -32,6 +33,7 @@ Do not split the modes into different repositories, applications, deployments or
 ## Canonical domain systems
 
 - Clients and projects: `clients`, `projects`; imported prospects stay in `crm_leads` until linked or converted.
+- Campaign intake: `cash_flow_leads` stores the isolated Amir campaign submissions and is unrelated to the separate cash-flow product repository.
 - Meeting and discovery: `client_meetings`, `meeting_sources`.
 - Meeting accounting: client-safe timing is stored on `client_meetings`; one immutable agency-only `meeting_time_charges` row records confirmed billable discovery hours and the existing `paid_hours` bank deduction.
 - Project conversation: `project_conversations`, `conversation_participants`, `chat_messages`, `ai_runs`, `ai_generated_drafts`.

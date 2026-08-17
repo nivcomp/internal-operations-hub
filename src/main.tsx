@@ -13,11 +13,14 @@ const joinRole = window.location.pathname === "/join/client"
   : window.location.pathname === "/join/supplier"
     ? "supplier" as const
     : null;
+const isAmirCashFlowRoute = window.location.pathname.replace(/\/+$/, "") === "/amir-cashflow";
 
 async function mount() {
-  const screen = joinRole
-    ? React.createElement((await import("./pages/JoinPage")).JoinPage, { role: joinRole })
-    : React.createElement((await import("./App")).default);
+  const screen = isAmirCashFlowRoute
+    ? React.createElement((await import("./pages/AmirCashFlowPage")).AmirCashFlowPage)
+    : joinRole
+      ? React.createElement((await import("./pages/JoinPage")).JoinPage, { role: joinRole })
+      : React.createElement((await import("./App")).default);
 
   root.render(
     <React.StrictMode>

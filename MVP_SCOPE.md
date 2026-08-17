@@ -25,6 +25,7 @@ Help Yaniv move agency work from lead and client discovery through a controlled 
 - A shared document center that creates versioned specification, technical and implementation drafts from approved sections and exposes only client-audience documents in the client portal.
 - Scope approval, payments/paid hours, schedules, supplier assignment, start gates, time tracking and supplier payables.
 - Excel/CSV import and CRM enrichment suggestions.
+- An isolated public Hebrew RTL Amir campaign lead form with Supabase persistence and an agency-only lead list with calling, editing, confirmed deletion, statuses and Excel export. It is not the separate `nivcomp/chashflow` product.
 
 ## Canonical pricing rule
 

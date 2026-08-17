@@ -52,12 +52,13 @@ import { SupplierPortalPage } from "./pages/SupplierPortalPage";
 import { SupplierTimePage } from "./pages/SupplierTimePage";
 import { SuppliersPage } from "./pages/SuppliersPage";
 import { LeadConversationsPage } from "./pages/LeadConversationsPage";
+import { CashFlowLeadsPage } from "./pages/CashFlowLeadsPage";
 import type { UserRole } from "./types/domain";
 import type { ViewKey } from "./views";
 
 const roleViews: Record<UserRole, ViewKey[]> = {
   agency_admin: [
-    "home", "dashboard", "action-queue", "lead-conversations", "clients", "client-detail", "client-portal",
+    "home", "dashboard", "action-queue", "lead-conversations", "cash-flow-leads", "clients", "client-detail", "client-portal",
     "projects", "project-detail", "change-requests",
     "suppliers", "supplier-detail", "supplier-time", "supplier-portal",
     "pricing-margin", "payments-hours", "ai-workbench", "ai-usage", "access-management", "api-integrations",
@@ -372,6 +373,7 @@ function AppShell() {
     ),
     crm: <CrmWorkspace onClientSelect={openClientDetail} onCreateProject={openClientDetail} />,
     "lead-conversations": <LeadConversationsPage onProjectOpen={openProjectDetail} />,
+    "cash-flow-leads": <CashFlowLeadsPage />,
     suppliers: <SuppliersPage onSupplierSelect={openSupplierDetail} />,
     "supplier-detail": (
       <SupplierDetailPage
@@ -431,6 +433,7 @@ function AppShell() {
       />
     ),
     "lead-conversations": <LeadConversationsPage onProjectOpen={openSimpleProject} />,
+    "cash-flow-leads": <CashFlowLeadsPage />,
     clients: <SimpleRecordsPage kind="clients" />,
     projects: <SimpleRecordsPage kind="projects" onProjectOpen={openSimpleProject} />,
     project: (() => {

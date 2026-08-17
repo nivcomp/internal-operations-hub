@@ -55,6 +55,23 @@ This is the practical planning model for the first build. Names can become datab
 
 Lead conversations are the durable pre-project record. On agency promotion, their messages and onboarding artifacts are copied into the new project's canonical conversation, brief and specification records.
 
+### Cash Flow Lead
+
+- id
+- created date
+- first and last name
+- company name
+- phone and mobile phone
+- email
+- physical address
+- reason for cash-flow software
+- accounting system and optional other-system name
+- notes
+- source: `amir_cashflow_form`
+- status: new, contacted, qualified, not relevant or converted
+
+Cash-flow leads come only from the public Amir campaign form. Public users may submit but never read this table; agency admins own review and status changes.
+
 ### Project
 
 - id

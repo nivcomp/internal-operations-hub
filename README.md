@@ -8,6 +8,8 @@ Canonical repository: `nivcomp/internal-operations-hub`.
 
 The repository contains one React application. `simple` and `advanced` are two views rendered by the same `src/App.tsx`. They share authentication, providers, Supabase records, services, AI conversations and business rules. They must not be separated into different applications, repositories or databases.
 
+The separate `nivcomp/chashflow` repository is a different product and is not a remote or deployment source for this application. The `/amir-cashflow` route in this repository is only an isolated campaign lead form.
+
 ## Stack
 
 - React 18, TypeScript and Vite 5.
@@ -21,7 +23,7 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 
 - Client, CRM lead, project, supplier and invitation management.
 - Simple and advanced dashboards over the same `AppDataProvider` state.
-- Daily Simple navigation limited to Home, CRM, Projects and Suppliers, with one four-area project workspace and the complete operator system behind `מערכת מתקדמת`.
+- A compact Simple project workflow with the complete operator system behind `מערכת מתקדמת`.
 - Client and supplier portals with strict visibility rules.
 - Project chat, onboarding chat, persistent Copilot and voice Copilot.
 - Client and supplier project chats retain usage quotas; agency-admin project chats are unmetered in both Simple and Advanced Mode while still retaining input safety controls and usage logging.
@@ -40,6 +42,13 @@ The connected Supabase project id is declared in `supabase/config.toml`. Fronten
 - Change requests, schedules, payment/paid-hours gates and supplier assignments.
 - Draft execution packages based on signed scope.
 - Excel/CSV import and CRM pipeline.
+- Public Hebrew Amir campaign intake with agency-only management, stored in `cash_flow_leads`.
+
+## Amir campaign lead form
+
+The public route `/amir-cashflow` is a Hebrew, RTL lead form branded as "ניב מחשבים". It collects the business contact, cash-flow need and accounting system, requires explicit contact consent, and writes directly to the configured Supabase project.
+
+The migrations `20260816090000_cash_flow_leads.sql` and `20260816112000_cash_flow_lead_deletion.sql` provide fixed-source anonymous insert-only access and agency-admin management. This route is part of the campaign intake inside Internal Operations Hub; it is not the source code or deployment of `nivcomp/chashflow`.
 
 ## Pricing rule
 
@@ -86,6 +95,14 @@ pnpm run api:docs
 ```
 
 Agency admins manage scoped keys and read the live documents inside **API & Integrations**. The complete key is shown only once and stored server-side only as a SHA-256 hash. External integrations use the authenticated/audited `external-api` Edge Function and must never receive a Supabase `service_role` key.
+
+## Production checklist
+
+1. Run `pnpm run build` and type-check every changed Edge Function.
+2. Apply only pending migrations that belong to `nivcomp/internal-operations-hub`.
+3. Deploy the matching Edge Functions from the same source revision.
+4. Synchronize Lovable to the repository `main` revision and publish.
+5. Verify `https://project.stat.ninja/` and the changed authenticated role flow.
 
 ## Security invariants
 

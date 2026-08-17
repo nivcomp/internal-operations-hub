@@ -1,206 +1,5 @@
 # Work Log
 
-### 2026-08-17 — Client-generated visual-only live MVP
-
-**Work unit**
-Replace the client flow-button canvas with a project-bound, inviting live MVP preview that illustrates the evolving app, WhatsApp bot or automation without building an executable system.
-
-**Changes**
-- Added an explicit create/update control above the client MVP view in both simple client surfaces.
-- Added a client-safe `client_preview` action to the existing `project-prototype` function with server-side project ownership validation.
-- Limited preview context to client-visible approved specification sections, client-audience conversation memory and visible client-agency messages.
-- Stored previews in the existing immutable `project_prototypes` / `prototype_versions` system so existing realtime subscriptions refresh authorized viewers.
-- Added a stable source fingerprint, unchanged-result reuse and a five-minute changed-generation cooldown to control token use.
-- Kept the result bounded JSON with 3–5 simulated screens; it contains no code, live integration or data mutation.
-- Clearly labelled early client previews as visual drafts and kept them outside the reviewed exact-version approval controls.
-- Removed the orphaned client `ProjectFlowCanvas` component and its obsolete styles while preserving the separate agency artifact flow diagram.
-
-**Verification**
-- `pnpm run build` passed (TypeScript + Vite, 289 modules); the existing large-chunk warning remains.
-- `npx -y deno-bin check supabase/functions/project-prototype/index.ts` passed after tightening the optional action-tone sanitizer.
-- `git diff --check` passed.
-- A repository search confirmed that the removed client `ProjectFlowCanvas` has no remaining imports; the separate `ProjectFlowDiagram` renderer remains intact.
-- No automated test or lint script exists; authenticated client/agency and production Edge Function smoke tests remain pending.
-
-**Next**
-- Deploy and run the authenticated client/agency smoke test only with explicit production approval as recorded in `NEXT_TASK.md`.
-
-### 2026-08-16 — Managed external API production release
-
-**Work unit**
-Implement, expose in the application and deploy the scoped external API gateway and AI Skill documentation package.
-
-**Changes**
-- Added service-role-only private storage for hashed API keys, immutable audit events and idempotency records.
-- Added `api-admin` for agency-admin key lifecycle management and `external-api` for scoped discovery, CRUD, guarded business actions and audit reads.
-- Added the agency-admin-only `API ואינטגרציות` screen, including one-time full-key display, masked key inventory, revocation, embedded documentation and direct OpenAPI/AI Skill downloads.
-- Generated and bundled an exact runtime contract for 83 public tables, including `cash_flow_leads`, while preserving the newer cash-flow, payment-gate, client-space and MVP-reconsideration features in Lovable.
-- Applied `20260816170000_external_api_gateway.sql` once to the connected production database and deployed both Edge Functions.
-- Published the matching frontend to `https://project.stat.ninja/`.
-
-**Verification**
-- `pnpm run api:docs` generated 83 tables, 12 service families and 9 domain RPC functions.
-- `npx -y deno-bin check supabase/functions/api-admin/index.ts supabase/functions/external-api/index.ts` passed.
-- `pnpm run build` passed with 289 modules; the existing large-chunk warning remains.
-- Production `/external-api/docs` returned 200; `/openapi.json` reported OpenAPI 3.1.0; the AI Skill package contained 83 tables.
-- Production `/external-api/v1/me` without `X-API-Key` and `/api-admin` without JWT both returned 401.
-- The published `App` asset contains the `api-integrations` view, Hebrew menu label and API screen styles.
-- No API key was created automatically and no secret was logged or committed.
-
-**Commits**
-- `0772bb5 Add managed external API gateway`
-- `b942955 Include cash-flow leads in API catalog`
-
-**Next**
-- Run the short-lived authenticated key creation/read/revocation smoke test recorded in `NEXT_TASK.md`.
-
-### 2026-08-16 — External API and AI Skill design package
-
-**Work unit**
-Characterize the complete Supabase-backed system and produce a machine-readable API package from which an AI engine can generate a safe, full-featured connector or Skill.
-
-**Changes**
-- Generated an exact public-schema catalog from `src/integrations/supabase/types.ts`: 82 tables, 988 row fields, 172 relationships and 9 database functions, including separate insert/update shapes.
-- Added an OpenAPI 3.1 gateway contract for identity, capability discovery, paginated reads, validated creates, optimistic-concurrency updates, guarded deletes, business actions and audit reads.
-- Added a per-table authorization/mutation matrix covering agency, client and supplier boundaries, append-only/protected data, canonical pricing and legacy read-only pricing.
-- Catalogued 12 existing Edge Function service families and their guarded operations.
-- Added one self-contained `docs/api/ai-skill-input.json` package plus a copy-ready generator prompt and Hebrew implementation/security reference.
-- Added deterministic generation commands that fail if a schema table is missing from the domain/policy mapping.
-- Recorded that this is a design contract: the scoped OAuth/audit gateway must be implemented before any generated Skill can connect, and a Supabase `service_role` key must never be distributed.
-
-**Verification**
-- `pnpm run api:docs` passed and regenerated the package deterministically.
-- JSON parsing and inventory assertions passed for all package files: 82 table policies, 12 service families and OpenAPI 3.1.
-- All internal OpenAPI references resolved, operation ids were unique and every table had a populated Row schema.
-- A secret-shape scan found no JWT, API key or service-role credential in the package.
-- `pnpm run build` passed (TypeScript + Vite, 287 modules); the existing large-chunk warning remains. The first sandboxed attempt was blocked by parent-directory read restrictions, then the identical approved build completed successfully.
-- `git diff --check` passed before commit. No database, production environment or deployed application was changed.
-
-**Files**
-- `docs/api/`
-- `scripts/generate-api-catalog.mjs`
-- `scripts/generate-api-contract.mjs`
-- `README.md`, architecture/decision memory and `NEXT_TASK.md`
-
-**Commit**
-- `e2e2274 Document scoped external API contract`
-
-**Next**
-- Implement and stage-test the read-only authenticated gateway foundation recorded in `NEXT_TASK.md` before enabling writes, deletes or a generated Skill.
-
-### 2026-08-14 — Client can withdraw an accidental MVP approval
-
-**Work unit**
-Add a safe recovery path when a client approves the exact shared MVP version by mistake.
-
-**Changes**
-- Replaced the one-decision-per-version limitation with append-only client decision history; the latest decision is current.
-- Added a client-facing withdrawal control, optional correction note and confirmation dialog after approval.
-- Preserved the original approval, immutable version and complete conversation while returning the current decision to `changes_requested`.
-- Added an agency-visible latest-decision card and tightened client RLS reads to the signed-in client’s own approval history.
-
-**Tests**
-- `pnpm run build` passed (TypeScript + Vite, 287 modules); the existing large-chunk warning remains.
-- `git diff --check` passed before the implementation commit.
-- The production database was inspected read-only: the expected unique constraint exists, there is one current decision row and three prototype-approval policies. No production data or schema was changed.
-- No automated test or lint script exists. The migration and authenticated client/agency browser flow require deployment verification.
-
-**Files**
-- `src/components/prototype/PrototypeStudio.tsx`
-- `src/services/prototypeApi.ts`
-- `src/styles.css`
-- `supabase/migrations/20260814170000_allow_client_mvp_approval_reconsideration.sql`
-- Project memory and approval-flow documentation.
-
-**Commit**
-- `5165e19 Allow clients to withdraw MVP approval`
-
-**Next**
-- Apply the migration, publish the frontend and run the single authenticated client/agency smoke test recorded in `NEXT_TASK.md`.
-
-### 2026-08-13 — Simple currency and supplier assignment refinements
-
-**Work unit**
-Make the Simple pricing and supplier handoff controls match the agency's actual daily defaults.
-
-**Changes**
-- Made ILS the application and new-estimate default, with the visible selector ordered ILS, USD and GBP.
-- Kept existing estimate values unchanged; choosing another currency changes the recorded/displayed unit and does not perform a silent exchange conversion.
-- Made all existing suppliers visible in the Simple project handoff selector with approved, pending-review and inactive labels.
-- Allowed a pending-review supplier to be assigned for planning while keeping execution visibly blocked until supplier approval; inactive suppliers remain visible but cannot be assigned.
-- Tightened the Simple ready-to-start summary so it also requires an approved assigned supplier and estimate items assigned to that supplier.
-
-**Verification**
-- `pnpm run build` passed (TypeScript + Vite, 288 modules); the existing large-chunk warning remains.
-- `git diff --check` passed.
-- GitHub branch `codex/simplify-admin-ui` and Lovable preview were verified at source commit `7d10205755690f2903bb1e4a99c6cc773f374370` with a clean working tree.
-- Published the matching frontend to `https://project.stat.ninja/` and confirmed the live `App-CV4mLSjq.js` bundle contains the ILS/USD/GBP options plus the pending-supplier planning labels.
-
-**Next**
-- Refresh the authenticated production session and smoke-test the real project's currency selector and supplier assignment without changing unrelated production data.
-
-### 2026-08-13 — Simplified agency-admin daily workflow
-
-**Work unit**
-Audit and simplify the agency-admin experience without changing backend, authentication, RLS, role isolation, signed proposals, estimate rules or audit history.
-
-**Changes**
-- Audited visible Simple and Advanced controls in `ADMIN_UI_AUDIT.md`, including working, partial, dead and advanced-only classifications.
-- Reduced Simple primary navigation to Home, CRM, Projects and Suppliers, with pre-project lead conversations available contextually and the complete product behind `מערכת מתקדמת`.
-- Added a four-area Simple project workspace: Discovery, Pricing & Proposal, Execution & Supplier, and Status.
-- Added a canonical `project_estimates` pricing workspace with explicit hourly rate, hours, cost, budget, recommended price, margin, risk summary, human fixed-price approval and existing proposal publication flow.
-- Added supplier assignment and supplier-safe `supplier_brief` generation, preview, print/PDF-save view and contextual supplier portal access.
-- Added a plain-language project status summary and a direct control to return to the beginning of the original client conversation.
-- Kept one persistent contextual Copilot and repaired the previously ignored Advanced project-tab deep-link context.
-- Removed duplicate Simple project actions and reduced the Home quick-action grid to one primary and three secondary actions.
-
-**Verification**
-- `npx tsc --noEmit` passed.
-- `pnpm run build` passed; the existing large-chunk warning remains.
-- The Vite application and unauthenticated login boundary loaded successfully in the local in-app browser.
-- No lint or automated test script exists in `package.json`.
-- An authenticated real-project smoke test remains required because the matching local build had no signed-in browser session. No production data was changed and no release was published.
-
-**Files**
-- `ADMIN_UI_AUDIT.md`
-- Simple layout, Home, CRM, record cards and project workspace components
-- Canonical pricing, supplier handoff, status and supplier-print components
-- `App.tsx`, project chat/deep-link routing and responsive/print styles
-- Project memory documents
-
-**Next**
-- Review the pull request and run the single authenticated preview smoke test described in `NEXT_TASK.md`; do not merge until it passes.
-
-### 2026-08-13 — Production release of agency-controlled lead conversations
-
-**Work unit**
-Apply the approved production database migration and publish the matching lead-to-project release.
-
-**Changes**
-- Applied `20260813100000_lead_conversation_inbox.sql` to the connected production database.
-- Backfilled one existing no-project onboarding conversation as a lead while preserving its six messages.
-- Deployed `onboarding-chat`, `lead-conversations`, `access-admin`, and `public-registration` from source commit `d87e0de` without source changes.
-- Published the matching Lovable frontend to production; the public URL redirects to `https://project.stat.ninja/`.
-
-**Verification**
-- Confirmed both lead tables exist, all four RLS policies are installed, and the agency-only promotion guard is active.
-- Confirmed client submission no longer creates a project.
-- Confirmed Lovable reports the project as published and ready.
-- Confirmed the production login boundary loads without browser console errors.
-- The earlier `npx tsc --noEmit`, `npm run build`, and `git diff --check` checks remain green for the published source.
-- A full authenticated client/admin interaction smoke test remains required because this run did not have both signed-in production roles available.
-
-**Files**
-- `NEXT_TASK.md`
-- `WORK_LOG.md`
-
-**Commit**
-- Production source: `d87e0de Add agency-controlled lead conversations`.
-- This deployment record will be committed separately on the current feature branch.
-
-**Next**
-- Run one authenticated client/admin production smoke test through message visibility, reply/private note isolation, pause/resume, review submission, retry-safe promotion, artifact transfer, and continuation-link preservation.
-
 ### 2026-08-13 — QR code for public client/lead registration link
 
 **Work unit**
@@ -2842,6 +2641,427 @@ Create automatic reviewed specification documents and expose the existing projec
 
 **Next**
 - Deploy and verify the existing `project-chat` and `project-documents` Edge Functions with agency and client sessions.
+
+---
+
+### 2026-08-08 — Unmetered agency project chat
+
+**Work unit**
+Remove project-chat usage quotas from the agency admin while preserving client and supplier portal limits.
+
+**Changes**
+- `project-chat` no longer returns a usage meter or enforces quota, cooldown, automatic pause or burst blocking when the authenticated profile is `agency_admin`.
+- Client and supplier behavior is unchanged.
+- Usage events and message-length/input safety checks remain active for the agency.
+- The frontend clears stale usage state when the server intentionally omits a meter.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- No automated test suite exists. The changed Edge Function still requires deployment and authenticated role verification.
+
+**Files**
+- `supabase/functions/project-chat/index.ts`
+- `src/components/ProjectChat.tsx`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and PR.
+
+**Next**
+- Deploy and verify `project-chat` and `project-documents` with separate agency, client and supplier sessions.
+
+---
+
+### 2026-08-08 — Discovery meeting time accounting
+
+**Work unit**
+Track live discovery duration and safely deduct confirmed meeting hours from the existing paid-hours bank.
+
+**Changes**
+- Added a live start/end/duration strip to the Simple meeting workspace.
+- Added a finish flow with editable quarter-hour billing and eligible project/client bank selection.
+- Added client-safe `duration_minutes` to `client_meetings` and an agency-only `meeting_time_charges` ledger.
+- Added `finish_client_meeting`, which locks the meeting and selected bank, validates ownership and balance, prevents duplicate deductions and updates the existing `paid_hours` aggregate atomically.
+- Meetings without an available bank retain their billable time in the ledger without falsely deducting a balance.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- Migration/table audit confirmed this change alters the existing meeting record and adds only the required charge ledger; it does not duplicate meetings or hour banks.
+- Supabase CLI and an authenticated production session are unavailable, so migration application and live role/balance verification remain required.
+
+**Files**
+- `supabase/migrations/20260808113000_meeting_time_accounting.sql`
+- `src/components/meeting/MeetingWorkspace.tsx`
+- `src/services/meetingWorkflowApi.ts`
+- `src/integrations/supabase/types.ts`, `src/styles.css`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final report records the SHA and PR.
+
+**Next**
+- Build the saved interactive visual prototype studio with versioned client approval and reviewed Lovable export.
+
+### 2026-08-17 — Client-generated visual-only live MVP
+
+**Work unit**
+Replace the client flow-button canvas with a project-bound, inviting live MVP preview that illustrates the evolving app, WhatsApp bot or automation without building an executable system.
+
+**Changes**
+- Added an explicit create/update control above the client MVP view in both simple client surfaces.
+- Added a client-safe `client_preview` action to the existing `project-prototype` function with server-side project ownership validation.
+- Limited preview context to client-visible approved specification sections, client-audience conversation memory and visible client-agency messages.
+- Stored previews in the existing immutable `project_prototypes` / `prototype_versions` system so existing realtime subscriptions refresh authorized viewers.
+- Added a stable source fingerprint, unchanged-result reuse and a five-minute changed-generation cooldown to control token use.
+- Kept the result bounded JSON with 3–5 simulated screens; it contains no code, live integration or data mutation.
+- Clearly labelled early client previews as visual drafts and kept them outside the reviewed exact-version approval controls.
+- Removed the orphaned client `ProjectFlowCanvas` component and its obsolete styles while preserving the separate agency artifact flow diagram.
+
+**Verification**
+- `pnpm run build` passed (TypeScript + Vite, 289 modules); the existing large-chunk warning remains.
+- `npx -y deno-bin check supabase/functions/project-prototype/index.ts` passed after tightening the optional action-tone sanitizer.
+- `git diff --check` passed.
+- A repository search confirmed that the removed client `ProjectFlowCanvas` has no remaining imports; the separate `ProjectFlowDiagram` renderer remains intact.
+- No automated test or lint script exists; authenticated client/agency and production Edge Function smoke tests remain pending.
+
+**Next**
+- Deploy and run the authenticated client/agency smoke test only with explicit production approval as recorded in `NEXT_TASK.md`.
+
+### 2026-08-16 — Managed external API production release
+
+**Work unit**
+Implement, expose in the application and deploy the scoped external API gateway and AI Skill documentation package.
+
+**Changes**
+- Added service-role-only private storage for hashed API keys, immutable audit events and idempotency records.
+- Added `api-admin` for agency-admin key lifecycle management and `external-api` for scoped discovery, CRUD, guarded business actions and audit reads.
+- Added the agency-admin-only `API ואינטגרציות` screen, including one-time full-key display, masked key inventory, revocation, embedded documentation and direct OpenAPI/AI Skill downloads.
+- Generated and bundled an exact runtime contract for 83 public tables, including `cash_flow_leads`, while preserving the newer cash-flow, payment-gate, client-space and MVP-reconsideration features in Lovable.
+- Applied `20260816170000_external_api_gateway.sql` once to the connected production database and deployed both Edge Functions.
+- Published the matching frontend to `https://project.stat.ninja/`.
+
+**Verification**
+- `pnpm run api:docs` generated 83 tables, 12 service families and 9 domain RPC functions.
+- `npx -y deno-bin check supabase/functions/api-admin/index.ts supabase/functions/external-api/index.ts` passed.
+- `pnpm run build` passed with 289 modules; the existing large-chunk warning remains.
+- Production `/external-api/docs` returned 200; `/openapi.json` reported OpenAPI 3.1.0; the AI Skill package contained 83 tables.
+- Production `/external-api/v1/me` without `X-API-Key` and `/api-admin` without JWT both returned 401.
+- The published `App` asset contains the `api-integrations` view, Hebrew menu label and API screen styles.
+- No API key was created automatically and no secret was logged or committed.
+
+**Commits**
+- `0772bb5 Add managed external API gateway`
+- `b942955 Include cash-flow leads in API catalog`
+
+**Next**
+- Run the short-lived authenticated key creation/read/revocation smoke test recorded in `NEXT_TASK.md`.
+
+### 2026-08-16 — External API and AI Skill design package
+
+**Work unit**
+Characterize the complete Supabase-backed system and produce a machine-readable API package from which an AI engine can generate a safe, full-featured connector or Skill.
+
+**Changes**
+- Generated an exact public-schema catalog from `src/integrations/supabase/types.ts`: 82 tables, 988 row fields, 172 relationships and 9 database functions, including separate insert/update shapes.
+- Added an OpenAPI 3.1 gateway contract for identity, capability discovery, paginated reads, validated creates, optimistic-concurrency updates, guarded deletes, business actions and audit reads.
+- Added a per-table authorization/mutation matrix covering agency, client and supplier boundaries, append-only/protected data, canonical pricing and legacy read-only pricing.
+- Catalogued 12 existing Edge Function service families and their guarded operations.
+- Added one self-contained `docs/api/ai-skill-input.json` package plus a copy-ready generator prompt and Hebrew implementation/security reference.
+- Added deterministic generation commands that fail if a schema table is missing from the domain/policy mapping.
+- Recorded that this is a design contract: the scoped OAuth/audit gateway must be implemented before any generated Skill can connect, and a Supabase `service_role` key must never be distributed.
+
+**Verification**
+- `pnpm run api:docs` passed and regenerated the package deterministically.
+- JSON parsing and inventory assertions passed for all package files: 82 table policies, 12 service families and OpenAPI 3.1.
+- All internal OpenAPI references resolved, operation ids were unique and every table had a populated Row schema.
+- A secret-shape scan found no JWT, API key or service-role credential in the package.
+- `pnpm run build` passed (TypeScript + Vite, 287 modules); the existing large-chunk warning remains. The first sandboxed attempt was blocked by parent-directory read restrictions, then the identical approved build completed successfully.
+- `git diff --check` passed before commit. No database, production environment or deployed application was changed.
+
+**Files**
+- `docs/api/`
+- `scripts/generate-api-catalog.mjs`
+- `scripts/generate-api-contract.mjs`
+- `README.md`, architecture/decision memory and `NEXT_TASK.md`
+
+**Commit**
+- `e2e2274 Document scoped external API contract`
+
+**Next**
+- Implement and stage-test the read-only authenticated gateway foundation recorded in `NEXT_TASK.md` before enabling writes, deletes or a generated Skill.
+
+### 2026-08-14 — Client can withdraw an accidental MVP approval
+
+**Work unit**
+Add a safe recovery path when a client approves the exact shared MVP version by mistake.
+
+**Changes**
+- Replaced the one-decision-per-version limitation with append-only client decision history; the latest decision is current.
+- Added a client-facing withdrawal control, optional correction note and confirmation dialog after approval.
+- Preserved the original approval, immutable version and complete conversation while returning the current decision to `changes_requested`.
+- Added an agency-visible latest-decision card and tightened client RLS reads to the signed-in client’s own approval history.
+
+**Tests**
+- `pnpm run build` passed (TypeScript + Vite, 287 modules); the existing large-chunk warning remains.
+- `git diff --check` passed before the implementation commit.
+- The production database was inspected read-only: the expected unique constraint exists, there is one current decision row and three prototype-approval policies. No production data or schema was changed.
+- No automated test or lint script exists. The migration and authenticated client/agency browser flow require deployment verification.
+
+**Files**
+- `src/components/prototype/PrototypeStudio.tsx`
+- `src/services/prototypeApi.ts`
+- `src/styles.css`
+- `supabase/migrations/20260814170000_allow_client_mvp_approval_reconsideration.sql`
+- Project memory and approval-flow documentation.
+
+**Commit**
+- `5165e19 Allow clients to withdraw MVP approval`
+
+**Next**
+- Apply the migration, publish the frontend and run the single authenticated client/agency smoke test recorded in `NEXT_TASK.md`.
+
+### 2026-08-13 — Simple currency and supplier assignment refinements
+
+**Work unit**
+Make the Simple pricing and supplier handoff controls match the agency's actual daily defaults.
+
+**Changes**
+- Made ILS the application and new-estimate default, with the visible selector ordered ILS, USD and GBP.
+- Kept existing estimate values unchanged; choosing another currency changes the recorded/displayed unit and does not perform a silent exchange conversion.
+- Made all existing suppliers visible in the Simple project handoff selector with approved, pending-review and inactive labels.
+- Allowed a pending-review supplier to be assigned for planning while keeping execution visibly blocked until supplier approval; inactive suppliers remain visible but cannot be assigned.
+- Tightened the Simple ready-to-start summary so it also requires an approved assigned supplier and estimate items assigned to that supplier.
+
+**Verification**
+- `pnpm run build` passed (TypeScript + Vite, 288 modules); the existing large-chunk warning remains.
+- `git diff --check` passed.
+- GitHub branch `codex/simplify-admin-ui` and Lovable preview were verified at source commit `7d10205755690f2903bb1e4a99c6cc773f374370` with a clean working tree.
+- Published the matching frontend to `https://project.stat.ninja/` and confirmed the live `App-CV4mLSjq.js` bundle contains the ILS/USD/GBP options plus the pending-supplier planning labels.
+
+**Next**
+- Refresh the authenticated production session and smoke-test the real project's currency selector and supplier assignment without changing unrelated production data.
+
+### 2026-08-13 — Simplified agency-admin daily workflow
+
+**Work unit**
+Audit and simplify the agency-admin experience without changing backend, authentication, RLS, role isolation, signed proposals, estimate rules or audit history.
+
+**Changes**
+- Audited visible Simple and Advanced controls in `ADMIN_UI_AUDIT.md`, including working, partial, dead and advanced-only classifications.
+- Reduced Simple primary navigation to Home, CRM, Projects and Suppliers, with pre-project lead conversations available contextually and the complete product behind `מערכת מתקדמת`.
+- Added a four-area Simple project workspace: Discovery, Pricing & Proposal, Execution & Supplier, and Status.
+- Added a canonical `project_estimates` pricing workspace with explicit hourly rate, hours, cost, budget, recommended price, margin, risk summary, human fixed-price approval and existing proposal publication flow.
+- Added supplier assignment and supplier-safe `supplier_brief` generation, preview, print/PDF-save view and contextual supplier portal access.
+- Added a plain-language project status summary and a direct control to return to the beginning of the original client conversation.
+- Kept one persistent contextual Copilot and repaired the previously ignored Advanced project-tab deep-link context.
+- Removed duplicate Simple project actions and reduced the Home quick-action grid to one primary and three secondary actions.
+
+**Verification**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; the existing large-chunk warning remains.
+- The Vite application and unauthenticated login boundary loaded successfully in the local in-app browser.
+- No lint or automated test script exists in `package.json`.
+- An authenticated real-project smoke test remains required because the matching local build had no signed-in browser session. No production data was changed and no release was published.
+
+**Files**
+- `ADMIN_UI_AUDIT.md`
+- Simple layout, Home, CRM, record cards and project workspace components
+- Canonical pricing, supplier handoff, status and supplier-print components
+- `App.tsx`, project chat/deep-link routing and responsive/print styles
+- Project memory documents
+
+**Next**
+- Review the pull request and run the single authenticated preview smoke test described in `NEXT_TASK.md`; do not merge until it passes.
+
+### 2026-08-13 — Production release of agency-controlled lead conversations
+
+**Work unit**
+Apply the approved production database migration and publish the matching lead-to-project release.
+
+**Changes**
+- Applied `20260813100000_lead_conversation_inbox.sql` to the connected production database.
+- Backfilled one existing no-project onboarding conversation as a lead while preserving its six messages.
+- Deployed `onboarding-chat`, `lead-conversations`, `access-admin`, and `public-registration` from source commit `d87e0de` without source changes.
+- Published the matching Lovable frontend to production; the public URL redirects to `https://project.stat.ninja/`.
+
+**Verification**
+- Confirmed both lead tables exist, all four RLS policies are installed, and the agency-only promotion guard is active.
+- Confirmed client submission no longer creates a project.
+- Confirmed Lovable reports the project as published and ready.
+- Confirmed the production login boundary loads without browser console errors.
+- The earlier `npx tsc --noEmit`, `npm run build`, and `git diff --check` checks remain green for the published source.
+- A full authenticated client/admin interaction smoke test remains required because this run did not have both signed-in production roles available.
+
+**Files**
+- `NEXT_TASK.md`
+- `WORK_LOG.md`
+
+**Commit**
+- Production source: `d87e0de Add agency-controlled lead conversations`.
+- This deployment record will be committed separately on the current feature branch.
+
+**Next**
+- Run one authenticated client/admin production smoke test through message visibility, reply/private note isolation, pause/resume, review submission, retry-safe promotion, artifact transfer, and continuation-link preservation.
+
+### 2026-08-13 — QR code for public client/lead registration link
+---
+
+### 2026-08-16 — Amir cash-flow lead intake
+
+**Work unit**
+Add the public Hebrew "אמיר תזרים מזומנים" lead form, its database table and an agency-only lead management view.
+
+**Changes**
+- Added `/amir-cashflow` as an isolated public Hebrew RTL route branded "ניב מחשבים", with required-field and email validation, conditional accounting-system input, consent gating and trimmed Supabase submission.
+- Added `cash_flow_leads` with automatic ids/timestamps, constrained source/status values, anonymous insert-only RLS and agency-admin read/update RLS.
+- Added **Cash Flow Leads** to Advanced Mode and **לידים תזרים** to Simple Mode, including search and five status controls.
+- Updated generated Supabase types, project documentation and the pnpm lockfile so frozen installs are reproducible again.
+
+**Tests**
+- `pnpm install --frozen-lockfile` passed after synchronizing the previously stale lockfile.
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed (TypeScript + Vite); the existing large App chunk warning remains.
+- `git diff --check` passed.
+- No lint or automated test script exists in `package.json`. The migration and public/admin production smoke test remain deployment checks.
+
+**Files**
+- `supabase/migrations/20260816090000_cash_flow_leads.sql`
+- `src/pages/AmirCashFlowPage.tsx`, `src/pages/CashFlowLeadsPage.tsx`
+- `src/services/cashFlowLeadsApi.ts`, `src/integrations/supabase/types.ts`
+- Application routing/navigation, shared styles, README and project memory files
+
+**Commit**
+- `18af3928c1745da3b3c7447bebed5af8902c6c3a` — `Add Amir cash-flow lead intake`
+
+**Next**
+- Synchronize `main` through Lovable, apply the migration to the connected Supabase project, publish, and run one public-submit/admin-status production smoke test.
+
+---
+
+### 2026-08-16 — Cash-flow lead mobile operations
+
+**Work unit**
+Make the Simple Mode cash-flow lead list practical on phones while preserving the full desktop view.
+
+**Changes**
+- Replaced the wide table on small screens with Hebrew RTL lead cards.
+- Added a prominent direct-call action and clickable phone/email details for every lead.
+- Kept the requested lead fields and status controls available in both mobile and desktop layouts.
+- Renamed the internal heading to the Hebrew **לידים תזרים** used in Simple Mode navigation.
+
+**Tests**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; the existing large App chunk warning remains.
+
+**Files**
+- `src/pages/CashFlowLeadsPage.tsx`
+- `src/styles.css`
+- `README.md`, `NEXT_TASK.md`, `WORK_LOG.md`
+
+**Next**
+- Synchronize and publish `main` in Lovable, apply the Supabase migration, then verify the public form and direct calling on the production domain.
+
+---
+
+### 2026-08-16 — Cash-flow production publication
+
+**Work unit**
+Publish the campaign form through Lovable and activate its Supabase table.
+
+**Changes**
+- Applied `20260816090000_cash_flow_leads.sql` through the authenticated Lovable cloud database connection.
+- Imported the canonical GitHub cash-flow files into the existing Lovable project and preserved its newer payment-gate/client-space call signatures.
+- Wired the public route and the Simple/Advanced internal navigation in the active Lovable edit branch.
+- Published the project and verified `https://project.stat.ninja/amir-cashflow` renders the Hebrew RTL form rather than the login screen.
+
+**Verification**
+- Lovable `npx tsc --noEmit` passed.
+- Lovable `pnpm run build` passed; only the existing large-chunk warning remains.
+- The production table has 15 columns, 3 RLS policies and 0 leads before campaign testing.
+- The live form exposes every requested field and keeps submit disabled until consent.
+- No synthetic lead was submitted.
+
+**Next**
+- Submit one approved production test lead, verify it appears in **לידים תזרים**, test direct calling on a phone and exercise one status update.
+
+---
+
+### 2026-08-16 — Cash-flow lead Excel export
+
+**Work unit**
+Allow agency admins to download every Amir cash-flow campaign lead as an Excel workbook.
+
+**Changes**
+- Added **הורדת כל הלידים לאקסל** to the internal cash-flow lead toolbar.
+- Exported all loaded campaign leads, independent of the current search filter, with Hebrew column headers and practical column widths.
+- Included contact details, address, reason, accounting system, notes, source and Hebrew status labels.
+- Used the existing `xlsx` dependency and added responsive toolbar styling.
+
+**Tests**
+- `npx tsc --noEmit` passed.
+- `pnpm run build` passed; existing large-chunk warnings remain.
+
+**Next**
+- After the first approved test submission, download the workbook and confirm Hebrew text, phone values and status labels in Excel.
+
+---
+
+### 2026-08-16 — Cash-flow campaign brand correction
+
+**Work unit**
+Correct the campaign business name everywhere to "ניב מחשבים".
+
+**Changes**
+- Updated the public form header and intro branding.
+- Updated the consent wording and post-submit thank-you message.
+- Updated the internal cash-flow lead view and project documentation.
+- Preserved unrelated natural-language phrases such as "נעים מאוד".
+
+**Tests**
+- Exact repository search confirms no occurrence of the previous business name remains.
+- `npx tsc --noEmit` passed.
+- The local Vite build was blocked by the desktop sandbox denying an ancestor-directory read; the production Lovable build remains the publication gate.
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and branch.
+
+**Next**
+- Submit one approved production test lead and verify the mobile call, status and Excel workflow end to end.
+
+---
+
+### 2026-08-16 — Cash-flow lead editing and deletion
+
+**Work unit**
+Allow agency admins to edit and explicitly delete Amir cash-flow leads on desktop and mobile.
+
+**Changes**
+- Added a Hebrew edit dialog for all lead contact, company, need, accounting-system and notes fields.
+- Added required-field and email validation plus trimming before saving.
+- Added edit/delete actions to desktop rows and mobile lead cards.
+- Added a named destructive confirmation before deleting a lead.
+- Added an agency-admin-only DELETE grant and RLS policy; anonymous access remains insert-only.
+
+**Tests**
+- `npx tsc --noEmit` passed after implementation.
+- The production Vite bundle passed with `--configLoader runner`; the standard config bundler is blocked only by the desktop sandbox's ancestor-directory read restriction.
+- `git diff --check` passed after implementation.
+- Production Lovable build and authenticated edit/delete smoke testing remain publication checks.
+
+**Files**
+- `src/pages/CashFlowLeadsPage.tsx`
+- `src/services/cashFlowLeadsApi.ts`
+- `src/components/ui/ConfirmDialog.tsx`, `src/styles.css`
+- `supabase/migrations/20260816112000_cash_flow_lead_deletion.sql`
+- Project memory files
+
+**Commit**
+- Created after this log entry; the final task report records the SHA and branch.
+
+**Next**
+- Run one approved disposable production lead through submit, edit, call, status, Excel and confirmed deletion end to end.
 
 ---
 

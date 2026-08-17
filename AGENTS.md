@@ -114,6 +114,8 @@ Before completing a cycle:
    - Secrets or sensitive data are present.
    - Existing unrelated changes cannot be safely separated.
 8. When a commit or push cannot be completed, explain the exact reason in the task chat and `WORK_LOG.md`.
+9. When the user explicitly approves a change for release, completion includes the full release chain by default: reconcile with the canonical `main`, commit, push, update `main` without rewriting history, deploy changed migrations/Edge Functions/frontend, synchronize and publish the matching Lovable revision, and verify the live application. Do not pause for a second routine approval. Stop only for a failed required check, an authentication/external blocker, an unclear destructive production-data migration, or a cross-repository ambiguity.
+10. Release only `nivcomp/internal-operations-hub` from this workspace. The separate `nivcomp/chashflow` repository has its own `main` and must never be fetched, merged, pushed or deployed as part of this application's release.
 
 ## Git discipline
 
