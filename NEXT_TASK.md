@@ -2,30 +2,26 @@
 
 ## Current result
 
-The managed external API gateway is implemented and deployed to the connected production Supabase project.
+The client workspace now contains a project-owned live MVP surface instead of the unrelated flow-button canvas. A promoted-project client can explicitly create or refresh a polished app, WhatsApp-bot or automation preview from client-visible approved specification content and the client-agency conversation.
 
-The production application now includes an agency-admin-only `API ואינטגרציות` screen with scoped key creation, masked key inventory, revocation, embedded documentation, OpenAPI 3.1 and a self-contained AI Skill input package. The full key is returned only once after creation; only its SHA-256 hash and display prefix are stored.
+The result is bounded visual JSON rendered by the existing prototype studio, never executable code. Simulated buttons only navigate between screens. Unchanged context reuses the saved version without another model call, changed generation has a cooldown, and realtime `prototype_versions` updates refresh other authorized viewers. Full agency generation, reviewed sharing and exact-version approval remain controlled separately.
 
-The gateway covers the exact generated catalog of 83 public-schema tables, including `cash_flow_leads`, plus guarded business actions and immutable audit events. The production smoke test confirmed `/docs` and `/openapi.json` return 200, the AI Skill package reports 83 tables, and unauthenticated `/v1/me` and `api-admin` calls return 401.
+The frontend TypeScript check, production Vite build, Edge Function type-check and whitespace check pass. The bounded change set is ready on the project branch; production deployment remains a separate, explicit action.
 
 ## Recommended next work unit
 
-Run one authenticated agency-admin connector smoke test without changing unrelated production data:
+Deploy and smoke-test this exact client live-preview change only:
 
-1. Sign in at `https://project.stat.ninja/` as an agency administrator and open `API ואינטגרציות`.
-2. Create one deliberately named short-lived test key with `schema.read` and `data.read` only; copy the full value from the one-time display.
-3. Call `/v1/me`, `/v1/schema/tables` and one bounded read against a non-sensitive table.
-4. Confirm the request appears in the API audit view without the raw key or sensitive payload.
-5. Revoke the test key in the application and verify the next request returns 401.
-6. Generate the first real connector key only after its owner, scopes and expiry are agreed.
-
-Do not paste a production key into source control, Lovable chat, work logs or support conversations.
+1. Deploy the updated `project-prototype` Edge Function and matching frontend only after explicit production approval.
+2. As one authenticated promoted-project client, create a preview and confirm that it is visibly view-only and tied to the correct project.
+3. Without changing the conversation, click again and confirm the saved version is reused.
+4. Add one client-safe message, refresh after the cooldown and confirm a new immutable version appears in realtime for the agency.
 
 ## Acceptance criteria
 
-- Only an authenticated `agency_admin` can create, list or revoke integration keys.
-- A full key is visible once after creation and cannot be recovered later.
-- Revocation takes effect immediately.
-- Schema and data responses stay inside the key's declared scopes and generated allowlists.
-- Audit events contain request metadata but no raw key or full sensitive payload.
-- Existing cash-flow, payment-gate, client-space and MVP-reconsideration flows remain available after the release.
+- Only an authenticated client who owns the project, or an agency admin, can call the client-preview action.
+- The preview uses no internal notes, hidden specification sections, pricing, supplier cost, margin, secrets or executable code.
+- The client sees a welcoming app/WhatsApp/automation simulation rather than the old flow-button canvas.
+- An unchanged source does not spend another AI generation.
+- A changed source creates a new immutable version after the cooldown and realtime refresh reaches authorized viewers.
+- Client-generated early previews are not presented as final scope approval; reviewed agency versions preserve the existing exact-version approval/reconsideration flow.

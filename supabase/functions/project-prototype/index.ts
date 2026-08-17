@@ -21,6 +21,20 @@ type PrototypeContent = {
   }>;
 };
 
+type PrototypeRequest = {
+  action?: string;
+  projectId?: string;
+  prototypeId?: string;
+  kind?: PrototypeKind;
+  title?: string;
+  instructions?: string;
+  sourceText?: string;
+  versionId?: string;
+};
+
+type RequestProfile = { role: string; is_active: boolean | null; client_id: string | null };
+const CLIENT_LIVE_PREVIEW_PREFIX = "[CLIENT_LIVE_PREVIEW]";
+
 function sanitize(raw: PrototypeContent): PrototypeContent {
   const screens = Array.isArray(raw?.screens) ? raw.screens.slice(0, 12).map((screen, index) => ({
     id: String(screen?.id || `screen-${index + 1}`).slice(0, 60),
@@ -35,7 +49,7 @@ function sanitize(raw: PrototypeContent): PrototypeContent {
     actions: (Array.isArray(screen?.actions) ? screen.actions : []).slice(0, 8).map((action, actionIndex) => ({
       id: String(action?.id || `action-${actionIndex + 1}`).slice(0, 60), label: String(action?.label || "Continue").slice(0, 100),
       targetScreenId: action?.targetScreenId ? String(action.targetScreenId).slice(0, 60) : undefined,
-      tone: (["primary","secondary","danger"].includes(action?.tone) ? action.tone : "primary") as any,
+      tone: (["primary","secondary","danger"].includes(String(action?.tone)) ? action.tone : "primary") as any,
     })),
   })) : [];
   if (!screens.length) throw new Error("The AI did not create any prototype screens.");
@@ -105,6 +119,151 @@ async function loadDurableClientConversation(projectId: string) {
   };
 }
 
+async function loadClientPreviewConversation(projectId: string) {
+  const { data: conversation } = await admin.from("project_conversations")
+    .select("id").eq("project_id", projectId).eq("kind", "client_agency").maybeSingle();
+  if (!conversation) return { memory: "", recent: [] as Array<{ sender_type: string; body: string }> };
+  const [{ data: messages }, { data: stored }] = await Promise.all([
+    admin.from("chat_messages").select("sender_type,body,created_at")
+      .eq("conversation_id", conversation.id).in("visibility", ["client_agency", "shared_all"])
+      .order("created_at", { ascending: false }).limit(40),
+    admin.from("ai_project_summaries").select("summary")
+      .eq("project_id", projectId).eq("conversation_id", conversation.id).eq("audience_role", "client").maybeSingle(),
+  ]);
+  return {
+    // Reuse existing memory when available, but never spend an extra model call
+    // merely to refresh it for the client's visual preview.
+    memory: String(stored?.summary || "").slice(0, 8000),
+    recent: (messages ?? []).slice().reverse().map((message: any) => ({
+      sender_type: String(message.sender_type || "participant").slice(0, 40),
+      body: String(message.body || "").replace(/\s+/g, " ").slice(0, 700),
+    })),
+  };
+}
+
+async function sourceFingerprint(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function inferPrototypeKind(source: string): PrototypeKind {
+  if (/whatsapp|וואטסאפ|ווטסאפ|צ[׳']אטבוט|chatbot|\bbot\b|בוט/i.test(source)) return "whatsapp";
+  if (/automation|אוטומציה|workflow|תהליך אוטומטי|make\b|n8n|zapier/i.test(source)) return "automation";
+  return "app";
+}
+
+async function createClientLivePreview(body: PrototypeRequest, userId: string, profile: RequestProfile) {
+  const projectId = String(body.projectId || "");
+  if (!projectId) return json({ error: "projectId is required" }, 400);
+
+  const { data: project } = await admin.from("projects")
+    .select("id,client_id,name,summary,status,updated_at").eq("id", projectId).maybeSingle();
+  if (!project) return json({ error: "Project not found" }, 404);
+  if (profile.role === "client" && (!profile.client_id || profile.client_id !== project.client_id)) {
+    return json({ error: "This project is not available to the signed-in client." }, 403);
+  }
+
+  let prototype: any = null;
+  if (body.prototypeId) {
+    const { data } = await admin.from("project_prototypes").select("id,title,prototype_kind,updated_at")
+      .eq("id", String(body.prototypeId)).eq("project_id", projectId).maybeSingle();
+    prototype = data;
+  }
+  if (!prototype) {
+    const { data } = await admin.from("project_prototypes").select("id,title,prototype_kind,updated_at")
+      .eq("project_id", projectId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    prototype = data;
+  }
+
+  const [sections, conversation, latestVisibleResult, latestClientPreviewResult] = await Promise.all([
+    admin.from("specification_sections").select("title,content,status")
+      .eq("project_id", projectId).eq("status", "approved").eq("client_visible", true).limit(30),
+    loadClientPreviewConversation(projectId),
+    admin.from("prototype_versions").select("*").eq("project_id", projectId).eq("audience", "client")
+      .in("status", ["shared", "approved"]).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("prototype_versions").select("*").eq("project_id", projectId)
+      .like("source_notes", `${CLIENT_LIVE_PREVIEW_PREFIX}%`).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+
+  const source = JSON.stringify({
+    project: { name: project.name, summary: project.summary, status: project.status },
+    approvedSpecification: sections.data ?? [],
+    conversationMemory: conversation.memory,
+    recentConversation: conversation.recent,
+  }).slice(0, 20000);
+  const fingerprint = await sourceFingerprint(source);
+  const sourceNote = `${CLIENT_LIVE_PREVIEW_PREFIX}${fingerprint}`;
+  const latestVisible = latestVisibleResult.data as any;
+  const latestClientPreview = latestClientPreviewResult.data as any;
+
+  if (latestClientPreview?.source_notes === sourceNote) {
+    const reusable = latestVisible && new Date(latestVisible.created_at).getTime() > new Date(latestClientPreview.created_at).getTime()
+      ? latestVisible
+      : latestClientPreview;
+    return json({ prototypeId: reusable.prototype_id, version: reusable, reused: true });
+  }
+
+  if (latestClientPreview) {
+    const elapsedMs = Date.now() - new Date(latestClientPreview.created_at).getTime();
+    const cooldownMs = 5 * 60 * 1000;
+    if (elapsedMs < cooldownMs) {
+      return json({
+        error: "The live preview can be regenerated after a short cooling-off period.",
+        retryAfterSeconds: Math.ceil((cooldownMs - elapsedMs) / 1000),
+      }, 429);
+    }
+  }
+
+  const kind = prototype?.prototype_kind ?? inferPrototypeKind(source);
+  const raw = await callModel([
+    { role: "system", content: `Create a polished, visual-only ${kind} preview in Hebrew unless the source is clearly English. It is an illustration, never executable software. Use only supplied facts; when details are missing, show a friendly placeholder such as "נגדיר יחד" instead of inventing a business rule. Never include price, supplier cost, internal cost, margin, secrets, external URLs, HTML or code. Return JSON only with this schema: {"title":string,"summary":string,"theme":{"primary":"#hex","accent":"#hex","style":string},"startScreenId":string,"screens":[{"id":string,"title":string,"subtitle":string,"imagePrompt":string,"blocks":[{"type":"heading|text|image|input|card|message|status","label":string,"value":string,"sender":"client|bot"}],"actions":[{"id":string,"label":string,"targetScreenId":string,"tone":"primary|secondary|danger"}]}],"dataModel":[],"integrations":[],"automations":[]}. Create 3-5 attractive screens. Every action is simulated navigation only and every targetScreenId must reference an existing screen. For automation, visualise the trigger, steps, result and one exception state without claiming that anything actually runs. For WhatsApp, show the conversation, success, missing-information and human-handoff states. For an app, show a welcoming overview, the main task and a clear success or empty state.` },
+    { role: "user", content: source },
+  ], { maxOutputTokens: 3200 });
+  const parsed = parseJsonOutput<any>(raw);
+  if (!parsed) return json({ error: "AI returned invalid preview JSON" }, 502);
+  const content = sanitize(parsed);
+
+  let prototypeId = String(prototype?.id || "");
+  if (!prototypeId) {
+    const { data, error } = await admin.from("project_prototypes").insert({
+      project_id: projectId,
+      title: String(parsed.title || `${project.name} — תצוגה חיה`).slice(0, 160),
+      prototype_kind: kind,
+      created_by: userId,
+    }).select().single();
+    if (error || !data) return json({ error: error?.message || "Could not create live preview" }, 500);
+    prototypeId = data.id;
+  }
+
+  const { data: latest } = await admin.from("prototype_versions").select("version")
+    .eq("prototype_id", prototypeId).order("version", { ascending: false }).limit(1).maybeSingle();
+  const { data: version, error } = await admin.from("prototype_versions").insert({
+    prototype_id: prototypeId,
+    project_id: projectId,
+    version: (latest?.version ?? 0) + 1,
+    status: "shared",
+    audience: "client",
+    title: String(parsed.title || project.name).slice(0, 160),
+    summary: String(parsed.summary || "").slice(0, 1200),
+    content,
+    source_notes: sourceNote,
+    created_by: userId,
+  }).select().single();
+  if (error || !version) return json({ error: error?.message || "Could not save live preview" }, 500);
+
+  await Promise.all([
+    admin.from("project_prototypes").update({ updated_at: new Date().toISOString() }).eq("id", prototypeId),
+    admin.from("ai_sessions").insert({
+      project_id: projectId,
+      kind: `client-live-preview:${kind}`,
+      prompt: "Create a bounded visual-only client preview from existing client-safe project context.",
+      output: JSON.stringify(content).slice(0, 20000),
+      metadata: { model: DEFAULT_MODEL, prototypeId, version: version.version, visualOnly: true },
+    }),
+  ]);
+  return json({ prototypeId, version, reused: false });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -113,11 +272,19 @@ Deno.serve(async (req) => {
   const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
   const { data: claims } = await anon.auth.getClaims(authHeader.replace("Bearer ", ""));
   const userId = claims?.claims?.sub as string | undefined;
-  const { data: profile } = userId ? await admin.from("profiles").select("role,is_active").eq("id", userId).maybeSingle() : { data: null };
-  if (!userId || !profile || profile.is_active === false || profile.role !== "agency_admin") return json({ error: "Forbidden" }, 403);
+  const { data: profile } = userId ? await admin.from("profiles").select("role,is_active,client_id").eq("id", userId).maybeSingle() : { data: null };
+  if (!userId || !profile || profile.is_active === false) return json({ error: "Forbidden" }, 403);
 
-  let body: { action?: string; projectId?: string; prototypeId?: string; kind?: PrototypeKind; title?: string; instructions?: string; sourceText?: string; versionId?: string };
+  let body: PrototypeRequest;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+
+  if (body.action === "client_preview") {
+    if (!['agency_admin', 'client'].includes(profile.role)) return json({ error: "Forbidden" }, 403);
+    return createClientLivePreview(body, userId, profile as RequestProfile);
+  }
+
+  // Full-fidelity generation, sharing and reviewed handoff remain agency-only.
+  if (profile.role !== "agency_admin") return json({ error: "Forbidden" }, 403);
   const projectId = String(body.projectId || "");
   if (!projectId) return json({ error: "projectId is required" }, 400);
 

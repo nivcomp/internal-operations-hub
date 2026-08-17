@@ -317,7 +317,14 @@ export function ClientPortalPage({
       </section> : null}</> : null}
 
       {focusMode === "mvp" ? <>
-        <PrototypeStudio projectId={project.id} projectName={project.name} readOnly clientMode={!isPreview} language={language} />
+        <PrototypeStudio
+          projectId={project.id}
+          projectName={project.name}
+          readOnly
+          clientMode={!isPreview}
+          language={language}
+          allowClientLivePreview={!isPreview}
+        />
         <section className="card portal-mvp-refresh">
           <h2>{t.refreshMvp}</h2>
           <p className="muted-text">{t.refreshMvpHelp}</p>

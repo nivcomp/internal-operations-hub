@@ -231,6 +231,7 @@ export function ClientHomePage({ clientId, initialProjectId, onRestartWizard }: 
             simple
             language={language}
             refreshToken={refreshToken}
+            allowClientLivePreview
           />
         </aside>
       </div>

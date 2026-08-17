@@ -1,5 +1,30 @@
 # Work Log
 
+### 2026-08-17 — Client-generated visual-only live MVP
+
+**Work unit**
+Replace the client flow-button canvas with a project-bound, inviting live MVP preview that illustrates the evolving app, WhatsApp bot or automation without building an executable system.
+
+**Changes**
+- Added an explicit create/update control above the client MVP view in both simple client surfaces.
+- Added a client-safe `client_preview` action to the existing `project-prototype` function with server-side project ownership validation.
+- Limited preview context to client-visible approved specification sections, client-audience conversation memory and visible client-agency messages.
+- Stored previews in the existing immutable `project_prototypes` / `prototype_versions` system so existing realtime subscriptions refresh authorized viewers.
+- Added a stable source fingerprint, unchanged-result reuse and a five-minute changed-generation cooldown to control token use.
+- Kept the result bounded JSON with 3–5 simulated screens; it contains no code, live integration or data mutation.
+- Clearly labelled early client previews as visual drafts and kept them outside the reviewed exact-version approval controls.
+- Removed the orphaned client `ProjectFlowCanvas` component and its obsolete styles while preserving the separate agency artifact flow diagram.
+
+**Verification**
+- `pnpm run build` passed (TypeScript + Vite, 289 modules); the existing large-chunk warning remains.
+- `npx -y deno-bin check supabase/functions/project-prototype/index.ts` passed after tightening the optional action-tone sanitizer.
+- `git diff --check` passed.
+- A repository search confirmed that the removed client `ProjectFlowCanvas` has no remaining imports; the separate `ProjectFlowDiagram` renderer remains intact.
+- No automated test or lint script exists; authenticated client/agency and production Edge Function smoke tests remain pending.
+
+**Next**
+- Deploy and run the authenticated client/agency smoke test only with explicit production approval as recorded in `NEXT_TASK.md`.
+
 ### 2026-08-16 — Managed external API production release
 
 **Work unit**

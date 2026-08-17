@@ -34,15 +34,30 @@ export async function listProjectPrototypes(projectId: string) {
 }
 
 export async function getPrototypeFreshness(projectId: string) {
-  const [{ data: versions, error: ve }, { data: messages, error: me }] = await Promise.all([
+  const [
+    { data: versions, error: ve },
+    { data: messages, error: me },
+    { data: sections, error: se },
+    { data: project, error: pe },
+  ] = await Promise.all([
     db.from("prototype_versions").select("id,created_at,version").eq("project_id", projectId).eq("audience", "client").in("status", ["shared", "approved"]).order("created_at", { ascending: false }).limit(1),
     db.from("chat_messages").select("id,created_at").eq("project_id", projectId).in("sender_type", ["client", "agency_admin"]).order("created_at", { ascending: false }).limit(1),
+    db.from("specification_sections").select("id,updated_at").eq("project_id", projectId).eq("status", "approved").eq("client_visible", true).order("updated_at", { ascending: false }).limit(1),
+    db.from("projects").select("id,updated_at").eq("id", projectId).maybeSingle(),
   ]);
-  if (ve) fail(ve, "Load MVP freshness"); if (me) fail(me, "Load conversation freshness");
-  const version = versions?.[0]; const message = messages?.[0];
+  if (ve) fail(ve, "Load MVP freshness");
+  if (me) fail(me, "Load conversation freshness");
+  if (se) fail(se, "Load specification freshness");
+  if (pe) fail(pe, "Load project freshness");
+  const version = versions?.[0];
+  const latestSourceTime = Math.max(
+    messages?.[0]?.created_at ? new Date(messages[0].created_at).getTime() : 0,
+    sections?.[0]?.updated_at ? new Date(sections[0].updated_at).getTime() : 0,
+    project?.updated_at ? new Date(project.updated_at).getTime() : 0,
+  );
   return {
     hasMvp: Boolean(version),
-    isStale: Boolean(version && message && new Date(message.created_at).getTime() > new Date(version.created_at).getTime()),
+    isStale: Boolean(version && latestSourceTime > new Date(version.created_at).getTime()),
     version: version?.version as number | undefined,
   };
 }
@@ -59,6 +74,20 @@ export async function generatePrototype(input: { projectId: string; prototypeId?
   const { data, error } = await supabase.functions.invoke("project-prototype", { body: { action: "generate", ...input } });
   if (error) fail(error, "Generate prototype"); if (data?.error) fail(data.error, "Generate prototype");
   return data as { prototypeId: string; version: PrototypeVersion };
+}
+
+/**
+ * Creates a bounded visual-only preview from the client-safe project context.
+ * The server reuses an unchanged result and rate-limits new generations, so a
+ * refresh click does not automatically spend another AI request.
+ */
+export async function generateClientLivePreview(input: { projectId: string; prototypeId?: string }) {
+  const { data, error } = await supabase.functions.invoke("project-prototype", {
+    body: { action: "client_preview", ...input },
+  });
+  if (error) fail(error, "Generate live preview");
+  if (data?.error) fail(data.error, "Generate live preview");
+  return data as { prototypeId: string; version: PrototypeVersion; reused: boolean };
 }
 
 export async function sharePrototype(projectId: string, versionId: string) {

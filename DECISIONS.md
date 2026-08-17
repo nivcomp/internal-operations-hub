@@ -1,5 +1,19 @@
 # Decisions
 
+## 2026-08-17 — Client live MVP is a bounded visual preview
+
+**Decision**
+Once a lead has been promoted into a project, the authenticated client may create or refresh a project-owned live MVP preview from client-visible approved specification content and the client-agency conversation. This preview is bounded JSON rendered by the existing prototype studio; it is not executable software and cannot perform integrations, send messages or mutate business data. Full-fidelity agency generation, reviewed sharing, approval and delivery handoff remain agency-controlled.
+
+**Reason**
+The client needs an inviting, concrete view of the application, WhatsApp bot or automation taking shape during discovery without exposing the internal project workspace or spending tokens on a functioning implementation.
+
+**Alternatives considered**
+Keeping the unrelated flow-button canvas, automatically generating after every message, or generating runnable code directly in the client portal.
+
+**Consequences**
+The client explicitly creates or updates the preview. Unchanged source context reuses the saved version without another model call, changed context is cooled down before regeneration, and realtime version events refresh every authorized viewer. Early client-generated previews are clearly labelled as visual drafts and are not treated as scope approval; reviewed agency versions retain the existing exact-version approval flow.
+
 ## 2026-08-14 — Client MVP decisions are append-only and reconsiderable
 
 **Decision**
